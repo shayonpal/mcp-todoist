@@ -72,11 +72,11 @@
 - [x] T031 TodoistFiltersTool implementation in src/tools/todoist-filters.ts
 
 ## Phase 3.4: Integration
-- [ ] T032 MCP server initialization in src/server.ts with tool registration
-- [ ] T033 Configuration management with dotenv in src/config/index.ts
-- [ ] T034 Structured error handling middleware in src/middleware/error-handler.ts
-- [ ] T035 Request logging with correlation IDs in src/middleware/logging.ts
-- [ ] T036 Health check endpoint for API connectivity in src/server.ts
+- [x] T032 MCP server initialization in src/server.ts with tool registration
+- [x] T033 Configuration management with dotenv in src/config/index.ts
+- [x] T034 Structured error handling middleware in src/middleware/error-handler.ts
+- [x] T035 Request logging with correlation IDs in src/middleware/logging.ts
+- [x] T036 Health check endpoint for API connectivity in src/server.ts
 
 ## Phase 3.5: Polish
 - [ ] T037 [P] Unit tests for TodoistApiService methods in tests/unit/todoist-api.test.ts
