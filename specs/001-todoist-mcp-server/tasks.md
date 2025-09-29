@@ -43,16 +43,16 @@
 
 ## Phase 3.2: Tests First (TDD) ⚠️ MUST COMPLETE BEFORE 3.3
 **CRITICAL: These tests MUST be written and MUST FAIL before ANY implementation**
-- [ ] T007 [P] Contract test for todoist_tasks tool in tests/contract/todoist_tasks.test.ts
-- [ ] T008 [P] Contract test for todoist_projects tool in tests/contract/todoist_projects.test.ts
-- [ ] T009 [P] Contract test for todoist_sections tool in tests/contract/todoist_sections.test.ts
-- [ ] T010 [P] Contract test for todoist_comments tool in tests/contract/todoist_comments.test.ts
-- [ ] T011 [P] Contract test for todoist_filters tool in tests/contract/todoist_filters.test.ts
-- [ ] T012 [P] Mock Todoist API responses in tests/mocks/todoist-api-responses.ts
-- [ ] T013 [P] Integration test for project creation and task management in tests/integration/project-workflow.test.ts
-- [ ] T014 [P] Integration test for batch operations in tests/integration/batch-operations.test.ts
-- [ ] T015 [P] Integration test for rate limiting behavior in tests/integration/rate-limiting.test.ts
-- [ ] T016 [P] Validation test suite for Zod schemas in tests/unit/validation.test.ts
+- [x] T007 [P] Contract test for todoist_tasks tool in tests/contract/todoist_tasks.test.ts
+- [x] T008 [P] Contract test for todoist_projects tool in tests/contract/todoist_projects.test.ts
+- [x] T009 [P] Contract test for todoist_sections tool in tests/contract/todoist_sections.test.ts
+- [x] T010 [P] Contract test for todoist_comments tool in tests/contract/todoist_comments.test.ts
+- [x] T011 [P] Contract test for todoist_filters tool in tests/contract/todoist_filters.test.ts
+- [x] T012 [P] Mock Todoist API responses in tests/mocks/todoist-api-responses.ts
+- [x] T013 [P] Integration test for project creation and task management in tests/integration/project-workflow.test.ts
+- [x] T014 [P] Integration test for batch operations in tests/integration/batch-operations.test.ts
+- [x] T015 [P] Integration test for rate limiting behavior in tests/integration/rate-limiting.test.ts
+- [x] T016 [P] Validation test suite for Zod schemas in tests/unit/validation.test.ts
 
 ## Phase 3.3: Core Implementation (ONLY after tests are failing)
 - [ ] T017 [P] TodoistTask type definition in src/types/todoist.ts
