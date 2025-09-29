@@ -1,0 +1,215 @@
+{
+  "name": "todoist_sections",
+  "description": "Section management within Todoist projects - create, read, update, delete, and reorder sections for better task organization",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "action": {
+        "type": "string",
+        "enum": ["create", "get", "update", "delete", "list", "reorder"],
+        "description": "Operation to perform on sections"
+      },
+      "section_id": {
+        "type": "string",
+        "description": "Section ID (required for get, update, delete)"
+      },
+      "project_id": {
+        "type": "string",
+        "description": "Project ID (required for create, list, and reorder operations)"
+      },
+      "name": {
+        "type": "string",
+        "maxLength": 120,
+        "description": "Section name (required for create)"
+      },
+      "order": {
+        "type": "integer",
+        "minimum": 1,
+        "description": "Section order within project"
+      },
+      "section_orders": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {"type": "string"},
+            "order": {"type": "integer"}
+          },
+          "required": ["id", "order"]
+        },
+        "description": "Array of section ID and order pairs for reorder action"
+      }
+    },
+    "required": ["action"],
+    "allOf": [
+      {
+        "if": {"properties": {"action": {"const": "create"}}},
+        "then": {"required": ["name", "project_id"]}
+      },
+      {
+        "if": {"properties": {"action": {"enum": ["get", "update", "delete"]}}},
+        "then": {"required": ["section_id"]}
+      },
+      {
+        "if": {"properties": {"action": {"enum": ["list", "reorder"]}}},
+        "then": {"required": ["project_id"]}
+      },
+      {
+        "if": {"properties": {"action": {"const": "reorder"}}},
+        "then": {"required": ["section_orders"]}
+      }
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "success": {"type": "boolean"},
+      "data": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "id": {"type": "string"},
+              "project_id": {"type": "string"},
+              "order": {"type": "integer"},
+              "name": {"type": "string"}
+            },
+            "description": "Single section object"
+          },
+          {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {"type": "string"},
+                "project_id": {"type": "string"},
+                "order": {"type": "integer"},
+                "name": {"type": "string"}
+              }
+            },
+            "description": "Array of section objects"
+          }
+        ]
+      },
+      "message": {"type": "string"},
+      "metadata": {
+        "type": "object",
+        "properties": {
+          "total_count": {"type": "integer"},
+          "project_name": {"type": "string"},
+          "operation_time": {"type": "number"},
+          "rate_limit_remaining": {"type": "integer"},
+          "rate_limit_reset": {"type": "string"}
+        }
+      },
+      "error": {
+        "type": "object",
+        "properties": {
+          "code": {"type": "string"},
+          "message": {"type": "string"},
+          "details": {"type": "object"},
+          "retryable": {"type": "boolean"},
+          "retry_after": {"type": "number"}
+        }
+      }
+    },
+    "required": ["success"]
+  },
+  "examples": [
+    {
+      "name": "Create a new section",
+      "input": {
+        "action": "create",
+        "name": "In Progress",
+        "project_id": "2203306141",
+        "order": 1
+      },
+      "output": {
+        "success": true,
+        "data": {
+          "id": "7025",
+          "project_id": "2203306141",
+          "order": 1,
+          "name": "In Progress"
+        },
+        "message": "Section created successfully"
+      }
+    },
+    {
+      "name": "List sections in a project",
+      "input": {
+        "action": "list",
+        "project_id": "2203306141"
+      },
+      "output": {
+        "success": true,
+        "data": [
+          {
+            "id": "7025",
+            "project_id": "2203306141",
+            "order": 1,
+            "name": "In Progress"
+          },
+          {
+            "id": "7026",
+            "project_id": "2203306141",
+            "order": 2,
+            "name": "Done"
+          }
+        ],
+        "metadata": {
+          "total_count": 2,
+          "project_name": "Website Redesign"
+        }
+      }
+    },
+    {
+      "name": "Reorder sections",
+      "input": {
+        "action": "reorder",
+        "project_id": "2203306141",
+        "section_orders": [
+          {"id": "7026", "order": 1},
+          {"id": "7025", "order": 2}
+        ]
+      },
+      "output": {
+        "success": true,
+        "message": "Sections reordered successfully"
+      }
+    }
+  ],
+  "errors": [
+    {
+      "code": "INVALID_TOKEN",
+      "message": "Invalid or expired API token",
+      "retryable": false
+    },
+    {
+      "code": "RATE_LIMIT_EXCEEDED",
+      "message": "API rate limit exceeded",
+      "retryable": true,
+      "retry_after": 60
+    },
+    {
+      "code": "VALIDATION_ERROR",
+      "message": "Invalid parameters provided",
+      "retryable": false
+    },
+    {
+      "code": "RESOURCE_NOT_FOUND",
+      "message": "Section or project not found",
+      "retryable": false
+    },
+    {
+      "code": "SECTION_HAS_TASKS",
+      "message": "Cannot delete section with existing tasks",
+      "retryable": false
+    },
+    {
+      "code": "DUPLICATE_ORDER",
+      "message": "Section order must be unique within project",
+      "retryable": false
+    }
+  ]
+}

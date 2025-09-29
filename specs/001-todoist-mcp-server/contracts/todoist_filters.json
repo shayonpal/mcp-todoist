@@ -1,0 +1,264 @@
+{
+  "name": "todoist_filters",
+  "description": "Filter management and task querying for Todoist - query existing filters, retrieve tasks within filters, and manage saved filter criteria",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "action": {
+        "type": "string",
+        "enum": ["list_filters", "get_filter", "query_filter", "create_filter", "update_filter", "delete_filter"],
+        "description": "Operation to perform with filters"
+      },
+      "filter_id": {
+        "type": "string",
+        "description": "Filter ID (required for get_filter, query_filter, update_filter, delete_filter)"
+      },
+      "name": {
+        "type": "string",
+        "maxLength": 120,
+        "description": "Filter name (required for create_filter)"
+      },
+      "query": {
+        "type": "string",
+        "description": "Todoist query syntax (required for create_filter)"
+      },
+      "color": {
+        "type": "string",
+        "description": "Filter color (predefined color ID)"
+      },
+      "is_favorite": {
+        "type": "boolean",
+        "description": "Whether filter is favorited"
+      },
+      "order": {
+        "type": "integer",
+        "minimum": 1,
+        "description": "Filter order"
+      },
+      "lang": {
+        "type": "string",
+        "default": "en",
+        "description": "Language for query processing"
+      }
+    },
+    "required": ["action"],
+    "allOf": [
+      {
+        "if": {"properties": {"action": {"const": "create_filter"}}},
+        "then": {"required": ["name", "query"]}
+      },
+      {
+        "if": {"properties": {"action": {"enum": ["get_filter", "query_filter", "update_filter", "delete_filter"]}}},
+        "then": {"required": ["filter_id"]}
+      }
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "success": {"type": "boolean"},
+      "data": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "id": {"type": "string"},
+              "name": {"type": "string"},
+              "query": {"type": "string"},
+              "color": {"type": "string"},
+              "order": {"type": "integer"},
+              "is_favorite": {"type": "boolean"}
+            },
+            "description": "Single filter object"
+          },
+          {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {"type": "string"},
+                "name": {"type": "string"},
+                "query": {"type": "string"},
+                "color": {"type": "string"},
+                "order": {"type": "integer"},
+                "is_favorite": {"type": "boolean"}
+              }
+            },
+            "description": "Array of filter objects"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "filter": {
+                "type": "object",
+                "properties": {
+                  "id": {"type": "string"},
+                  "name": {"type": "string"},
+                  "query": {"type": "string"}
+                }
+              },
+              "tasks": {
+                "type": "array",
+                "items": {"type": "object"}
+              }
+            },
+            "description": "Filter with matching tasks"
+          }
+        ]
+      },
+      "message": {"type": "string"},
+      "metadata": {
+        "type": "object",
+        "properties": {
+          "total_filters": {"type": "integer"},
+          "favorite_filters": {"type": "integer"},
+          "task_count": {"type": "integer"},
+          "query_parsed": {"type": "string"},
+          "operation_time": {"type": "number"},
+          "rate_limit_remaining": {"type": "integer"},
+          "rate_limit_reset": {"type": "string"}
+        }
+      },
+      "error": {
+        "type": "object",
+        "properties": {
+          "code": {"type": "string"},
+          "message": {"type": "string"},
+          "details": {"type": "object"},
+          "retryable": {"type": "boolean"},
+          "retry_after": {"type": "number"}
+        }
+      }
+    },
+    "required": ["success"]
+  },
+  "examples": [
+    {
+      "name": "List all filters",
+      "input": {
+        "action": "list_filters"
+      },
+      "output": {
+        "success": true,
+        "data": [
+          {
+            "id": "4638",
+            "name": "Priority 1",
+            "query": "p1",
+            "color": "red",
+            "order": 1,
+            "is_favorite": true
+          },
+          {
+            "id": "4639",
+            "name": "This Week",
+            "query": "7 days",
+            "color": "blue",
+            "order": 2,
+            "is_favorite": false
+          }
+        ],
+        "metadata": {
+          "total_filters": 2,
+          "favorite_filters": 1
+        }
+      }
+    },
+    {
+      "name": "Query tasks using a filter",
+      "input": {
+        "action": "query_filter",
+        "filter_id": "4638"
+      },
+      "output": {
+        "success": true,
+        "data": {
+          "filter": {
+            "id": "4638",
+            "name": "Priority 1",
+            "query": "p1"
+          },
+          "tasks": [
+            {
+              "id": "2995104339",
+              "content": "Review quarterly reports",
+              "project_id": "2203306141",
+              "priority": 4,
+              "completed": false,
+              "due": {
+                "date": "2025-09-29",
+                "string": "tomorrow"
+              }
+            },
+            {
+              "id": "2995104340",
+              "content": "Prepare presentation",
+              "project_id": "2203306141",
+              "priority": 4,
+              "completed": false
+            }
+          ]
+        },
+        "metadata": {
+          "task_count": 2,
+          "query_parsed": "p1"
+        }
+      }
+    },
+    {
+      "name": "Create a new filter",
+      "input": {
+        "action": "create_filter",
+        "name": "Work Today",
+        "query": "today & @work",
+        "color": "green",
+        "is_favorite": true
+      },
+      "output": {
+        "success": true,
+        "data": {
+          "id": "4640",
+          "name": "Work Today",
+          "query": "today & @work",
+          "color": "green",
+          "order": 3,
+          "is_favorite": true
+        },
+        "message": "Filter created successfully"
+      }
+    }
+  ],
+  "errors": [
+    {
+      "code": "INVALID_TOKEN",
+      "message": "Invalid or expired API token",
+      "retryable": false
+    },
+    {
+      "code": "RATE_LIMIT_EXCEEDED",
+      "message": "API rate limit exceeded",
+      "retryable": true,
+      "retry_after": 60
+    },
+    {
+      "code": "VALIDATION_ERROR",
+      "message": "Invalid parameters provided",
+      "retryable": false
+    },
+    {
+      "code": "RESOURCE_NOT_FOUND",
+      "message": "Filter not found",
+      "retryable": false
+    },
+    {
+      "code": "INVALID_QUERY",
+      "message": "Invalid Todoist query syntax",
+      "retryable": false
+    },
+    {
+      "code": "QUERY_PARSE_ERROR",
+      "message": "Failed to parse filter query",
+      "retryable": false
+    }
+  ]
+}
