@@ -65,7 +65,7 @@
 - [x] T024 TodoistApiService with rate limiting in src/services/todoist-api.ts
 - [x] T025 Cache service for projects and labels in src/services/cache.ts
 - [x] T026 Batch operations handler with temp ID management in src/services/batch.ts
-- [ ] T027 TodoistTasksTool implementation in src/tools/todoist-tasks.ts
+- [x] T027 TodoistTasksTool implementation in src/tools/todoist-tasks.ts
 - [ ] T028 TodoistProjectsTool implementation in src/tools/todoist-projects.ts
 - [ ] T029 TodoistSectionsTool implementation in src/tools/todoist-sections.ts
 - [ ] T030 TodoistCommentsTool implementation in src/tools/todoist-comments.ts

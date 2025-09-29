@@ -38,7 +38,7 @@ export const CreateTaskSchema = z.object({
 });
 
 export const UpdateTaskSchema = CreateTaskSchema.partial().extend({
-  id: z.string().min(1, 'Task ID is required'),
+  task_id: z.string().min(1, 'Task ID is required'),
 });
 
 export const TaskQuerySchema = z.object({
