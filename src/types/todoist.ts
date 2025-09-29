@@ -48,6 +48,7 @@ export interface TodoistProject {
   view_style: 'list' | 'board'; // Display style
   url: string; // Web URL to project
   parent_id?: string; // For nested projects
+  is_archived?: boolean; // Whether project is archived
 }
 
 /**

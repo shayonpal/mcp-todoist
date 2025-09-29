@@ -10,6 +10,7 @@ import {
   TodoistSection,
   TodoistComment,
   TodoistLabel,
+  TodoistFilter,
   APIConfiguration,
 } from '../types/todoist.js';
 import {
@@ -488,5 +489,61 @@ export class TodoistApiService {
       },
       true
     ); // Mark as sync endpoint for rate limiting
+  }
+
+  // Filter methods
+  async getFilters(): Promise<TodoistFilter[]> {
+    return this.executeRequest<TodoistFilter[]>('/filters', {});
+  }
+
+  async getFilter(filterId: string): Promise<TodoistFilter> {
+    return this.executeRequest<TodoistFilter>(`/filters/${filterId}`, {});
+  }
+
+  async createFilter(
+    filterData: Partial<TodoistFilter>
+  ): Promise<TodoistFilter> {
+    return this.executeRequest<TodoistFilter>('/filters', {
+      method: 'POST',
+      data: filterData,
+    });
+  }
+
+  async updateFilter(
+    filterId: string,
+    filterData: Partial<TodoistFilter>
+  ): Promise<TodoistFilter> {
+    return this.executeRequest<TodoistFilter>(`/filters/${filterId}`, {
+      method: 'POST',
+      data: filterData,
+    });
+  }
+
+  async deleteFilter(filterId: string): Promise<void> {
+    await this.executeRequest<void>(`/filters/${filterId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Project archive methods
+  async archiveProject(projectId: string): Promise<void> {
+    await this.executeRequest<void>(`/projects/${projectId}/archive`, {
+      method: 'POST',
+    });
+  }
+
+  async unarchiveProject(projectId: string): Promise<void> {
+    await this.executeRequest<void>(`/projects/${projectId}/unarchive`, {
+      method: 'POST',
+    });
+  }
+
+  // Comment convenience methods
+  async getTaskComments(taskId: string): Promise<TodoistComment[]> {
+    return this.getComments({ task_id: taskId });
+  }
+
+  async getProjectComments(projectId: string): Promise<TodoistComment[]> {
+    return this.getComments({ project_id: projectId });
   }
 }

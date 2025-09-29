@@ -66,10 +66,10 @@
 - [x] T025 Cache service for projects and labels in src/services/cache.ts
 - [x] T026 Batch operations handler with temp ID management in src/services/batch.ts
 - [x] T027 TodoistTasksTool implementation in src/tools/todoist-tasks.ts
-- [ ] T028 TodoistProjectsTool implementation in src/tools/todoist-projects.ts
-- [ ] T029 TodoistSectionsTool implementation in src/tools/todoist-sections.ts
-- [ ] T030 TodoistCommentsTool implementation in src/tools/todoist-comments.ts
-- [ ] T031 TodoistFiltersTool implementation in src/tools/todoist-filters.ts
+- [x] T028 TodoistProjectsTool implementation in src/tools/todoist-projects.ts
+- [x] T029 TodoistSectionsTool implementation in src/tools/todoist-sections.ts
+- [x] T030 TodoistCommentsTool implementation in src/tools/todoist-comments.ts
+- [x] T031 TodoistFiltersTool implementation in src/tools/todoist-filters.ts
 
 ## Phase 3.4: Integration
 - [ ] T032 MCP server initialization in src/server.ts with tool registration
