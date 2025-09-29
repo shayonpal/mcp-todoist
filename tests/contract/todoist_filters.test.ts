@@ -5,7 +5,12 @@
  */
 
 import { describe, test, expect, beforeEach } from '@jest/globals';
-import { mockFilters, mockLabels, mockFiltersListResponse, createSuccessResponse } from '../mocks/todoist-api-responses.js';
+import {
+  mockFilters,
+  mockLabels,
+  mockFiltersListResponse,
+  createSuccessResponse,
+} from '../mocks/todoist-api-responses.js';
 
 // Mock the MCP tool - will fail until implemented
 let todoistFiltersTool: any;
@@ -14,7 +19,8 @@ describe('todoist_filters MCP Tool Contract', () => {
   beforeEach(() => {
     // This will fail until the actual tool is implemented
     try {
-      todoistFiltersTool = require('../../src/tools/todoist-filters.js').TodoistFiltersTool;
+      todoistFiltersTool =
+        require('../../src/tools/todoist-filters.js').TodoistFiltersTool;
     } catch (error) {
       todoistFiltersTool = null;
     }
@@ -91,10 +97,12 @@ describe('todoist_filters MCP Tool Contract', () => {
       const result = await todoistFiltersTool.execute(params);
 
       expect(result).toBeDefined();
-      expect(result.content).toEqual([{
-        type: 'text',
-        text: expect.stringContaining('filter created'),
-      }]);
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: expect.stringContaining('filter created'),
+        },
+      ]);
     });
 
     test('should handle filter creation with all parameters', async () => {
@@ -110,10 +118,12 @@ describe('todoist_filters MCP Tool Contract', () => {
       const result = await todoistFiltersTool.execute(params);
 
       expect(result).toBeDefined();
-      expect(result.content).toEqual([{
-        type: 'text',
-        text: expect.stringContaining('filter created'),
-      }]);
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: expect.stringContaining('filter created'),
+        },
+      ]);
     });
 
     test('should reject creation without required parameters', async () => {
@@ -157,10 +167,12 @@ describe('todoist_filters MCP Tool Contract', () => {
       const result = await todoistFiltersTool.execute(params);
 
       expect(result).toBeDefined();
-      expect(result.content).toEqual([{
-        type: 'text',
-        text: expect.stringContaining('High Priority'),
-      }]);
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: expect.stringContaining('High Priority'),
+        },
+      ]);
     });
 
     test('should reject get without filter_id', async () => {
@@ -196,10 +208,12 @@ describe('todoist_filters MCP Tool Contract', () => {
       const result = await todoistFiltersTool.execute(params);
 
       expect(result).toBeDefined();
-      expect(result.content).toEqual([{
-        type: 'text',
-        text: expect.stringContaining('filter updated'),
-      }]);
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: expect.stringContaining('filter updated'),
+        },
+      ]);
     });
 
     test('should reject update without filter_id', async () => {
@@ -232,10 +246,12 @@ describe('todoist_filters MCP Tool Contract', () => {
       const result = await todoistFiltersTool.execute(params);
 
       expect(result).toBeDefined();
-      expect(result.content).toEqual([{
-        type: 'text',
-        text: expect.stringContaining('filter deleted'),
-      }]);
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: expect.stringContaining('filter deleted'),
+        },
+      ]);
     });
 
     test('should reject delete without filter_id', async () => {
@@ -256,10 +272,12 @@ describe('todoist_filters MCP Tool Contract', () => {
       const result = await todoistFiltersTool.execute(params);
 
       expect(result).toBeDefined();
-      expect(result.content).toEqual([{
-        type: 'text',
-        text: expect.stringContaining('filters'),
-      }]);
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: expect.stringContaining('filters'),
+        },
+      ]);
     });
 
     test('should show filters in order', async () => {
@@ -309,10 +327,12 @@ describe('todoist_filters MCP Tool Contract', () => {
       const result = await todoistFiltersTool.execute(params);
 
       expect(result).toBeDefined();
-      expect(result.content).toEqual([{
-        type: 'text',
-        text: expect.stringContaining('tasks found'),
-      }]);
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: expect.stringContaining('tasks found'),
+        },
+      ]);
     });
 
     test('should execute complex filter queries', async () => {
@@ -381,10 +401,12 @@ describe('todoist_filters MCP Tool Contract', () => {
       const result = await todoistFiltersTool.execute(params);
 
       expect(result).toBeDefined();
-      expect(result.content).toEqual([{
-        type: 'text',
-        text: expect.stringContaining('no tasks found'),
-      }]);
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: expect.stringContaining('no tasks found'),
+        },
+      ]);
     });
   });
 
@@ -397,10 +419,12 @@ describe('todoist_filters MCP Tool Contract', () => {
       const result = await todoistFiltersTool.execute(params);
 
       expect(result).toBeDefined();
-      expect(result.content).toEqual([{
-        type: 'text',
-        text: expect.stringContaining('labels'),
-      }]);
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: expect.stringContaining('labels'),
+        },
+      ]);
     });
 
     test('should create new label', async () => {
@@ -414,10 +438,12 @@ describe('todoist_filters MCP Tool Contract', () => {
       const result = await todoistFiltersTool.execute(params);
 
       expect(result).toBeDefined();
-      expect(result.content).toEqual([{
-        type: 'text',
-        text: expect.stringContaining('label created'),
-      }]);
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: expect.stringContaining('label created'),
+        },
+      ]);
     });
 
     test('should update existing label', async () => {
@@ -432,10 +458,12 @@ describe('todoist_filters MCP Tool Contract', () => {
       const result = await todoistFiltersTool.execute(params);
 
       expect(result).toBeDefined();
-      expect(result.content).toEqual([{
-        type: 'text',
-        text: expect.stringContaining('label updated'),
-      }]);
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: expect.stringContaining('label updated'),
+        },
+      ]);
     });
 
     test('should delete label', async () => {
@@ -447,10 +475,12 @@ describe('todoist_filters MCP Tool Contract', () => {
       const result = await todoistFiltersTool.execute(params);
 
       expect(result).toBeDefined();
-      expect(result.content).toEqual([{
-        type: 'text',
-        text: expect.stringContaining('label deleted'),
-      }]);
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: expect.stringContaining('label deleted'),
+        },
+      ]);
     });
 
     test('should reject duplicate label names', async () => {
@@ -573,7 +603,8 @@ describe('todoist_filters MCP Tool Contract', () => {
     test('should handle complex queries efficiently', async () => {
       const params = {
         action: 'query_tasks',
-        query: '(#Work | #Personal) & (p1 | p2) & (@urgent | @important) & due before: +7 days',
+        query:
+          '(#Work | #Personal) & (p1 | p2) & (@urgent | @important) & due before: +7 days',
       };
 
       const startTime = Date.now();
@@ -641,10 +672,12 @@ describe('todoist_filters MCP Tool Contract', () => {
       const result = await todoistFiltersTool.execute(params);
 
       expect(result).toBeDefined();
-      expect(result.content).toEqual([{
-        type: 'text',
-        text: expect.stringContaining('no tasks found'),
-      }]);
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: expect.stringContaining('no tasks found'),
+        },
+      ]);
     });
   });
 });

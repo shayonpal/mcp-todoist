@@ -5,7 +5,11 @@
  */
 
 import { describe, test, expect, beforeEach } from '@jest/globals';
-import { mockProjects, mockProjectsListResponse, createSuccessResponse } from '../mocks/todoist-api-responses.js';
+import {
+  mockProjects,
+  mockProjectsListResponse,
+  createSuccessResponse,
+} from '../mocks/todoist-api-responses.js';
 
 // Mock the MCP tool - will fail until implemented
 let todoistProjectsTool: any;
@@ -14,7 +18,8 @@ describe('todoist_projects MCP Tool Contract', () => {
   beforeEach(() => {
     // This will fail until the actual tool is implemented
     try {
-      todoistProjectsTool = require('../../src/tools/todoist-projects.js').TodoistProjectsTool;
+      todoistProjectsTool =
+        require('../../src/tools/todoist-projects.js').TodoistProjectsTool;
     } catch (error) {
       todoistProjectsTool = null;
     }
@@ -65,7 +70,8 @@ describe('todoist_projects MCP Tool Contract', () => {
     });
 
     test('should validate view_style options', () => {
-      const viewStyleProperty = todoistProjectsTool.inputSchema.properties.view_style;
+      const viewStyleProperty =
+        todoistProjectsTool.inputSchema.properties.view_style;
       expect(viewStyleProperty.enum).toEqual(['list', 'board']);
     });
   });
@@ -80,10 +86,12 @@ describe('todoist_projects MCP Tool Contract', () => {
       const result = await todoistProjectsTool.execute(params);
 
       expect(result).toBeDefined();
-      expect(result.content).toEqual([{
-        type: 'text',
-        text: expect.stringContaining('created'),
-      }]);
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: expect.stringContaining('created'),
+        },
+      ]);
     });
 
     test('should handle project creation with all parameters', async () => {
@@ -99,10 +107,12 @@ describe('todoist_projects MCP Tool Contract', () => {
       const result = await todoistProjectsTool.execute(params);
 
       expect(result).toBeDefined();
-      expect(result.content).toEqual([{
-        type: 'text',
-        text: expect.stringContaining('created'),
-      }]);
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: expect.stringContaining('created'),
+        },
+      ]);
     });
 
     test('should reject creation without required name', async () => {
@@ -144,10 +154,12 @@ describe('todoist_projects MCP Tool Contract', () => {
       const result = await todoistProjectsTool.execute(params);
 
       expect(result).toBeDefined();
-      expect(result.content).toEqual([{
-        type: 'text',
-        text: expect.stringContaining('Inbox'),
-      }]);
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: expect.stringContaining('Inbox'),
+        },
+      ]);
     });
 
     test('should reject get without project_id', async () => {
@@ -182,10 +194,12 @@ describe('todoist_projects MCP Tool Contract', () => {
       const result = await todoistProjectsTool.execute(params);
 
       expect(result).toBeDefined();
-      expect(result.content).toEqual([{
-        type: 'text',
-        text: expect.stringContaining('updated'),
-      }]);
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: expect.stringContaining('updated'),
+        },
+      ]);
     });
 
     test('should reject update without project_id', async () => {
@@ -219,10 +233,12 @@ describe('todoist_projects MCP Tool Contract', () => {
       const result = await todoistProjectsTool.execute(params);
 
       expect(result).toBeDefined();
-      expect(result.content).toEqual([{
-        type: 'text',
-        text: expect.stringContaining('deleted'),
-      }]);
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: expect.stringContaining('deleted'),
+        },
+      ]);
     });
 
     test('should reject delete without project_id', async () => {
@@ -252,10 +268,12 @@ describe('todoist_projects MCP Tool Contract', () => {
       const result = await todoistProjectsTool.execute(params);
 
       expect(result).toBeDefined();
-      expect(result.content).toEqual([{
-        type: 'text',
-        text: expect.stringContaining('projects'),
-      }]);
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: expect.stringContaining('projects'),
+        },
+      ]);
     });
 
     test('should filter favorite projects', async () => {
@@ -267,10 +285,12 @@ describe('todoist_projects MCP Tool Contract', () => {
       const result = await todoistProjectsTool.execute(params);
 
       expect(result).toBeDefined();
-      expect(result.content).toEqual([{
-        type: 'text',
-        text: expect.stringContaining('favorite'),
-      }]);
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: expect.stringContaining('favorite'),
+        },
+      ]);
     });
 
     test('should show project hierarchy', async () => {
@@ -297,10 +317,12 @@ describe('todoist_projects MCP Tool Contract', () => {
       const result = await todoistProjectsTool.execute(params);
 
       expect(result).toBeDefined();
-      expect(result.content).toEqual([{
-        type: 'text',
-        text: expect.stringContaining('archived'),
-      }]);
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: expect.stringContaining('archived'),
+        },
+      ]);
     });
 
     test('should unarchive project by ID', async () => {
@@ -312,10 +334,12 @@ describe('todoist_projects MCP Tool Contract', () => {
       const result = await todoistProjectsTool.execute(params);
 
       expect(result).toBeDefined();
-      expect(result.content).toEqual([{
-        type: 'text',
-        text: expect.stringContaining('unarchived'),
-      }]);
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: expect.stringContaining('unarchived'),
+        },
+      ]);
     });
 
     test('should reject archive of inbox project', async () => {

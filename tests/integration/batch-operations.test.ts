@@ -5,7 +5,11 @@
  */
 
 import { describe, test, expect, beforeEach, afterEach } from '@jest/globals';
-import { mockBatchResponse, mockTasks, createSuccessResponse } from '../mocks/todoist-api-responses.js';
+import {
+  mockBatchResponse,
+  mockTasks,
+  createSuccessResponse,
+} from '../mocks/todoist-api-responses.js';
 
 // Mock MCP tools - will fail until implemented
 let todoistTasksTool: any;
@@ -15,8 +19,10 @@ describe('Batch Operations Integration Tests', () => {
   beforeEach(() => {
     // These will fail until the actual tools are implemented
     try {
-      todoistTasksTool = require('../../src/tools/todoist-tasks.js').TodoistTasksTool;
-      todoistProjectsTool = require('../../src/tools/todoist-projects.js').TodoistProjectsTool;
+      todoistTasksTool =
+        require('../../src/tools/todoist-tasks.js').TodoistTasksTool;
+      todoistProjectsTool =
+        require('../../src/tools/todoist-projects.js').TodoistProjectsTool;
     } catch (error) {
       todoistTasksTool = null;
       todoistProjectsTool = null;
@@ -377,7 +383,9 @@ describe('Batch Operations Integration Tests', () => {
         batch_commands: batchCommands,
       };
 
-      await expect(todoistTasksTool.execute(batchParams)).rejects.toThrow(/100.*limit/i);
+      await expect(todoistTasksTool.execute(batchParams)).rejects.toThrow(
+        /100.*limit/i
+      );
     });
 
     test('should handle invalid batch command structure', async () => {
@@ -395,7 +403,9 @@ describe('Batch Operations Integration Tests', () => {
         ],
       };
 
-      await expect(todoistTasksTool.execute(batchParams)).rejects.toThrow(/invalid.*command/i);
+      await expect(todoistTasksTool.execute(batchParams)).rejects.toThrow(
+        /invalid.*command/i
+      );
     });
 
     test('should handle temp ID conflicts and duplicates', async () => {
@@ -428,7 +438,9 @@ describe('Batch Operations Integration Tests', () => {
         ],
       };
 
-      await expect(todoistTasksTool.execute(batchParams)).rejects.toThrow(/duplicate.*temp_id/i);
+      await expect(todoistTasksTool.execute(batchParams)).rejects.toThrow(
+        /duplicate.*temp_id/i
+      );
     });
   });
 

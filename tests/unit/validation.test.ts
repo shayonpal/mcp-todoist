@@ -32,7 +32,8 @@ describe('Zod Schema Validation Tests', () => {
         labels: ['urgent', 'work'],
       };
 
-      const result = validationSchemas.CreateTaskSchema.safeParse(validTaskData);
+      const result =
+        validationSchemas.CreateTaskSchema.safeParse(validTaskData);
       expect(result.success).toBe(true);
       expect(result.data).toEqual(validTaskData);
     });
@@ -43,7 +44,8 @@ describe('Zod Schema Validation Tests', () => {
         priority: 2,
       };
 
-      const result = validationSchemas.CreateTaskSchema.safeParse(invalidTaskData);
+      const result =
+        validationSchemas.CreateTaskSchema.safeParse(invalidTaskData);
       expect(result.success).toBe(false);
       expect(result.error.issues).toEqual([
         expect.objectContaining({
@@ -63,7 +65,8 @@ describe('Zod Schema Validation Tests', () => {
         project_id: '220474322',
       };
 
-      const result = validationSchemas.CreateTaskSchema.safeParse(longContentTask);
+      const result =
+        validationSchemas.CreateTaskSchema.safeParse(longContentTask);
       expect(result.success).toBe(false);
       expect(result.error.issues[0].message).toContain('500');
     });
@@ -75,7 +78,8 @@ describe('Zod Schema Validation Tests', () => {
         priority: 5, // Invalid: must be 1-4
       };
 
-      const result = validationSchemas.CreateTaskSchema.safeParse(invalidPriorityTask);
+      const result =
+        validationSchemas.CreateTaskSchema.safeParse(invalidPriorityTask);
       expect(result.success).toBe(false);
       expect(result.error.issues[0].message).toContain('4');
     });
@@ -87,7 +91,8 @@ describe('Zod Schema Validation Tests', () => {
         labels: Array.from({ length: 101 }, (_, i) => `label_${i}`), // Exceeds 100 limit
       };
 
-      const result = validationSchemas.CreateTaskSchema.safeParse(tooManyLabelsTask);
+      const result =
+        validationSchemas.CreateTaskSchema.safeParse(tooManyLabelsTask);
       expect(result.success).toBe(false);
       expect(result.error.issues[0].message).toContain('100');
     });
@@ -118,7 +123,8 @@ describe('Zod Schema Validation Tests', () => {
         due_date: 'invalid-date-format',
       };
 
-      const result = validationSchemas.CreateTaskSchema.safeParse(invalidDateTask);
+      const result =
+        validationSchemas.CreateTaskSchema.safeParse(invalidDateTask);
       expect(result.success).toBe(false);
     });
 
@@ -132,7 +138,8 @@ describe('Zod Schema Validation Tests', () => {
         section_id: '7025',
       };
 
-      const result = validationSchemas.UpdateTaskSchema.safeParse(validUpdateData);
+      const result =
+        validationSchemas.UpdateTaskSchema.safeParse(validUpdateData);
       expect(result.success).toBe(true);
 
       // Should require task ID
@@ -140,7 +147,8 @@ describe('Zod Schema Validation Tests', () => {
         content: 'Updated content',
       };
 
-      const noIdResult = validationSchemas.UpdateTaskSchema.safeParse(noIdUpdate);
+      const noIdResult =
+        validationSchemas.UpdateTaskSchema.safeParse(noIdUpdate);
       expect(noIdResult.success).toBe(false);
       expect(noIdResult.error.issues[0].path).toEqual(['id']);
     });
@@ -156,12 +164,14 @@ describe('Zod Schema Validation Tests', () => {
         lang: 'en',
       };
 
-      const result = validationSchemas.TaskQuerySchema.safeParse(validQueryData);
+      const result =
+        validationSchemas.TaskQuerySchema.safeParse(validQueryData);
       expect(result.success).toBe(true);
 
       // All parameters should be optional
       const emptyQuery = {};
-      const emptyResult = validationSchemas.TaskQuerySchema.safeParse(emptyQuery);
+      const emptyResult =
+        validationSchemas.TaskQuerySchema.safeParse(emptyQuery);
       expect(emptyResult.success).toBe(true);
       expect(emptyResult.data.lang).toBe('en'); // Default value
     });
@@ -179,7 +189,8 @@ describe('Zod Schema Validation Tests', () => {
         parent_id: '220474322',
       };
 
-      const result = validationSchemas.CreateProjectSchema.safeParse(validProjectData);
+      const result =
+        validationSchemas.CreateProjectSchema.safeParse(validProjectData);
       expect(result.success).toBe(true);
     });
 
@@ -189,7 +200,8 @@ describe('Zod Schema Validation Tests', () => {
         color: 'blue',
       };
 
-      const noNameResult = validationSchemas.CreateProjectSchema.safeParse(noNameProject);
+      const noNameResult =
+        validationSchemas.CreateProjectSchema.safeParse(noNameProject);
       expect(noNameResult.success).toBe(false);
       expect(noNameResult.error.issues[0].path).toEqual(['name']);
 
@@ -198,7 +210,8 @@ describe('Zod Schema Validation Tests', () => {
         name: 'a'.repeat(121), // Exceeds 120 char limit
       };
 
-      const longNameResult = validationSchemas.CreateProjectSchema.safeParse(longNameProject);
+      const longNameResult =
+        validationSchemas.CreateProjectSchema.safeParse(longNameProject);
       expect(longNameResult.success).toBe(false);
       expect(longNameResult.error.issues[0].message).toContain('120');
     });
@@ -212,7 +225,8 @@ describe('Zod Schema Validation Tests', () => {
           view_style: style,
         };
 
-        const result = validationSchemas.CreateProjectSchema.safeParse(projectData);
+        const result =
+          validationSchemas.CreateProjectSchema.safeParse(projectData);
         expect(result.success).toBe(true);
       });
 
@@ -222,7 +236,8 @@ describe('Zod Schema Validation Tests', () => {
         view_style: 'invalid_style',
       };
 
-      const result = validationSchemas.CreateProjectSchema.safeParse(invalidStyleProject);
+      const result =
+        validationSchemas.CreateProjectSchema.safeParse(invalidStyleProject);
       expect(result.success).toBe(false);
       expect(result.error.issues[0].message).toContain('list');
       expect(result.error.issues[0].message).toContain('board');
@@ -237,7 +252,8 @@ describe('Zod Schema Validation Tests', () => {
           [field]: 'not_boolean', // Invalid boolean
         };
 
-        const result = validationSchemas.CreateProjectSchema.safeParse(projectData);
+        const result =
+          validationSchemas.CreateProjectSchema.safeParse(projectData);
         expect(result.success).toBe(false);
         expect(result.error.issues[0].path).toEqual([field]);
       });
@@ -254,7 +270,8 @@ describe('Zod Schema Validation Tests', () => {
         order: 5,
       };
 
-      const result = validationSchemas.CreateSectionSchema.safeParse(validSectionData);
+      const result =
+        validationSchemas.CreateSectionSchema.safeParse(validSectionData);
       expect(result.success).toBe(true);
     });
 
@@ -264,7 +281,9 @@ describe('Zod Schema Validation Tests', () => {
         // Missing name and project_id
       };
 
-      const result = validationSchemas.CreateSectionSchema.safeParse(incompleteSectionData);
+      const result = validationSchemas.CreateSectionSchema.safeParse(
+        incompleteSectionData
+      );
       expect(result.success).toBe(false);
 
       const missingFields = result.error.issues.map(issue => issue.path[0]);
@@ -278,7 +297,8 @@ describe('Zod Schema Validation Tests', () => {
         project_id: '220474322',
       };
 
-      const result = validationSchemas.CreateSectionSchema.safeParse(longNameSection);
+      const result =
+        validationSchemas.CreateSectionSchema.safeParse(longNameSection);
       expect(result.success).toBe(false);
       expect(result.error.issues[0].message).toContain('120');
     });
@@ -293,7 +313,8 @@ describe('Zod Schema Validation Tests', () => {
           order,
         };
 
-        const result = validationSchemas.CreateSectionSchema.safeParse(sectionData);
+        const result =
+          validationSchemas.CreateSectionSchema.safeParse(sectionData);
         expect(result.success).toBe(false);
       });
     });
@@ -308,7 +329,8 @@ describe('Zod Schema Validation Tests', () => {
         task_id: '2995104339',
       };
 
-      const result = validationSchemas.CreateCommentSchema.safeParse(validCommentData);
+      const result =
+        validationSchemas.CreateCommentSchema.safeParse(validCommentData);
       expect(result.success).toBe(true);
     });
 
@@ -318,7 +340,8 @@ describe('Zod Schema Validation Tests', () => {
         task_id: '2995104339',
       };
 
-      const result = validationSchemas.CreateCommentSchema.safeParse(longContentComment);
+      const result =
+        validationSchemas.CreateCommentSchema.safeParse(longContentComment);
       expect(result.success).toBe(false);
       expect(result.error.issues[0].message).toContain('15000');
     });
@@ -329,7 +352,8 @@ describe('Zod Schema Validation Tests', () => {
         content: 'Comment without target',
       };
 
-      const result = validationSchemas.CreateCommentSchema.safeParse(noTargetComment);
+      const result =
+        validationSchemas.CreateCommentSchema.safeParse(noTargetComment);
       expect(result.success).toBe(false);
 
       // Should have custom validation for either/or requirement
@@ -343,7 +367,8 @@ describe('Zod Schema Validation Tests', () => {
         project_id: '220474322',
       };
 
-      const result = validationSchemas.CreateCommentSchema.safeParse(bothTargetsComment);
+      const result =
+        validationSchemas.CreateCommentSchema.safeParse(bothTargetsComment);
       expect(result.success).toBe(false);
       expect(result.error.issues[0].message).toContain('only one');
     });
@@ -360,7 +385,8 @@ describe('Zod Schema Validation Tests', () => {
         },
       };
 
-      const result = validationSchemas.CreateCommentSchema.safeParse(validAttachment);
+      const result =
+        validationSchemas.CreateCommentSchema.safeParse(validAttachment);
       expect(result.success).toBe(true);
 
       // Invalid attachment structure
@@ -370,7 +396,8 @@ describe('Zod Schema Validation Tests', () => {
         attachment: 'invalid_attachment_format',
       };
 
-      const invalidResult = validationSchemas.CreateCommentSchema.safeParse(invalidAttachment);
+      const invalidResult =
+        validationSchemas.CreateCommentSchema.safeParse(invalidAttachment);
       expect(invalidResult.success).toBe(false);
     });
   });
@@ -387,7 +414,8 @@ describe('Zod Schema Validation Tests', () => {
         is_favorite: true,
       };
 
-      const result = validationSchemas.CreateFilterSchema.safeParse(validFilterData);
+      const result =
+        validationSchemas.CreateFilterSchema.safeParse(validFilterData);
       expect(result.success).toBe(true);
     });
 
@@ -397,7 +425,8 @@ describe('Zod Schema Validation Tests', () => {
         // Missing name and query
       };
 
-      const result = validationSchemas.CreateFilterSchema.safeParse(incompleteFilterData);
+      const result =
+        validationSchemas.CreateFilterSchema.safeParse(incompleteFilterData);
       expect(result.success).toBe(false);
 
       const missingFields = result.error.issues.map(issue => issue.path[0]);
@@ -411,7 +440,8 @@ describe('Zod Schema Validation Tests', () => {
         query: 'today',
       };
 
-      const result = validationSchemas.CreateFilterSchema.safeParse(longNameFilter);
+      const result =
+        validationSchemas.CreateFilterSchema.safeParse(longNameFilter);
       expect(result.success).toBe(false);
       expect(result.error.issues[0].message).toContain('120');
     });
@@ -433,7 +463,8 @@ describe('Zod Schema Validation Tests', () => {
           query,
         };
 
-        const result = validationSchemas.CreateFilterSchema.safeParse(filterData);
+        const result =
+          validationSchemas.CreateFilterSchema.safeParse(filterData);
         expect(result.success).toBe(true);
       });
     });
@@ -450,7 +481,8 @@ describe('Zod Schema Validation Tests', () => {
         is_favorite: false,
       };
 
-      const result = validationSchemas.CreateLabelSchema.safeParse(validLabelData);
+      const result =
+        validationSchemas.CreateLabelSchema.safeParse(validLabelData);
       expect(result.success).toBe(true);
     });
 
@@ -461,7 +493,8 @@ describe('Zod Schema Validation Tests', () => {
         color: 'blue',
       };
 
-      const result = validationSchemas.CreateLabelSchema.safeParse(longNameLabel);
+      const result =
+        validationSchemas.CreateLabelSchema.safeParse(longNameLabel);
       expect(result.success).toBe(false);
       expect(result.error.issues[0].message).toContain('120');
 
@@ -471,7 +504,8 @@ describe('Zod Schema Validation Tests', () => {
         color: 'blue',
       };
 
-      const emptyResult = validationSchemas.CreateLabelSchema.safeParse(emptyNameLabel);
+      const emptyResult =
+        validationSchemas.CreateLabelSchema.safeParse(emptyNameLabel);
       expect(emptyResult.success).toBe(false);
     });
 
@@ -539,7 +573,8 @@ describe('Zod Schema Validation Tests', () => {
         ],
       };
 
-      const result = validationSchemas.BatchOperationSchema.safeParse(validBatchData);
+      const result =
+        validationSchemas.BatchOperationSchema.safeParse(validBatchData);
       expect(result.success).toBe(true);
     });
 
@@ -555,7 +590,8 @@ describe('Zod Schema Validation Tests', () => {
         })),
       };
 
-      const result = validationSchemas.BatchOperationSchema.safeParse(tooManyCommands);
+      const result =
+        validationSchemas.BatchOperationSchema.safeParse(tooManyCommands);
       expect(result.success).toBe(false);
       expect(result.error.issues[0].message).toContain('100');
     });
@@ -584,7 +620,8 @@ describe('Zod Schema Validation Tests', () => {
           ],
         };
 
-        const result = validationSchemas.BatchOperationSchema.safeParse(batchData);
+        const result =
+          validationSchemas.BatchOperationSchema.safeParse(batchData);
         expect(result.success).toBe(true);
       });
 
@@ -599,7 +636,8 @@ describe('Zod Schema Validation Tests', () => {
         ],
       };
 
-      const result = validationSchemas.BatchOperationSchema.safeParse(invalidCommand);
+      const result =
+        validationSchemas.BatchOperationSchema.safeParse(invalidCommand);
       expect(result.success).toBe(false);
     });
 
@@ -625,7 +663,8 @@ describe('Zod Schema Validation Tests', () => {
         ],
       };
 
-      const result = validationSchemas.BatchOperationSchema.safeParse(duplicateTempIds);
+      const result =
+        validationSchemas.BatchOperationSchema.safeParse(duplicateTempIds);
       expect(result.success).toBe(false);
       expect(result.error.issues[0].message).toContain('unique');
     });
@@ -647,7 +686,8 @@ describe('Zod Schema Validation Tests', () => {
         retry_after: null,
       };
 
-      const result = validationSchemas.ErrorResponseSchema.safeParse(validErrorData);
+      const result =
+        validationSchemas.ErrorResponseSchema.safeParse(validErrorData);
       expect(result.success).toBe(true);
     });
 
@@ -668,7 +708,8 @@ describe('Zod Schema Validation Tests', () => {
           retryable: false,
         };
 
-        const result = validationSchemas.ErrorResponseSchema.safeParse(errorData);
+        const result =
+          validationSchemas.ErrorResponseSchema.safeParse(errorData);
         expect(result.success).toBe(true);
       });
 
@@ -679,7 +720,8 @@ describe('Zod Schema Validation Tests', () => {
         retryable: false,
       };
 
-      const result = validationSchemas.ErrorResponseSchema.safeParse(invalidCode);
+      const result =
+        validationSchemas.ErrorResponseSchema.safeParse(invalidCode);
       expect(result.success).toBe(false);
     });
   });

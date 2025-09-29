@@ -249,8 +249,14 @@ export const mockRateLimitResponse = {
 
 // Error responses
 export const mockNotFoundResponse = createErrorResponse(404, 'Not found');
-export const mockUnauthorizedResponse = createErrorResponse(401, 'Unauthorized');
-export const mockValidationErrorResponse = createErrorResponse(400, 'Invalid request data');
+export const mockUnauthorizedResponse = createErrorResponse(
+  401,
+  'Unauthorized'
+);
+export const mockValidationErrorResponse = createErrorResponse(
+  400,
+  'Invalid request data'
+);
 
 // Collection responses
 export const mockTasksListResponse = createSuccessResponse([

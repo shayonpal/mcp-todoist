@@ -5,7 +5,12 @@
  */
 
 import { describe, test, expect, beforeEach, afterEach } from '@jest/globals';
-import { mockProjects, mockSections, mockTasks, createSuccessResponse } from '../mocks/todoist-api-responses.js';
+import {
+  mockProjects,
+  mockSections,
+  mockTasks,
+  createSuccessResponse,
+} from '../mocks/todoist-api-responses.js';
 
 // Mock MCP tools - will fail until implemented
 let todoistProjectsTool: any;
@@ -16,9 +21,12 @@ describe('Project Workflow Integration Tests', () => {
   beforeEach(() => {
     // These will fail until the actual tools are implemented
     try {
-      todoistProjectsTool = require('../../src/tools/todoist-projects.js').TodoistProjectsTool;
-      todoistSectionsTool = require('../../src/tools/todoist-sections.js').TodoistSectionsTool;
-      todoistTasksTool = require('../../src/tools/todoist-tasks.js').TodoistTasksTool;
+      todoistProjectsTool =
+        require('../../src/tools/todoist-projects.js').TodoistProjectsTool;
+      todoistSectionsTool =
+        require('../../src/tools/todoist-sections.js').TodoistSectionsTool;
+      todoistTasksTool =
+        require('../../src/tools/todoist-tasks.js').TodoistTasksTool;
     } catch (error) {
       todoistProjectsTool = null;
       todoistSectionsTool = null;
@@ -100,8 +108,12 @@ describe('Project Workflow Integration Tests', () => {
       expect(task2Result).toBeDefined();
 
       // Step 4: Verify the complete structure
-      const projectListResult = await todoistProjectsTool.execute({ action: 'list' });
-      expect(projectListResult.content[0].text).toContain('Integration Test Project');
+      const projectListResult = await todoistProjectsTool.execute({
+        action: 'list',
+      });
+      expect(projectListResult.content[0].text).toContain(
+        'Integration Test Project'
+      );
 
       const sectionsListResult = await todoistSectionsTool.execute({
         action: 'list',
@@ -114,8 +126,12 @@ describe('Project Workflow Integration Tests', () => {
         action: 'list',
         project_id: projectId,
       });
-      expect(tasksListResult.content[0].text).toContain('First integration test task');
-      expect(tasksListResult.content[0].text).toContain('Second integration test task');
+      expect(tasksListResult.content[0].text).toContain(
+        'First integration test task'
+      );
+      expect(tasksListResult.content[0].text).toContain(
+        'Second integration test task'
+      );
     });
 
     test('should handle project creation with immediate task assignment', async () => {
@@ -145,7 +161,9 @@ describe('Project Workflow Integration Tests', () => {
         action: 'list',
         project_id: projectId,
       });
-      expect(projectTasksResult.content[0].text).toContain('Quick task in new project');
+      expect(projectTasksResult.content[0].text).toContain(
+        'Quick task in new project'
+      );
     });
   });
 
@@ -158,7 +176,8 @@ describe('Project Workflow Integration Tests', () => {
         color: 'blue',
       };
 
-      const parentResult = await todoistProjectsTool.execute(parentProjectParams);
+      const parentResult =
+        await todoistProjectsTool.execute(parentProjectParams);
       const parentProjectId = extractProjectIdFromResult(parentResult);
 
       // Create child project
@@ -252,8 +271,12 @@ describe('Project Workflow Integration Tests', () => {
 
         if (i === 0) {
           // Backlog should have 2 tasks
-          expect(sectionTasksResult.content[0].text).toContain('Backlog task 1');
-          expect(sectionTasksResult.content[0].text).toContain('Backlog task 2');
+          expect(sectionTasksResult.content[0].text).toContain(
+            'Backlog task 1'
+          );
+          expect(sectionTasksResult.content[0].text).toContain(
+            'Backlog task 2'
+          );
         }
       }
     });
@@ -309,14 +332,18 @@ describe('Project Workflow Integration Tests', () => {
         action: 'list',
         section_id: doneSectionId,
       });
-      expect(doneSectionTasksResult.content[0].text).toContain('Moved and updated task');
+      expect(doneSectionTasksResult.content[0].text).toContain(
+        'Moved and updated task'
+      );
 
       // Verify task is no longer in old section
       const todoSectionTasksResult = await todoistTasksTool.execute({
         action: 'list',
         section_id: todoSectionId,
       });
-      expect(todoSectionTasksResult.content[0].text).not.toContain('Moveable task');
+      expect(todoSectionTasksResult.content[0].text).not.toContain(
+        'Moveable task'
+      );
     });
 
     test('should handle task completion workflow', async () => {
@@ -398,7 +425,9 @@ describe('Project Workflow Integration Tests', () => {
       const projectsResult = await todoistProjectsTool.execute({
         action: 'list',
       });
-      expect(projectsResult.content[0].text).not.toContain('Archive Test Project');
+      expect(projectsResult.content[0].text).not.toContain(
+        'Archive Test Project'
+      );
 
       // Test unarchive functionality
       const unarchiveResult = await todoistProjectsTool.execute({

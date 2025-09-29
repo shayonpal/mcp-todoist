@@ -5,7 +5,11 @@
  */
 
 import { describe, test, expect, beforeEach } from '@jest/globals';
-import { mockComments, mockCommentsListResponse, createSuccessResponse } from '../mocks/todoist-api-responses.js';
+import {
+  mockComments,
+  mockCommentsListResponse,
+  createSuccessResponse,
+} from '../mocks/todoist-api-responses.js';
 
 // Mock the MCP tool - will fail until implemented
 let todoistCommentsTool: any;
@@ -14,7 +18,8 @@ describe('todoist_comments MCP Tool Contract', () => {
   beforeEach(() => {
     // This will fail until the actual tool is implemented
     try {
-      todoistCommentsTool = require('../../src/tools/todoist-comments.js').TodoistCommentsTool;
+      todoistCommentsTool =
+        require('../../src/tools/todoist-comments.js').TodoistCommentsTool;
     } catch (error) {
       todoistCommentsTool = null;
     }
@@ -53,13 +58,15 @@ describe('todoist_comments MCP Tool Contract', () => {
     });
 
     test('should validate content max length', () => {
-      const contentProperty = todoistCommentsTool.inputSchema.properties.content;
+      const contentProperty =
+        todoistCommentsTool.inputSchema.properties.content;
       expect(contentProperty.maxLength).toBe(15000);
     });
 
     test('should require either task_id or project_id', () => {
       const taskIdProperty = todoistCommentsTool.inputSchema.properties.task_id;
-      const projectIdProperty = todoistCommentsTool.inputSchema.properties.project_id;
+      const projectIdProperty =
+        todoistCommentsTool.inputSchema.properties.project_id;
 
       expect(taskIdProperty).toBeDefined();
       expect(projectIdProperty).toBeDefined();
@@ -68,7 +75,8 @@ describe('todoist_comments MCP Tool Contract', () => {
     });
 
     test('should validate attachment structure', () => {
-      const attachmentProperty = todoistCommentsTool.inputSchema.properties.attachment;
+      const attachmentProperty =
+        todoistCommentsTool.inputSchema.properties.attachment;
       expect(attachmentProperty).toBeDefined();
       expect(attachmentProperty.type).toBe('object');
     });
@@ -85,10 +93,12 @@ describe('todoist_comments MCP Tool Contract', () => {
       const result = await todoistCommentsTool.execute(params);
 
       expect(result).toBeDefined();
-      expect(result.content).toEqual([{
-        type: 'text',
-        text: expect.stringContaining('created'),
-      }]);
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: expect.stringContaining('created'),
+        },
+      ]);
     });
 
     test('should handle comment creation on project', async () => {
@@ -101,10 +111,12 @@ describe('todoist_comments MCP Tool Contract', () => {
       const result = await todoistCommentsTool.execute(params);
 
       expect(result).toBeDefined();
-      expect(result.content).toEqual([{
-        type: 'text',
-        text: expect.stringContaining('created'),
-      }]);
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: expect.stringContaining('created'),
+        },
+      ]);
     });
 
     test('should handle comment creation with attachment', async () => {
@@ -122,10 +134,12 @@ describe('todoist_comments MCP Tool Contract', () => {
       const result = await todoistCommentsTool.execute(params);
 
       expect(result).toBeDefined();
-      expect(result.content).toEqual([{
-        type: 'text',
-        text: expect.stringContaining('created'),
-      }]);
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: expect.stringContaining('created'),
+        },
+      ]);
     });
 
     test('should reject creation without content', async () => {
@@ -191,10 +205,12 @@ describe('todoist_comments MCP Tool Contract', () => {
       const result = await todoistCommentsTool.execute(params);
 
       expect(result).toBeDefined();
-      expect(result.content).toEqual([{
-        type: 'text',
-        text: expect.stringContaining('This needs to be done by Friday'),
-      }]);
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: expect.stringContaining('This needs to be done by Friday'),
+        },
+      ]);
     });
 
     test('should reject get without comment_id', async () => {
@@ -240,10 +256,12 @@ describe('todoist_comments MCP Tool Contract', () => {
       const result = await todoistCommentsTool.execute(params);
 
       expect(result).toBeDefined();
-      expect(result.content).toEqual([{
-        type: 'text',
-        text: expect.stringContaining('updated'),
-      }]);
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: expect.stringContaining('updated'),
+        },
+      ]);
     });
 
     test('should reject update without comment_id', async () => {
@@ -284,7 +302,8 @@ describe('todoist_comments MCP Tool Contract', () => {
         attachment: {
           file_url: 'https://example.com/new-file.docx',
           file_name: 'new-document.docx',
-          file_type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          file_type:
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         },
       };
 
@@ -305,10 +324,12 @@ describe('todoist_comments MCP Tool Contract', () => {
       const result = await todoistCommentsTool.execute(params);
 
       expect(result).toBeDefined();
-      expect(result.content).toEqual([{
-        type: 'text',
-        text: expect.stringContaining('deleted'),
-      }]);
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: expect.stringContaining('deleted'),
+        },
+      ]);
     });
 
     test('should reject delete without comment_id', async () => {
@@ -344,10 +365,12 @@ describe('todoist_comments MCP Tool Contract', () => {
       const result = await todoistCommentsTool.execute(params);
 
       expect(result).toBeDefined();
-      expect(result.content).toEqual([{
-        type: 'text',
-        text: expect.stringContaining('comments'),
-      }]);
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: expect.stringContaining('comments'),
+        },
+      ]);
     });
 
     test('should list comments for a project', async () => {
@@ -359,10 +382,12 @@ describe('todoist_comments MCP Tool Contract', () => {
       const result = await todoistCommentsTool.execute(params);
 
       expect(result).toBeDefined();
-      expect(result.content).toEqual([{
-        type: 'text',
-        text: expect.stringContaining('comments'),
-      }]);
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: expect.stringContaining('comments'),
+        },
+      ]);
     });
 
     test('should reject list without task_id or project_id', async () => {
@@ -396,10 +421,12 @@ describe('todoist_comments MCP Tool Contract', () => {
       const result = await todoistCommentsTool.execute(params);
 
       expect(result).toBeDefined();
-      expect(result.content).toEqual([{
-        type: 'text',
-        text: expect.stringContaining('no comments'),
-      }]);
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: expect.stringContaining('no comments'),
+        },
+      ]);
     });
 
     test('should include attachment indicators in list', async () => {

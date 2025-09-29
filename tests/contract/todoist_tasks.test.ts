@@ -5,7 +5,11 @@
  */
 
 import { describe, test, expect, beforeEach } from '@jest/globals';
-import { mockTasks, mockTasksListResponse, createSuccessResponse } from '../mocks/todoist-api-responses.js';
+import {
+  mockTasks,
+  mockTasksListResponse,
+  createSuccessResponse,
+} from '../mocks/todoist-api-responses.js';
 
 // Mock the MCP tool - will fail until implemented
 let todoistTasksTool: any;
@@ -15,7 +19,8 @@ describe('todoist_tasks MCP Tool Contract', () => {
     // This will fail until the actual tool is implemented
     try {
       // This import will fail initially - that's expected for TDD
-      todoistTasksTool = require('../../src/tools/todoist-tasks.js').TodoistTasksTool;
+      todoistTasksTool =
+        require('../../src/tools/todoist-tasks.js').TodoistTasksTool;
     } catch (error) {
       todoistTasksTool = null;
     }
@@ -62,7 +67,8 @@ describe('todoist_tasks MCP Tool Contract', () => {
     });
 
     test('should validate description max length', () => {
-      const descriptionProperty = todoistTasksTool.inputSchema.properties.description;
+      const descriptionProperty =
+        todoistTasksTool.inputSchema.properties.description;
       expect(descriptionProperty.maxLength).toBe(16384);
     });
 
@@ -91,10 +97,12 @@ describe('todoist_tasks MCP Tool Contract', () => {
       const result = await todoistTasksTool.execute(params);
 
       expect(result).toBeDefined();
-      expect(result.content).toEqual([{
-        type: 'text',
-        text: expect.stringContaining('created'),
-      }]);
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: expect.stringContaining('created'),
+        },
+      ]);
     });
 
     test('should handle task creation with all parameters', async () => {
@@ -112,10 +120,12 @@ describe('todoist_tasks MCP Tool Contract', () => {
       const result = await todoistTasksTool.execute(params);
 
       expect(result).toBeDefined();
-      expect(result.content).toEqual([{
-        type: 'text',
-        text: expect.stringContaining('created'),
-      }]);
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: expect.stringContaining('created'),
+        },
+      ]);
     });
 
     test('should reject creation without required parameters', async () => {
@@ -148,10 +158,12 @@ describe('todoist_tasks MCP Tool Contract', () => {
       const result = await todoistTasksTool.execute(params);
 
       expect(result).toBeDefined();
-      expect(result.content).toEqual([{
-        type: 'text',
-        text: expect.stringContaining('Buy coffee'),
-      }]);
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: expect.stringContaining('Buy coffee'),
+        },
+      ]);
     });
 
     test('should reject get without task_id', async () => {
@@ -185,10 +197,12 @@ describe('todoist_tasks MCP Tool Contract', () => {
       const result = await todoistTasksTool.execute(params);
 
       expect(result).toBeDefined();
-      expect(result.content).toEqual([{
-        type: 'text',
-        text: expect.stringContaining('updated'),
-      }]);
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: expect.stringContaining('updated'),
+        },
+      ]);
     });
 
     test('should reject update without task_id', async () => {
@@ -211,10 +225,12 @@ describe('todoist_tasks MCP Tool Contract', () => {
       const result = await todoistTasksTool.execute(params);
 
       expect(result).toBeDefined();
-      expect(result.content).toEqual([{
-        type: 'text',
-        text: expect.stringContaining('deleted'),
-      }]);
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: expect.stringContaining('deleted'),
+        },
+      ]);
     });
 
     test('should reject delete without task_id', async () => {
@@ -235,10 +251,12 @@ describe('todoist_tasks MCP Tool Contract', () => {
       const result = await todoistTasksTool.execute(params);
 
       expect(result).toBeDefined();
-      expect(result.content).toEqual([{
-        type: 'text',
-        text: expect.stringContaining('tasks'),
-      }]);
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: expect.stringContaining('tasks'),
+        },
+      ]);
     });
 
     test('should filter tasks by project', async () => {
@@ -250,10 +268,12 @@ describe('todoist_tasks MCP Tool Contract', () => {
       const result = await todoistTasksTool.execute(params);
 
       expect(result).toBeDefined();
-      expect(result.content).toEqual([{
-        type: 'text',
-        text: expect.stringContaining('tasks'),
-      }]);
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: expect.stringContaining('tasks'),
+        },
+      ]);
     });
 
     test('should filter tasks by section', async () => {
@@ -278,10 +298,12 @@ describe('todoist_tasks MCP Tool Contract', () => {
       const result = await todoistTasksTool.execute(params);
 
       expect(result).toBeDefined();
-      expect(result.content).toEqual([{
-        type: 'text',
-        text: expect.stringContaining('completed'),
-      }]);
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: expect.stringContaining('completed'),
+        },
+      ]);
     });
 
     test('should uncomplete task by ID', async () => {
@@ -293,10 +315,12 @@ describe('todoist_tasks MCP Tool Contract', () => {
       const result = await todoistTasksTool.execute(params);
 
       expect(result).toBeDefined();
-      expect(result.content).toEqual([{
-        type: 'text',
-        text: expect.stringContaining('reopened'),
-      }]);
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: expect.stringContaining('reopened'),
+        },
+      ]);
     });
   });
 
@@ -327,10 +351,12 @@ describe('todoist_tasks MCP Tool Contract', () => {
       const result = await todoistTasksTool.execute(params);
 
       expect(result).toBeDefined();
-      expect(result.content).toEqual([{
-        type: 'text',
-        text: expect.stringContaining('batch'),
-      }]);
+      expect(result.content).toEqual([
+        {
+          type: 'text',
+          text: expect.stringContaining('batch'),
+        },
+      ]);
     });
 
     test('should reject batch with too many commands', async () => {

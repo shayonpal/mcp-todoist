@@ -4,8 +4,18 @@
  * Tests MUST FAIL until the actual implementation is complete
  */
 
-import { describe, test, expect, beforeEach, afterEach, jest } from '@jest/globals';
-import { mockRateLimitResponse, createSuccessResponse } from '../mocks/todoist-api-responses.js';
+import {
+  describe,
+  test,
+  expect,
+  beforeEach,
+  afterEach,
+  jest,
+} from '@jest/globals';
+import {
+  mockRateLimitResponse,
+  createSuccessResponse,
+} from '../mocks/todoist-api-responses.js';
 
 // Mock MCP tools - will fail until implemented
 let todoistTasksTool: any;
@@ -16,9 +26,12 @@ describe('Rate Limiting Integration Tests', () => {
   beforeEach(() => {
     // These will fail until the actual tools are implemented
     try {
-      todoistTasksTool = require('../../src/tools/todoist-tasks.js').TodoistTasksTool;
-      todoistProjectsTool = require('../../src/tools/todoist-projects.js').TodoistProjectsTool;
-      rateLimitService = require('../../src/services/rate-limit.js').RateLimitService;
+      todoistTasksTool =
+        require('../../src/tools/todoist-tasks.js').TodoistTasksTool;
+      todoistProjectsTool =
+        require('../../src/tools/todoist-projects.js').TodoistProjectsTool;
+      rateLimitService =
+        require('../../src/services/rate-limit.js').RateLimitService;
     } catch (error) {
       todoistTasksTool = null;
       todoistProjectsTool = null;
@@ -123,7 +136,9 @@ describe('Rate Limiting Integration Tests', () => {
         project_id: '220474322',
       };
 
-      await expect(todoistTasksTool.execute(taskParams)).rejects.toThrow(/rate limit exceeded/i);
+      await expect(todoistTasksTool.execute(taskParams)).rejects.toThrow(
+        /rate limit exceeded/i
+      );
     });
 
     test('should provide meaningful rate limit error messages', async () => {
@@ -182,7 +197,7 @@ describe('Rate Limiting Integration Tests', () => {
       const originalExecute = todoistTasksTool.execute;
 
       // Mock multiple rate limit responses
-      todoistTasksTool.execute = jest.fn().mockImplementation(async (params) => {
+      todoistTasksTool.execute = jest.fn().mockImplementation(async params => {
         retryCount++;
         if (retryCount <= 3) {
           throw new Error('Rate limit exceeded. Retry after 60 seconds.');
@@ -226,7 +241,7 @@ describe('Rate Limiting Integration Tests', () => {
       let callCount = 0;
       const originalExecute = todoistTasksTool.execute;
 
-      todoistTasksTool.execute = jest.fn().mockImplementation(async (params) => {
+      todoistTasksTool.execute = jest.fn().mockImplementation(async params => {
         callCount++;
         if (callCount === 1) {
           throw mockRateLimitError;
@@ -351,8 +366,15 @@ describe('Rate Limiting Integration Tests', () => {
     test('should track request patterns and provide analytics', async () => {
       // Make several requests of different types
       await todoistProjectsTool.execute({ action: 'list' });
-      await todoistTasksTool.execute({ action: 'list', project_id: '220474322' });
-      await todoistTasksTool.execute({ action: 'create', content: 'Test', project_id: '220474322' });
+      await todoistTasksTool.execute({
+        action: 'list',
+        project_id: '220474322',
+      });
+      await todoistTasksTool.execute({
+        action: 'create',
+        content: 'Test',
+        project_id: '220474322',
+      });
 
       const analytics = rateLimitService.getAnalytics();
 

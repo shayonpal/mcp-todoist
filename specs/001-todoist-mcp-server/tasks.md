@@ -55,16 +55,16 @@
 - [x] T016 [P] Validation test suite for Zod schemas in tests/unit/validation.test.ts
 
 ## Phase 3.3: Core Implementation (ONLY after tests are failing)
-- [ ] T017 [P] TodoistTask type definition in src/types/todoist.ts
-- [ ] T018 [P] TodoistProject type definition in src/types/todoist.ts
-- [ ] T019 [P] TodoistSection type definition in src/types/todoist.ts
-- [ ] T020 [P] TodoistComment type definition in src/types/todoist.ts
-- [ ] T021 [P] TodoistFilter and TodoistLabel types in src/types/todoist.ts
-- [ ] T022 [P] Zod validation schemas for all input types in src/schemas/validation.ts
-- [ ] T023 [P] Error type definitions and MCP error mapping in src/types/errors.ts
-- [ ] T024 TodoistApiService with rate limiting in src/services/todoist-api.ts
-- [ ] T025 Cache service for projects and labels in src/services/cache.ts
-- [ ] T026 Batch operations handler with temp ID management in src/services/batch.ts
+- [x] T017 [P] TodoistTask type definition in src/types/todoist.ts
+- [x] T018 [P] TodoistProject type definition in src/types/todoist.ts
+- [x] T019 [P] TodoistSection type definition in src/types/todoist.ts
+- [x] T020 [P] TodoistComment type definition in src/types/todoist.ts
+- [x] T021 [P] TodoistFilter and TodoistLabel types in src/types/todoist.ts
+- [x] T022 [P] Zod validation schemas for all input types in src/schemas/validation.ts
+- [x] T023 [P] Error type definitions and MCP error mapping in src/types/errors.ts
+- [x] T024 TodoistApiService with rate limiting in src/services/todoist-api.ts
+- [x] T025 Cache service for projects and labels in src/services/cache.ts
+- [x] T026 Batch operations handler with temp ID management in src/services/batch.ts
 - [ ] T027 TodoistTasksTool implementation in src/tools/todoist-tasks.ts
 - [ ] T028 TodoistProjectsTool implementation in src/tools/todoist-projects.ts
 - [ ] T029 TodoistSectionsTool implementation in src/tools/todoist-sections.ts

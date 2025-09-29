@@ -10,7 +10,8 @@ module.exports = {
   parserOptions: {
     ecmaVersion: 2022,
     sourceType: 'module',
-    project: './tsconfig.json',
+    project: './tsconfig.eslint.json',
+    tsconfigRootDir: __dirname,
   },
   env: {
     node: true,
@@ -23,10 +24,21 @@ module.exports = {
     '@typescript-eslint/explicit-function-return-type': 'off',
     '@typescript-eslint/explicit-module-boundary-types': 'off',
     '@typescript-eslint/no-explicit-any': 'warn',
-    '@typescript-eslint/prefer-const': 'error',
     '@typescript-eslint/no-non-null-assertion': 'warn',
     'no-console': 'warn',
     'prefer-const': 'error',
   },
   ignorePatterns: ['dist/', 'node_modules/', 'coverage/'],
+  overrides: [
+    {
+      files: ['tests/**/*.ts'],
+      env: {
+        jest: true,
+        node: true,
+      },
+      rules: {
+        '@typescript-eslint/no-explicit-any': 'off', // Allow any in test mocks
+      },
+    },
+  ],
 };
