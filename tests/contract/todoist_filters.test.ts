@@ -11,18 +11,22 @@ import {
   mockFiltersListResponse,
   createSuccessResponse,
 } from '../mocks/todoist-api-responses.js';
+import { TodoistFiltersTool } from '../../src/tools/todoist-filters.js';
 
-// Mock the MCP tool - will fail until implemented
-let todoistFiltersTool: any;
+// Mock API configuration for tests
+const mockApiConfig = {
+  token: 'test_token',
+  base_url: 'https://api.todoist.com/rest/v1',
+  timeout: 10000,
+  retry_attempts: 3,
+};
+
+// Initialize tool with mock configuration
+let todoistFiltersTool: TodoistFiltersTool;
 
 describe('todoist_filters MCP Tool Contract', () => {
   beforeEach(() => {
-    // This will fail until the actual tool is implemented
-    try {
-      todoistFiltersTool =
-        require('../../src/tools/todoist-filters.js').TodoistFiltersTool;
-    } catch (error) {
-      todoistFiltersTool = null;
+    todoistFiltersTool = new TodoistFiltersTool(mockApiConfig);
     }
   });
 

@@ -136,7 +136,7 @@ export class TodoistApiService {
   constructor(config: APIConfiguration) {
     this.config = {
       token: config.token,
-      base_url: config.base_url || 'https://api.todoist.com/rest/v2',
+      base_url: config.base_url || 'https://api.todoist.com/rest/v1',
       timeout: config.timeout || 10000,
       retry_attempts: config.retry_attempts || 3,
     };
@@ -478,9 +478,10 @@ export class TodoistApiService {
   }
 
   // Sync operations (for batch processing)
+  // Note: Sync API uses /api/v1/sync instead of /rest/v1/sync
   async sync(commands: any[]): Promise<any> {
     return this.executeRequest<any>(
-      '/sync',
+      'https://api.todoist.com/api/v1/sync',
       {
         method: 'POST',
         data: {

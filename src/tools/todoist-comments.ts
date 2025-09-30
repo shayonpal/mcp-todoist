@@ -40,11 +40,11 @@ const TodoistCommentsInputSchema = z.discriminatedUnion('action', [
     comment_id: z.string().min(1, 'Comment ID is required'),
   }),
   z.object({
-    action: z.literal('list'),
+    action: z.literal('list_by_task'),
     task_id: z.string().min(1),
   }),
   z.object({
-    action: z.literal('list'),
+    action: z.literal('list_by_project'),
     project_id: z.string().min(1),
   }),
 ]);
@@ -133,7 +133,8 @@ export class TodoistCommentsTool {
         case 'delete':
           result = await this.handleDelete(validatedInput);
           break;
-        case 'list':
+        case 'list_by_task':
+        case 'list_by_project':
           result = await this.handleList(validatedInput);
           break;
         default:
@@ -257,17 +258,17 @@ export class TodoistCommentsTool {
    * List comments for a task or project
    */
   private async handleList(
-    input: Extract<TodoistCommentsInput, { action: 'list' }>
+    input: Extract<TodoistCommentsInput, { action: 'list_by_task' | 'list_by_project' }>
   ): Promise<TodoistCommentsOutput> {
     let comments: TodoistComment[];
 
-    if ('task_id' in input) {
+    if (input.action === 'list_by_task') {
       comments = await this.apiService.getTaskComments(input.task_id);
-    } else if ('project_id' in input) {
+    } else if (input.action === 'list_by_project') {
       comments = await this.apiService.getProjectComments(input.project_id);
     } else {
       throw new ValidationError(
-        'Either task_id or project_id must be provided'
+        'Invalid list action specified'
       );
     }
 

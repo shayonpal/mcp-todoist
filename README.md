@@ -79,18 +79,6 @@ Add to your MCP client configuration (e.g., Claude Desktop):
 - `todoist_comments` - Comment management with file attachments
 - `todoist_filters` - Filter management for custom task queries
 
-## Development Status
-
-Phase 3.1 (Setup) - ✅ Complete
-- [x] Project structure created
-- [x] Dependencies installed
-- [x] TypeScript configured
-- [x] Jest testing setup
-- [x] ESLint and Prettier configured
-- [x] Environment template created
-
-Next: Phase 3.2 (Tests First - TDD)
-
 ## License
 
-MIT
+GPL 3.0

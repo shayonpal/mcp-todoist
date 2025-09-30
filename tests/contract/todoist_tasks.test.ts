@@ -10,20 +10,22 @@ import {
   mockTasksListResponse,
   createSuccessResponse,
 } from '../mocks/todoist-api-responses.js';
+import { TodoistTasksTool } from '../../src/tools/todoist-tasks.js';
 
-// Mock the MCP tool - will fail until implemented
-let todoistTasksTool: any;
+// Mock API configuration for tests
+const mockApiConfig = {
+  token: 'test_token',
+  base_url: 'https://api.todoist.com/rest/v1',
+  timeout: 10000,
+  retry_attempts: 3,
+};
+
+// Initialize tool with mock configuration
+let todoistTasksTool: TodoistTasksTool;
 
 describe('todoist_tasks MCP Tool Contract', () => {
   beforeEach(() => {
-    // This will fail until the actual tool is implemented
-    try {
-      // This import will fail initially - that's expected for TDD
-      todoistTasksTool =
-        require('../../src/tools/todoist-tasks.js').TodoistTasksTool;
-    } catch (error) {
-      todoistTasksTool = null;
-    }
+    todoistTasksTool = new TodoistTasksTool(mockApiConfig);
   });
 
   describe('Tool Registration', () => {

@@ -11,27 +11,28 @@ import {
   mockTasks,
   createSuccessResponse,
 } from '../mocks/todoist-api-responses.js';
+import { TodoistProjectsTool } from '../../src/tools/todoist-projects.js';
+import { TodoistSectionsTool } from '../../src/tools/todoist-sections.js';
+import { TodoistTasksTool } from '../../src/tools/todoist-tasks.js';
 
-// Mock MCP tools - will fail until implemented
-let todoistProjectsTool: any;
-let todoistSectionsTool: any;
-let todoistTasksTool: any;
+// Mock API configuration for tests
+const mockApiConfig = {
+  token: 'test_token',
+  base_url: 'https://api.todoist.com/rest/v1',
+  timeout: 10000,
+  retry_attempts: 3,
+};
+
+// Initialize tools with mock configuration
+let todoistProjectsTool: TodoistProjectsTool;
+let todoistSectionsTool: TodoistSectionsTool;
+let todoistTasksTool: TodoistTasksTool;
 
 describe('Project Workflow Integration Tests', () => {
   beforeEach(() => {
-    // These will fail until the actual tools are implemented
-    try {
-      todoistProjectsTool =
-        require('../../src/tools/todoist-projects.js').TodoistProjectsTool;
-      todoistSectionsTool =
-        require('../../src/tools/todoist-sections.js').TodoistSectionsTool;
-      todoistTasksTool =
-        require('../../src/tools/todoist-tasks.js').TodoistTasksTool;
-    } catch (error) {
-      todoistProjectsTool = null;
-      todoistSectionsTool = null;
-      todoistTasksTool = null;
-    }
+    todoistProjectsTool = new TodoistProjectsTool(mockApiConfig);
+    todoistSectionsTool = new TodoistSectionsTool(mockApiConfig);
+    todoistTasksTool = new TodoistTasksTool(mockApiConfig);
   });
 
   afterEach(() => {

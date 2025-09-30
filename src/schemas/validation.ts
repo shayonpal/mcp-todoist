@@ -235,7 +235,7 @@ export const APIConfigurationSchema = z.object({
   base_url: z
     .string()
     .url('Base URL must be valid')
-    .default('https://api.todoist.com/rest/v2'),
+    .default('https://api.todoist.com/rest/v1'),
   timeout: z.number().int().min(1000).max(60000).default(10000),
   retry_attempts: z.number().int().min(0).max(10).default(3),
 });

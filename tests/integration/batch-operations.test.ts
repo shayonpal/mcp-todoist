@@ -10,23 +10,25 @@ import {
   mockTasks,
   createSuccessResponse,
 } from '../mocks/todoist-api-responses.js';
+import { TodoistTasksTool } from '../../src/tools/todoist-tasks.js';
+import { TodoistProjectsTool } from '../../src/tools/todoist-projects.js';
 
-// Mock MCP tools - will fail until implemented
-let todoistTasksTool: any;
-let todoistProjectsTool: any;
+// Mock API configuration for tests
+const mockApiConfig = {
+  token: 'test_token',
+  base_url: 'https://api.todoist.com/rest/v1',
+  timeout: 10000,
+  retry_attempts: 3,
+};
+
+// Initialize tools with mock configuration
+let todoistTasksTool: TodoistTasksTool;
+let todoistProjectsTool: TodoistProjectsTool;
 
 describe('Batch Operations Integration Tests', () => {
   beforeEach(() => {
-    // These will fail until the actual tools are implemented
-    try {
-      todoistTasksTool =
-        require('../../src/tools/todoist-tasks.js').TodoistTasksTool;
-      todoistProjectsTool =
-        require('../../src/tools/todoist-projects.js').TodoistProjectsTool;
-    } catch (error) {
-      todoistTasksTool = null;
-      todoistProjectsTool = null;
-    }
+    todoistTasksTool = new TodoistTasksTool(mockApiConfig);
+    todoistProjectsTool = new TodoistProjectsTool(mockApiConfig);
   });
 
   afterEach(() => {
@@ -82,9 +84,9 @@ describe('Batch Operations Integration Tests', () => {
       const batchResult = await todoistTasksTool.execute(batchParams);
 
       expect(batchResult).toBeDefined();
-      expect(batchResult.content[0].text).toContain('batch');
-      expect(batchResult.content[0].text).toContain('3 commands');
-      expect(batchResult.content[0].text).toContain('successful');
+      expect(batchResult.success).toBe(true);
+      expect(batchResult.message).toContain('batch');
+      expect(batchResult.metadata?.completed_commands).toBe(3);
 
       // Verify all tasks were created
       const tasksListResult = await todoistTasksTool.execute({
@@ -92,9 +94,13 @@ describe('Batch Operations Integration Tests', () => {
         project_id: projectId,
       });
 
-      expect(tasksListResult.content[0].text).toContain('First batch task');
-      expect(tasksListResult.content[0].text).toContain('Second batch task');
-      expect(tasksListResult.content[0].text).toContain('Third batch task');
+      expect(tasksListResult.success).toBe(true);
+      expect(Array.isArray(tasksListResult.data)).toBe(true);
+      const tasks = tasksListResult.data as any[];
+      expect(tasks.length).toBe(3);
+      expect(tasks.some(task => task.content === 'First batch task')).toBe(true);
+      expect(tasks.some(task => task.content === 'Second batch task')).toBe(true);
+      expect(tasks.some(task => task.content === 'Third batch task')).toBe(true);
     });
 
     test('should handle batch operations with temp ID dependencies', async () => {
@@ -631,10 +637,16 @@ describe('Batch Operations Integration Tests', () => {
 
   // Helper functions
   function extractProjectIdFromResult(result: any): string {
-    return 'extracted_project_id';
+    if (result.success && result.data && result.data.id) {
+      return result.data.id;
+    }
+    return 'test_project_id';
   }
 
   function extractTaskIdFromResult(result: any): string {
-    return 'extracted_task_id';
+    if (result.success && result.data && result.data.id) {
+      return result.data.id;
+    }
+    return 'test_task_id';
   }
 });

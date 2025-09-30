@@ -10,19 +10,22 @@ import {
   mockCommentsListResponse,
   createSuccessResponse,
 } from '../mocks/todoist-api-responses.js';
+import { TodoistCommentsTool } from '../../src/tools/todoist-comments.js';
 
-// Mock the MCP tool - will fail until implemented
-let todoistCommentsTool: any;
+// Mock API configuration for tests
+const mockApiConfig = {
+  token: 'test_token',
+  base_url: 'https://api.todoist.com/rest/v1',
+  timeout: 10000,
+  retry_attempts: 3,
+};
+
+// Initialize tool with mock configuration
+let todoistCommentsTool: TodoistCommentsTool;
 
 describe('todoist_comments MCP Tool Contract', () => {
   beforeEach(() => {
-    // This will fail until the actual tool is implemented
-    try {
-      todoistCommentsTool =
-        require('../../src/tools/todoist-comments.js').TodoistCommentsTool;
-    } catch (error) {
-      todoistCommentsTool = null;
-    }
+    todoistCommentsTool = new TodoistCommentsTool(mockApiConfig);
   });
 
   describe('Tool Registration', () => {

@@ -56,3 +56,4 @@ pids/
 # Project-specific directories
 .claude/
 .specify/
+.serena/

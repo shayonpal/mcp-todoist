@@ -16,32 +16,28 @@ import {
   mockRateLimitResponse,
   createSuccessResponse,
 } from '../mocks/todoist-api-responses.js';
+import { TodoistTasksTool } from '../../src/tools/todoist-tasks.js';
+import { TodoistProjectsTool } from '../../src/tools/todoist-projects.js';
+import { TodoistApiService } from '../../src/services/todoist-api.js';
 
-// Mock MCP tools - will fail until implemented
-let todoistTasksTool: any;
-let todoistProjectsTool: any;
-let rateLimitService: any;
+// Mock API configuration for tests
+const mockApiConfig = {
+  token: 'test_token',
+  base_url: 'https://api.todoist.com/rest/v1',
+  timeout: 10000,
+  retry_attempts: 3,
+};
+
+// Initialize tools and services with mock configuration
+let todoistTasksTool: TodoistTasksTool;
+let todoistProjectsTool: TodoistProjectsTool;
+let todoistApiService: TodoistApiService;
 
 describe('Rate Limiting Integration Tests', () => {
   beforeEach(() => {
-    // These will fail until the actual tools are implemented
-    try {
-      todoistTasksTool =
-        require('../../src/tools/todoist-tasks.js').TodoistTasksTool;
-      todoistProjectsTool =
-        require('../../src/tools/todoist-projects.js').TodoistProjectsTool;
-      rateLimitService =
-        require('../../src/services/rate-limit.js').RateLimitService;
-    } catch (error) {
-      todoistTasksTool = null;
-      todoistProjectsTool = null;
-      rateLimitService = null;
-    }
-
-    // Reset any rate limiting state before each test
-    if (rateLimitService) {
-      rateLimitService.reset();
-    }
+    todoistTasksTool = new TodoistTasksTool(mockApiConfig);
+    todoistProjectsTool = new TodoistProjectsTool(mockApiConfig);
+    todoistApiService = new TodoistApiService(mockApiConfig);
   });
 
   afterEach(() => {

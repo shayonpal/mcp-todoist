@@ -286,7 +286,7 @@ describe('Zod Schema Validation Tests', () => {
       );
       expect(result.success).toBe(false);
 
-      const missingFields = result.error.issues.map(issue => issue.path[0]);
+      const missingFields = result.error.issues.map((issue: any) => issue.path[0]);
       expect(missingFields).toContain('name');
       expect(missingFields).toContain('project_id');
     });
@@ -429,7 +429,7 @@ describe('Zod Schema Validation Tests', () => {
         validationSchemas.CreateFilterSchema.safeParse(incompleteFilterData);
       expect(result.success).toBe(false);
 
-      const missingFields = result.error.issues.map(issue => issue.path[0]);
+      const missingFields = result.error.issues.map((issue: any) => issue.path[0]);
       expect(missingFields).toContain('name');
       expect(missingFields).toContain('query');
     });
