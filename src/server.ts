@@ -18,9 +18,17 @@ import { getConfig } from './config/index.js';
 import { logger } from './middleware/logging.js';
 import { TodoistAPIError, TodoistErrorCode } from './types/errors.js';
 
+interface ToolExecutionResult {
+  success: boolean;
+}
+
+interface MCPExecutableTool {
+  execute(args: unknown): Promise<ToolExecutionResult>;
+}
+
 export class TodoistMCPServer {
   private server: Server;
-  private tools: Map<string, any> = new Map();
+  private readonly tools: Map<string, MCPExecutableTool> = new Map();
   private config: APIConfiguration;
 
   constructor() {
@@ -224,14 +232,14 @@ export class TodoistMCPServer {
 
     try {
       // Check if tools are properly initialized
-      if (this.tools.size !== 5) {
+      if (this.tools.size !== 6) {
         checks.tools = 'error';
       }
 
       // Test API connectivity by making a lightweight call
       try {
         const tasksTool = this.tools.get('todoist_tasks');
-        if (tasksTool) {
+        if (tasksTool instanceof TodoistTasksTool) {
           // Attempt to list tasks with minimal parameters to test API
           await tasksTool.execute({ action: 'list', lang: 'en' });
           checks.api = 'ok';
@@ -320,7 +328,7 @@ export const server = new TodoistMCPServer();
 // Start server if this file is run directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   server.run().catch(error => {
-    console.error('Failed to start server:', error);
+    logger.error('Failed to start server via direct execution', { error });
     process.exit(1);
   });
 }

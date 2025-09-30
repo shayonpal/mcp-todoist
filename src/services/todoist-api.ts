@@ -25,6 +25,24 @@ import {
   TodoistErrorCode,
 } from '../types/errors.js';
 
+export type SyncCommand = Record<string, unknown>;
+
+export interface SyncResponse {
+  temp_id_mapping?: Record<string, string>;
+  sync_status?: Record<string, string>;
+  reminders?: TodoistReminder[];
+  reminders_location?: TodoistReminder[];
+  [key: string]: unknown;
+}
+
+type TaskQueryParams = {
+  project_id?: string;
+  section_id?: string;
+  label_id?: string;
+  filter?: string;
+  lang?: string;
+};
+
 /**
  * Rate limiter interface for different endpoint types
  */
@@ -174,10 +192,25 @@ export class TodoistApiService {
   /**
    * Handle API errors with proper error mapping and retry logic
    */
-  private async handleApiError(error: any): Promise<never> {
+  private async handleApiError(error: unknown): Promise<never> {
+    if (!axios.isAxiosError(error)) {
+      if (error instanceof TodoistAPIError) {
+        throw error;
+      }
+
+      throw new TodoistAPIError(
+        TodoistErrorCode.UNKNOWN_ERROR,
+        error instanceof Error ? error.message : 'An unexpected error occurred',
+        { originalError: error },
+        false
+      );
+    }
+
     const status = error.response?.status;
-    const data = error.response?.data;
-    const headers = error.response?.headers;
+    const data = error.response?.data as Record<string, unknown> | undefined;
+    const headers = error.response?.headers as
+      | Record<string, string>
+      | undefined;
 
     switch (status) {
       case 401:
@@ -195,18 +228,23 @@ export class TodoistApiService {
         throw new NotFoundError('Resource not found', { originalError: data });
 
       case 429: {
-        const retryAfter = headers?.['retry-after']
-          ? parseInt(headers['retry-after'])
-          : undefined;
+        const retryAfterHeader = headers?.['retry-after'];
+        const retryAfter =
+          typeof retryAfterHeader === 'string'
+            ? parseInt(retryAfterHeader, 10)
+            : undefined;
         throw new RateLimitError('API rate limit exceeded', retryAfter, {
           originalError: data,
         });
       }
 
-      case 400:
-        throw new ValidationError(data?.error || 'Invalid request data', {
+      case 400: {
+        const validationMessage =
+          typeof data?.error === 'string' ? data.error : 'Invalid request data';
+        throw new ValidationError(validationMessage, {
           originalError: data,
         });
+      }
 
       case 500:
       case 502:
@@ -274,7 +312,7 @@ export class TodoistApiService {
   }
 
   // Task operations
-  async getTasks(params?: Record<string, any>): Promise<TodoistTask[]> {
+  async getTasks(params?: TaskQueryParams): Promise<TodoistTask[]> {
     return this.executeRequest<TodoistTask[]>('/tasks', {
       method: 'GET',
       params,
@@ -480,8 +518,8 @@ export class TodoistApiService {
 
   // Sync operations (for batch processing)
   // Note: Sync API uses /api/v1/sync instead of /rest/v1/sync
-  async sync(commands: any[]): Promise<any> {
-    return this.executeRequest<any>(
+  async sync(commands: SyncCommand[]): Promise<SyncResponse> {
+    return this.executeRequest<SyncResponse>(
       'https://api.todoist.com/api/v1/sync',
       {
         method: 'POST',
@@ -501,7 +539,7 @@ export class TodoistApiService {
       ? ['reminders', 'reminders_location']
       : ['reminders', 'reminders_location'];
 
-    const response = await this.executeRequest<any>(
+    const response = await this.executeRequest<SyncResponse>(
       'https://api.todoist.com/api/v1/sync',
       {
         method: 'POST',
@@ -515,8 +553,10 @@ export class TodoistApiService {
 
     // Combine time-based and location-based reminders
     const reminders = [
-      ...(response.reminders || []),
-      ...(response.reminders_location || []),
+      ...(Array.isArray(response.reminders) ? response.reminders : []),
+      ...(Array.isArray(response.reminders_location)
+        ? response.reminders_location
+        : []),
     ];
 
     // Filter by item_id if provided
@@ -552,8 +592,11 @@ export class TodoistApiService {
 
     if (!reminderId) {
       throw new TodoistAPIError(
-        'Failed to create reminder',
         TodoistErrorCode.SERVER_ERROR,
+        'Failed to create reminder',
+        undefined,
+        false,
+        undefined,
         500
       );
     }

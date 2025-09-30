@@ -125,16 +125,20 @@ export const CreateCommentSchema = z
     project_id: z.string().min(1, 'Project ID must not be empty').optional(),
     attachment: z
       .object({
-        resource_type: z.string(),
         file_url: z.string().url('File URL must be valid'),
-        file_name: z.string(),
-        file_size: z.number().int().min(0),
-        file_type: z.string(),
+        file_name: z.string().min(1, 'File name is required'),
+        file_type: z.string().min(1, 'File type is required'),
+        file_size: z.number().int().min(0, 'File size must be non-negative'),
       })
+      .strict()
       .optional(),
   })
   .refine(data => data.task_id || data.project_id, {
     message: 'Either task_id or project_id is required',
+    path: ['task_id', 'project_id'],
+  })
+  .refine(data => !(data.task_id && data.project_id), {
+    message: 'Cannot specify both task_id and project_id, only one is allowed',
     path: ['task_id', 'project_id'],
   });
 
@@ -159,7 +163,7 @@ export const CreateFilterSchema = z.object({
     .min(1, 'Filter name is required')
     .max(120, 'Filter name must be 120 characters or less'),
   query: z.string().min(1, 'Query is required'),
-  color: z.string().min(1, 'Color is required'),
+  color: z.string().min(1, 'Color is required').optional(),
   order: z.number().int().min(1).optional(),
   is_favorite: z.boolean().default(false),
 });
@@ -183,7 +187,11 @@ export const CreateLabelSchema = z.object({
   name: z
     .string()
     .min(1, 'Label name is required')
-    .max(120, 'Label name must be 120 characters or less'),
+    .max(120, 'Label name must be 120 characters or less')
+    .regex(
+      /^[a-zA-Z0-9_-]+$/,
+      'Label name can only contain alphanumeric characters, hyphens, and underscores'
+    ),
   order: z.number().int().min(1).optional(),
   color: z.string().min(1, 'Color is required'),
   is_favorite: z.boolean().default(false),
@@ -282,6 +290,7 @@ export const BatchCommandSchema = z.object({
     'item_delete',
     'item_complete',
     'item_uncomplete',
+    'item_move',
     'project_add',
     'project_update',
     'project_delete',
@@ -295,12 +304,30 @@ export const BatchCommandSchema = z.object({
   args: z.record(z.any()),
 });
 
-export const BatchOperationSchema = z.object({
+export const BatchOperationObjectSchema = z.object({
   batch_commands: z
     .array(BatchCommandSchema)
     .min(1, 'At least one command is required')
     .max(100, 'Maximum 100 commands allowed'),
 });
+
+export const BatchOperationSchema = BatchOperationObjectSchema.refine(
+  data => {
+    // Check temp_id uniqueness
+    const tempIds = data.batch_commands
+      .map(cmd => cmd.temp_id)
+      .filter((id): id is string => id !== undefined && id !== null);
+
+    if (tempIds.length === 0) return true; // No temp_ids to validate
+
+    const uniqueTempIds = new Set(tempIds);
+    return uniqueTempIds.size === tempIds.length;
+  },
+  {
+    message: 'All temp_id values must be unique within the batch',
+    path: ['batch_commands'],
+  }
+);
 
 /**
  * Configuration validation schemas

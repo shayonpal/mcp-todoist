@@ -519,11 +519,11 @@ export const logger = StructuredLogger.getInstance();
 /**
  * Middleware function for automatic correlation ID management
  */
-export function withCorrelationId<T extends (...args: any[]) => Promise<any>>(
-  fn: T,
-  context: LogContext = {}
-): T {
-  return (async (...args: Parameters<T>) => {
+export function withCorrelationId<
+  TResult,
+  T extends (...args: unknown[]) => Promise<TResult>,
+>(fn: T, context: LogContext = {}): T {
+  return (async (...args: Parameters<T>): Promise<TResult> => {
     const correlationId = logger.generateCorrelationId();
 
     try {
@@ -540,21 +540,27 @@ export function withCorrelationId<T extends (...args: any[]) => Promise<any>>(
  * Decorator for automatic request logging
  */
 export function loggedOperation(operationType: string) {
-  return function <T extends (...args: any[]) => Promise<any>>(
-    target: any,
+  return function <TResult, T extends (...args: unknown[]) => Promise<TResult>>(
+    target: unknown,
     propertyName: string,
     descriptor: TypedPropertyDescriptor<T>
   ) {
-    const method = descriptor.value!;
+    const method = descriptor.value;
+    if (!method) {
+      return;
+    }
 
-    descriptor.value = async function (this: any, ...args: Parameters<T>) {
+    descriptor.value = async function (
+      this: unknown,
+      ...args: Parameters<T>
+    ): Promise<TResult> {
       const correlationId = logger.generateCorrelationId();
       const startTime = Date.now();
 
       try {
         logger.logToolStart(
           correlationId,
-          target.constructor.name,
+          target instanceof Function ? target.name : String(propertyName),
           operationType
         );
         const result = await method.apply(this, args);
@@ -577,4 +583,4 @@ setInterval(
     logger.cleanup();
   },
   30 * 60 * 1000
-); // Cleanup every 30 minutes
+).unref(); // Cleanup every 30 minutes, allow process to exit gracefully

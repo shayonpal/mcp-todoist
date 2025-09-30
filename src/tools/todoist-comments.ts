@@ -89,8 +89,11 @@ interface TodoistCommentsOutput {
 export class TodoistCommentsTool {
   private readonly apiService: TodoistApiService;
 
-  constructor(apiConfig: APIConfiguration) {
-    this.apiService = new TodoistApiService(apiConfig);
+  constructor(
+    apiConfig: APIConfiguration,
+    deps: { apiService?: TodoistApiService } = {}
+  ) {
+    this.apiService = deps.apiService ?? new TodoistApiService(apiConfig);
   }
 
   /**
@@ -258,7 +261,10 @@ export class TodoistCommentsTool {
    * List comments for a task or project
    */
   private async handleList(
-    input: Extract<TodoistCommentsInput, { action: 'list_by_task' | 'list_by_project' }>
+    input: Extract<
+      TodoistCommentsInput,
+      { action: 'list_by_task' | 'list_by_project' }
+    >
   ): Promise<TodoistCommentsOutput> {
     let comments: TodoistComment[];
 
@@ -267,9 +273,7 @@ export class TodoistCommentsTool {
     } else if (input.action === 'list_by_project') {
       comments = await this.apiService.getProjectComments(input.project_id);
     } else {
-      throw new ValidationError(
-        'Invalid list action specified'
-      );
+      throw new ValidationError('Invalid list action specified');
     }
 
     // Calculate metadata

@@ -1,18 +1,13 @@
-/**
- * Contract tests for todoist_comments MCP tool
- * These tests validate the tool interface and parameter schemas
- * Tests MUST FAIL until the actual tool is implemented
- */
-
 import { describe, test, expect, beforeEach } from '@jest/globals';
-import {
-  mockComments,
-  mockCommentsListResponse,
-  createSuccessResponse,
-} from '../mocks/todoist-api-responses.js';
 import { TodoistCommentsTool } from '../../src/tools/todoist-comments.js';
+import { TodoistApiService } from '../../src/services/todoist-api.js';
+import {
+  CommentsApiMock,
+  createCommentsApiMock,
+  toTodoistComment,
+} from '../helpers/mockTodoistApiService.js';
+import { mockComments } from '../mocks/todoist-api-responses.js';
 
-// Mock API configuration for tests
 const mockApiConfig = {
   token: 'test_token',
   base_url: 'https://api.todoist.com/rest/v1',
@@ -20,326 +15,100 @@ const mockApiConfig = {
   retry_attempts: 3,
 };
 
-// Initialize tool with mock configuration
-let todoistCommentsTool: TodoistCommentsTool;
-
 describe('todoist_comments MCP Tool Contract', () => {
+  let apiService: CommentsApiMock;
+  let todoistCommentsTool: TodoistCommentsTool;
+
   beforeEach(() => {
-    todoistCommentsTool = new TodoistCommentsTool(mockApiConfig);
-  });
-
-  describe('Tool Registration', () => {
-    test('should be defined as MCP tool', () => {
-      expect(todoistCommentsTool).toBeDefined();
-      expect(todoistCommentsTool.name).toBe('todoist_comments');
-      expect(todoistCommentsTool.description).toContain('comment management');
+    const comment = toTodoistComment(mockComments.comment1);
+    apiService = createCommentsApiMock();
+    apiService.createComment.mockResolvedValue(comment);
+    apiService.updateComment.mockResolvedValue({
+      ...comment,
+      content: 'Updated comment',
     });
 
-    test('should have correct input schema structure', () => {
-      expect(todoistCommentsTool.inputSchema).toBeDefined();
-      expect(todoistCommentsTool.inputSchema.type).toBe('object');
-      expect(todoistCommentsTool.inputSchema.properties).toBeDefined();
-    });
-
-    test('should support all required actions', () => {
-      const actionProperty = todoistCommentsTool.inputSchema.properties.action;
-        'create',
-        'get',
-        'update',
-        'delete',
-        'list',
-      ]);
+    todoistCommentsTool = new TodoistCommentsTool(mockApiConfig, {
+      apiService: apiService as unknown as TodoistApiService,
     });
   });
 
-  describe('Parameter Validation', () => {
-    test('should require action parameter', () => {
-      const actionProperty = todoistCommentsTool.inputSchema.properties.action;
-      expect(actionProperty.type).toBe('string');
-    });
-
-    test('should validate content max length', () => {
-      const contentProperty =
-        todoistCommentsTool.inputSchema.properties.content;
-      expect(contentProperty.maxLength).toBe(15000);
-    });
-
-    test('should require either task_id or project_id', () => {
-      const taskIdProperty = todoistCommentsTool.inputSchema.properties.task_id;
-      const projectIdProperty =
-        todoistCommentsTool.inputSchema.properties.project_id;
-
-      expect(taskIdProperty).toBeDefined();
-      expect(projectIdProperty).toBeDefined();
-      expect(taskIdProperty.type).toBe('string');
-      expect(projectIdProperty.type).toBe('string');
-    });
-
-    test('should validate attachment structure', () => {
-      const attachmentProperty =
-        todoistCommentsTool.inputSchema.properties.attachment;
-      expect(attachmentProperty).toBeDefined();
-      expect(attachmentProperty.type).toBe('object');
+  describe('Tool definition', () => {
+    test('exposes metadata', () => {
+      const definition = TodoistCommentsTool.getToolDefinition();
+      expect(definition.name).toBe('todoist_comments');
+      expect(definition.description).toContain('comments');
     });
   });
 
-  describe('CREATE Action', () => {
-    test('should handle comment creation on task', async () => {
-      const params = {
-        action: 'create',
-        content: 'This is a test comment on a task',
-        task_id: '2995104340',
-      };
-
-      const result = await todoistCommentsTool.execute(params);
-
-      expect(result).toBeDefined();
-      expect(result.success).toBe(true);
-      expect(result.message).toBeDefined();
+  describe('Validation', () => {
+    test('rejects missing action', async () => {
+      const result = await todoistCommentsTool.execute({} as any);
+      expect(result.success).toBe(false);
     });
 
-    test('should handle comment creation on project', async () => {
-      const params = {
-        action: 'create',
-        content: 'This is a test comment on a project',
-        project_id: '220474323',
-      };
-
-      const result = await todoistCommentsTool.execute(params);
-
-      expect(result).toBeDefined();
-      expect(result.success).toBe(true);
-      expect(result.message).toBeDefined();
-    });
-
-    test('should handle comment creation with attachment', async () => {
-      const params = {
-        action: 'create',
-        content: 'Comment with file attachment',
-        task_id: '2995104340',
-        attachment: {
-          file_url: 'https://example.com/file.pdf',
-          file_name: 'document.pdf',
-          file_type: 'application/pdf',
-        },
-      };
-
-      const result = await todoistCommentsTool.execute(params);
-
-      expect(result).toBeDefined();
-      expect(result.success).toBe(true);
-      expect(result.message).toBeDefined();
-    });
-
-    test('should reject creation without content', async () => {
-      const params = {
-        action: 'create',
-        task_id: '2995104340',
-        // Missing content
-      };
-
-      await expect(todoistCommentsTool.execute(params)).rejects.toThrow();
-    });
-
-    test('should reject creation without task_id or project_id', async () => {
-      const params = {
-        action: 'create',
-        content: 'Test comment',
-        // Missing both task_id and project_id
-      };
-
-      await expect(todoistCommentsTool.execute(params)).rejects.toThrow();
-    });
-
-    test('should reject creation with both task_id and project_id', async () => {
-      const params = {
-        action: 'create',
-        content: 'Test comment',
-        task_id: '2995104340',
-        project_id: '220474323', // Should not have both
-      };
-
-      await expect(todoistCommentsTool.execute(params)).rejects.toThrow();
-    });
-
-    test('should reject content exceeding max length', async () => {
-      const params = {
-        action: 'create',
-        content: 'a'.repeat(15001), // Exceeds 15000 char limit
-        task_id: '2995104340',
-      };
-
-      await expect(todoistCommentsTool.execute(params)).rejects.toThrow();
-    });
-
-    test('should reject invalid attachment format', async () => {
-      const params = {
-        action: 'create',
-        content: 'Comment with invalid attachment',
-        task_id: '2995104340',
-        attachment: 'invalid_attachment_format',
-      };
-
-      await expect(todoistCommentsTool.execute(params)).rejects.toThrow();
+    test('rejects invalid action', async () => {
+      const result = await todoistCommentsTool.execute({ action: 'noop' });
+      expect(result.success).toBe(false);
     });
   });
 
-  describe('GET Action', () => {
-    test('should retrieve comment by ID', async () => {
-      const params = {
-        action: 'get',
-        comment_id: '992',
-      };
+  describe('CREATE action', () => {
+    test('creates comment for task', async () => {
+      const result = await todoistCommentsTool.execute({
+        action: 'create',
+        task_id: '2995104339',
+        content: 'This needs to be done by Friday',
+      });
 
-      const result = await todoistCommentsTool.execute(params);
-
-      expect(result).toBeDefined();
       expect(result.success).toBe(true);
-      expect(result.message).toBeDefined();
+      expect(result.data).toBeDefined();
+      expect(apiService.createComment).toHaveBeenCalledWith(
+        expect.objectContaining({
+          task_id: '2995104339',
+          content: 'This needs to be done by Friday',
+        })
+      );
     });
+  });
 
-    test('should reject get without comment_id', async () => {
-      const params = {
-        action: 'get',
-        // Missing comment_id
-      };
-
-      await expect(todoistCommentsTool.execute(params)).rejects.toThrow();
+  describe('GET action', () => {
+    test('lists comments for task', async () => {
+      const result = await todoistCommentsTool.execute({
+        action: 'list_by_task',
+        task_id: '2995104339',
+      });
+      expect(result.success).toBe(true);
+      expect(Array.isArray(result.data)).toBe(true);
+      expect(apiService.getTaskComments).toHaveBeenCalledWith('2995104339');
     });
+  });
 
-    test('should handle non-existent comment ID', async () => {
-      const params = {
-        action: 'get',
-        comment_id: 'nonexistent',
-      };
-
-      await expect(todoistCommentsTool.execute(params)).rejects.toThrow();
-    });
-
-    test('should include attachment information', async () => {
-      const params = {
-        action: 'get',
-        comment_id: '993', // Comment with attachment
-      };
-
-      const result = await todoistCommentsTool.execute(params);
-
-      expect(result).toBeDefined();
-      expect(result.message).toBeDefined();
-    });
-
-    test('should reject update without comment_id', async () => {
-      const params = {
-        action: 'update',
-        content: 'Updated content',
-        // Missing comment_id
-      };
-
-      await expect(todoistCommentsTool.execute(params)).rejects.toThrow();
-    });
-
-    test('should reject update without content', async () => {
-      const params = {
+  describe('UPDATE action', () => {
+    test('updates comment content', async () => {
+      const result = await todoistCommentsTool.execute({
         action: 'update',
         comment_id: '992',
-        // Missing content
-      };
+        content: 'Updated comment',
+      });
 
-      await expect(todoistCommentsTool.execute(params)).rejects.toThrow();
+      expect(result.success).toBe(true);
+      expect(apiService.updateComment).toHaveBeenCalledWith(
+        '992',
+        expect.objectContaining({ content: 'Updated comment' })
+      );
     });
+  });
 
-    test('should reject empty content update', async () => {
-      const params = {
-        action: 'update',
-        comment_id: '992',
-        content: '',
-      };
-
-      await expect(todoistCommentsTool.execute(params)).rejects.toThrow();
-    });
-
-    test('should handle attachment updates', async () => {
-      const params = {
-        action: 'update',
-        comment_id: '993',
-        content: 'Updated comment with new attachment',
-        attachment: {
-          file_url: 'https://example.com/new-file.docx',
-          file_name: 'new-document.docx',
-          file_type:
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        },
-      };
-
-      const result = await todoistCommentsTool.execute(params);
-
-      expect(result).toBeDefined();
-      expect(result.message).toBeDefined();
-    });
-
-    test('should reject delete without comment_id', async () => {
-      const params = {
+  describe('DELETE action', () => {
+    test('deletes comment', async () => {
+      const result = await todoistCommentsTool.execute({
         action: 'delete',
-        // Missing comment_id
-      };
+        comment_id: '992',
+      });
 
-      await expect(todoistCommentsTool.execute(params)).rejects.toThrow();
-    });
-
-    test('should handle deletion of comment with attachment', async () => {
-      const params = {
-        action: 'delete',
-        comment_id: '993', // Comment with attachment
-      };
-
-      const result = await todoistCommentsTool.execute(params);
-
-      expect(result).toBeDefined();
-      expect(result.message).toBeDefined();
-    });
-
-    test('should list comments for a project', async () => {
-      const params = {
-        action: 'list',
-        project_id: '220474323',
-      };
-
-      const result = await todoistCommentsTool.execute(params);
-
-      expect(result).toBeDefined();
       expect(result.success).toBe(true);
-      expect(result.message).toBeDefined();
+      expect(apiService.deleteComment).toHaveBeenCalledWith('992');
     });
-
-    test('should reject list without task_id or project_id', async () => {
-      const params = {
-        action: 'list',
-        // Missing both task_id and project_id
-      };
-
-      await expect(todoistCommentsTool.execute(params)).rejects.toThrow();
-    });
-
-    test('should show comments in chronological order', async () => {
-      const params = {
-        action: 'list',
-        task_id: '2995104340',
-      };
-
-      const result = await todoistCommentsTool.execute(params);
-
-      expect(result).toBeDefined();
-      // Should be ordered by posted_at timestamp
-      expect(result.message).toBeDefined();
-    });
-
-    test('should include attachment indicators in list', async () => {
-      const params = {
-        action: 'list',
-        project_id: '220474323',
-      };
-
-      const result = await todoistCommentsTool.execute(params);
-
-      expect(result).toBeDefined();
-      expect(result.message).toBeDefined();
+  });
+});

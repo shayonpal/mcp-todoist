@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable no-console */
 /**
  * Manual verification script for natural language due date support
  * Run this script to verify that the specified patterns work correctly
@@ -21,14 +22,38 @@ interface TestCase {
 const testCases: TestCase[] = [
   // Required patterns from T063
   { name: 'Tomorrow', pattern: 'tomorrow at 10:00', type: 'absolute' },
-  { name: 'Every day', pattern: 'every day at 9am', type: 'absolute', isRecurring: true },
-  { name: 'Every 4th', pattern: 'every 4th at noon', type: 'absolute', isRecurring: true },
-  { name: 'Day after tomorrow', pattern: 'day after tomorrow at 2pm', type: 'absolute' },
+  {
+    name: 'Every day',
+    pattern: 'every day at 9am',
+    type: 'absolute',
+    isRecurring: true,
+  },
+  {
+    name: 'Every 4th',
+    pattern: 'every 4th at noon',
+    type: 'absolute',
+    isRecurring: true,
+  },
+  {
+    name: 'Day after tomorrow',
+    pattern: 'day after tomorrow at 2pm',
+    type: 'absolute',
+  },
 
   // Additional common patterns
   { name: 'Next Monday', pattern: 'next monday at 9am', type: 'absolute' },
-  { name: 'Every Monday', pattern: 'every monday at 10am', type: 'absolute', isRecurring: true },
-  { name: 'Every Sept 7', pattern: 'every sept 7 at 10am', type: 'absolute', isRecurring: true },
+  {
+    name: 'Every Monday',
+    pattern: 'every monday at 10am',
+    type: 'absolute',
+    isRecurring: true,
+  },
+  {
+    name: 'Every Sept 7',
+    pattern: 'every sept 7 at 10am',
+    type: 'absolute',
+    isRecurring: true,
+  },
   { name: 'Today', pattern: 'today at 5pm', type: 'absolute' },
   { name: 'In 2 days', pattern: 'in 2 days at 3pm', type: 'absolute' },
   { name: 'End of week', pattern: 'end of week', type: 'absolute' },
@@ -36,7 +61,7 @@ const testCases: TestCase[] = [
 
 async function verifyNaturalLanguageSupport() {
   console.log('🔍 Verifying Natural Language Due Date Support\n');
-  console.log('=' .repeat(60));
+  console.log('='.repeat(60));
 
   try {
     // Get configuration
@@ -85,7 +110,9 @@ async function verifyNaturalLanguageSupport() {
     }> = [];
 
     for (const testCase of testCases) {
-      process.stdout.write(`Testing "${testCase.name}": "${testCase.pattern}"... `);
+      process.stdout.write(
+        `Testing "${testCase.name}": "${testCase.pattern}"... `
+      );
 
       try {
         const reminderResult = await remindersTool.execute({
@@ -161,7 +188,9 @@ async function verifyNaturalLanguageSupport() {
     });
 
     const listResponse = JSON.parse(listResult.content[0].text);
-    console.log(`Found ${listResponse.metadata?.total_count || 0} reminder(s)\n`);
+    console.log(
+      `Found ${listResponse.metadata?.total_count || 0} reminder(s)\n`
+    );
 
     // Cleanup: Delete test task (which will also delete reminders)
     console.log('🧹 Cleaning up test task...');

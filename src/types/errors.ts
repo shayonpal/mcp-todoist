@@ -18,6 +18,7 @@ export enum TodoistErrorCode {
 
   // Resource Errors
   RESOURCE_NOT_FOUND = 'RESOURCE_NOT_FOUND',
+  NOT_FOUND = 'NOT_FOUND',
   RESOURCE_ALREADY_EXISTS = 'RESOURCE_ALREADY_EXISTS',
   RESOURCE_DELETED = 'RESOURCE_DELETED',
 
@@ -37,6 +38,7 @@ export enum TodoistErrorCode {
   NETWORK_ERROR = 'NETWORK_ERROR',
   SERVICE_UNAVAILABLE = 'SERVICE_UNAVAILABLE',
   TIMEOUT_ERROR = 'TIMEOUT_ERROR',
+  SERVER_ERROR = 'SERVER_ERROR',
   UNKNOWN_ERROR = 'UNKNOWN_ERROR',
 }
 
@@ -46,7 +48,7 @@ export enum TodoistErrorCode {
 export interface TodoistError {
   code: TodoistErrorCode;
   message: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
   retryable: boolean;
   retry_after?: number; // Seconds to wait before retry
   http_status?: number;
@@ -61,7 +63,7 @@ export interface MCPError {
   message: string;
   data?: {
     todoist_error_code: TodoistErrorCode;
-    details?: Record<string, any>;
+    details?: Record<string, unknown>;
     retry_after?: number;
     correlation_id?: string;
   };
@@ -95,7 +97,7 @@ export class TodoistAPIError extends Error {
   constructor(
     public readonly errorCode: TodoistErrorCode,
     message: string,
-    public readonly details?: Record<string, any>,
+    public readonly details?: Record<string, unknown>,
     public readonly retryable: boolean = false,
     public readonly retryAfter?: number,
     public readonly httpStatus?: number,
@@ -120,7 +122,7 @@ export class TodoistAPIError extends Error {
 }
 
 export class ValidationError extends TodoistAPIError {
-  constructor(message: string, details?: Record<string, any>) {
+  constructor(message: string, details?: Record<string, unknown>) {
     super(
       TodoistErrorCode.VALIDATION_ERROR,
       message,
@@ -135,7 +137,7 @@ export class ValidationError extends TodoistAPIError {
 }
 
 export class AuthenticationError extends TodoistAPIError {
-  constructor(message: string, details?: Record<string, any>) {
+  constructor(message: string, details?: Record<string, unknown>) {
     super(
       TodoistErrorCode.INVALID_TOKEN,
       message,
@@ -153,7 +155,7 @@ export class RateLimitError extends TodoistAPIError {
   constructor(
     message: string,
     retryAfter?: number,
-    details?: Record<string, any>
+    details?: Record<string, unknown>
   ) {
     super(
       TodoistErrorCode.RATE_LIMIT_EXCEEDED,
@@ -169,7 +171,7 @@ export class RateLimitError extends TodoistAPIError {
 }
 
 export class NotFoundError extends TodoistAPIError {
-  constructor(message: string, details?: Record<string, any>) {
+  constructor(message: string, details?: Record<string, unknown>) {
     super(
       TodoistErrorCode.RESOURCE_NOT_FOUND,
       message,
@@ -184,7 +186,7 @@ export class NotFoundError extends TodoistAPIError {
 }
 
 export class NetworkError extends TodoistAPIError {
-  constructor(message: string, details?: Record<string, any>) {
+  constructor(message: string, details?: Record<string, unknown>) {
     super(
       TodoistErrorCode.NETWORK_ERROR,
       message,
@@ -202,7 +204,7 @@ export class ServiceUnavailableError extends TodoistAPIError {
   constructor(
     message: string,
     retryAfter?: number,
-    details?: Record<string, any>
+    details?: Record<string, unknown>
   ) {
     super(
       TodoistErrorCode.SERVICE_UNAVAILABLE,
@@ -314,8 +316,10 @@ export function createUserFriendlyMessage(
       'Your Todoist API token has expired. Please generate a new one.',
     [TodoistErrorCode.RATE_LIMIT_EXCEEDED]:
       'Rate limit exceeded. Please wait before making more requests.',
+    [TodoistErrorCode.SYNC_LIMIT_EXCEEDED]: 'Sync operation limit exceeded.',
     [TodoistErrorCode.RESOURCE_NOT_FOUND]:
       'The requested resource was not found.',
+    [TodoistErrorCode.NOT_FOUND]: 'The requested resource was not found.',
     [TodoistErrorCode.VALIDATION_ERROR]: 'The request contains invalid data.',
     [TodoistErrorCode.NETWORK_ERROR]:
       'Network connection failed. Please check your internet connection.',
@@ -338,7 +342,8 @@ export function createUserFriendlyMessage(
       'A field value exceeds the maximum length.',
     [TodoistErrorCode.CONCURRENT_MODIFICATION]:
       'The resource was modified by another operation.',
-    [TodoistErrorCode.SYNC_LIMIT_EXCEEDED]: 'Sync operation limit exceeded.',
+    [TodoistErrorCode.SERVER_ERROR]:
+      'Todoist reported an internal server error. Please try again later.',
   };
 
   return messageMap[errorCode] || originalMessage;

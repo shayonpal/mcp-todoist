@@ -96,8 +96,11 @@ interface TodoistFiltersOutput {
 export class TodoistFiltersTool {
   private readonly apiService: TodoistApiService;
 
-  constructor(apiConfig: APIConfiguration) {
-    this.apiService = new TodoistApiService(apiConfig);
+  constructor(
+    apiConfig: APIConfiguration,
+    deps: { apiService?: TodoistApiService } = {}
+  ) {
+    this.apiService = deps.apiService ?? new TodoistApiService(apiConfig);
   }
 
   /**

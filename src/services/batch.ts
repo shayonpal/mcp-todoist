@@ -3,14 +3,14 @@
  * Handles Todoist sync API batch operations with dependency resolution
  */
 
-import { TodoistApiService } from './todoist-api.js';
+import { TodoistApiService, SyncResponse } from './todoist-api.js';
 import {
   BatchOperationResult,
   BatchOperationError,
   TodoistAPIError,
   TodoistErrorCode,
 } from '../types/errors.js';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 
 /**
  * Batch command types supported by Todoist sync API
@@ -21,6 +21,7 @@ export type BatchCommandType =
   | 'item_delete'
   | 'item_complete'
   | 'item_uncomplete'
+  | 'item_move'
   | 'project_add'
   | 'project_update'
   | 'project_delete'
@@ -36,8 +37,12 @@ export interface BatchCommand {
   type: BatchCommandType;
   temp_id?: string;
   uuid: string;
-  args: Record<string, any>;
+  args: BatchCommandArgs;
+  [key: string]: unknown;
 }
+
+type BatchCommandArgs = Record<string, unknown>;
+type SectionIndexedTaskInput = BatchCommandArgs & { section_index?: number };
 
 /**
  * Dependency relationship between commands
@@ -149,9 +154,9 @@ export class BatchOperationsService {
    * Create a project with tasks and sections in one batch
    */
   async createProjectWithStructure(
-    projectData: any,
-    sections: any[] = [],
-    tasks: any[] = []
+    projectData: BatchCommandArgs,
+    sections: BatchCommandArgs[] = [],
+    tasks: SectionIndexedTaskInput[] = []
   ): Promise<BatchOperationResult> {
     const batch = this.createBatch();
 
@@ -171,13 +176,17 @@ export class BatchOperationsService {
     // Add tasks
     for (let i = 0; i < tasks.length; i++) {
       const taskData = tasks[i];
-      const sectionId =
-        taskData.section_index !== undefined
-          ? sectionTempIds[taskData.section_index]
+      const sectionIndex =
+        typeof taskData.section_index === 'number'
+          ? taskData.section_index
           : undefined;
+      const sectionId =
+        sectionIndex !== undefined ? sectionTempIds[sectionIndex] : undefined;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { section_index, ...taskPayload } = taskData;
 
       batch.addTask({
-        ...taskData,
+        ...taskPayload,
         project_id: projectTempId,
         section_id: sectionId,
       });
@@ -222,7 +231,7 @@ export class BatchOperationsService {
   private ensureCommandUUIDs(commands: BatchCommand[]): BatchCommand[] {
     return commands.map(cmd => ({
       ...cmd,
-      uuid: cmd.uuid || uuidv4(),
+      uuid: cmd.uuid || randomUUID(),
     }));
   }
 
@@ -265,7 +274,7 @@ export class BatchOperationsService {
   }
 
   private processSyncResponse(
-    syncResponse: any,
+    syncResponse: SyncResponse,
     commands: BatchCommand[],
     continueOnError: boolean = false
   ): BatchOperationResult {
@@ -286,7 +295,7 @@ export class BatchOperationsService {
     if (syncResponse.sync_status) {
       for (let i = 0; i < commands.length; i++) {
         const command = commands[i];
-        const status = syncResponse.sync_status[command.uuid];
+        const status = syncResponse.sync_status?.[command.uuid];
 
         if (status === 'ok') {
           result.completed_commands++;
@@ -315,7 +324,7 @@ export class BatchOperationsService {
   }
 
   private handleBatchError(
-    error: any,
+    error: unknown,
     commands: BatchCommand[]
   ): BatchOperationResult {
     const batchError: BatchOperationError = {
@@ -354,12 +363,12 @@ export class BatchBuilder {
   /**
    * Add a task creation command
    */
-  addTask(taskData: any): string {
+  addTask(taskData: BatchCommandArgs): string {
     const tempId = this.generateTempId('task');
     this.commands.push({
       type: 'item_add',
       temp_id: tempId,
-      uuid: uuidv4(),
+      uuid: randomUUID(),
       args: taskData,
     });
     return tempId;
@@ -368,10 +377,10 @@ export class BatchBuilder {
   /**
    * Update an existing task
    */
-  updateTask(taskId: string, updates: any): this {
+  updateTask(taskId: string, updates: BatchCommandArgs): this {
     this.commands.push({
       type: 'item_update',
-      uuid: uuidv4(),
+      uuid: randomUUID(),
       args: { id: taskId, ...updates },
     });
     return this;
@@ -383,7 +392,7 @@ export class BatchBuilder {
   deleteTask(taskId: string): this {
     this.commands.push({
       type: 'item_delete',
-      uuid: uuidv4(),
+      uuid: randomUUID(),
       args: { id: taskId },
     });
     return this;
@@ -395,7 +404,7 @@ export class BatchBuilder {
   completeTask(taskId: string): this {
     this.commands.push({
       type: 'item_complete',
-      uuid: uuidv4(),
+      uuid: randomUUID(),
       args: { id: taskId },
     });
     return this;
@@ -404,12 +413,12 @@ export class BatchBuilder {
   /**
    * Add a project creation command
    */
-  addProject(projectData: any): string {
+  addProject(projectData: BatchCommandArgs): string {
     const tempId = this.generateTempId('project');
     this.commands.push({
       type: 'project_add',
       temp_id: tempId,
-      uuid: uuidv4(),
+      uuid: randomUUID(),
       args: projectData,
     });
     return tempId;
@@ -418,10 +427,10 @@ export class BatchBuilder {
   /**
    * Update an existing project
    */
-  updateProject(projectId: string, updates: any): this {
+  updateProject(projectId: string, updates: BatchCommandArgs): this {
     this.commands.push({
       type: 'project_update',
-      uuid: uuidv4(),
+      uuid: randomUUID(),
       args: { id: projectId, ...updates },
     });
     return this;
@@ -430,12 +439,12 @@ export class BatchBuilder {
   /**
    * Add a section creation command
    */
-  addSection(sectionData: any): string {
+  addSection(sectionData: BatchCommandArgs): string {
     const tempId = this.generateTempId('section');
     this.commands.push({
       type: 'section_add',
       temp_id: tempId,
-      uuid: uuidv4(),
+      uuid: randomUUID(),
       args: sectionData,
     });
     return tempId;
@@ -444,10 +453,10 @@ export class BatchBuilder {
   /**
    * Update an existing section
    */
-  updateSection(sectionId: string, updates: any): this {
+  updateSection(sectionId: string, updates: BatchCommandArgs): this {
     this.commands.push({
       type: 'section_update',
-      uuid: uuidv4(),
+      uuid: randomUUID(),
       args: { id: sectionId, ...updates },
     });
     return this;

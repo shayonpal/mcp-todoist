@@ -10,7 +10,7 @@ import {
 /**
  * Input schema for the todoist_reminders tool
  */
-const TodoistRemindersInputSchema = z.discriminatedUnion('action', [
+const TodoistRemindersInputSchema = z.union([
   // Create relative reminder (minutes before task due)
   z.object({
     action: z.literal('create'),
@@ -172,8 +172,14 @@ export class TodoistRemindersTool {
               'Natural language date (e.g., "tomorrow at 10:00", "every day at 9am")',
           },
           timezone: { type: 'string', description: 'Timezone for due date' },
-          is_recurring: { type: 'boolean', description: 'Whether reminder repeats' },
-          lang: { type: 'string', description: 'Language for parsing (default: en)' },
+          is_recurring: {
+            type: 'boolean',
+            description: 'Whether reminder repeats',
+          },
+          lang: {
+            type: 'string',
+            description: 'Language for parsing (default: en)',
+          },
         },
       },
       name: {
@@ -207,8 +213,11 @@ export class TodoistRemindersTool {
 
   private readonly apiService: TodoistApiService;
 
-  constructor(apiConfig: APIConfiguration) {
-    this.apiService = new TodoistApiService(apiConfig);
+  constructor(
+    apiConfig: APIConfiguration,
+    deps: { apiService?: TodoistApiService } = {}
+  ) {
+    this.apiService = deps.apiService ?? new TodoistApiService(apiConfig);
   }
 
   /**
@@ -285,9 +294,7 @@ export class TodoistRemindersTool {
   /**
    * Execute a reminder operation
    */
-  async execute(params: unknown): Promise<{
-    content: Array<{ type: string; text: string }>;
-  }> {
+  async execute(params: unknown): Promise<TodoistRemindersOutput> {
     const startTime = Date.now();
 
     try {
@@ -313,94 +320,69 @@ export class TodoistRemindersTool {
           result = await this.handleList(validatedParams);
           break;
         default:
-          throw new ValidationError(
-            `Invalid action: ${(validatedParams as any).action}`
-          );
+          throw new ValidationError('Invalid action specified');
       }
 
       // Add operation time to metadata
       if (result.metadata) {
         result.metadata.operation_time = Date.now() - startTime;
+      } else {
+        result.metadata = {
+          operation_time: Date.now() - startTime,
+        };
       }
 
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(result, null, 2),
-          },
-        ],
-      };
+      return result;
     } catch (error) {
       if (error instanceof z.ZodError) {
         const validationError = new ValidationError(
           `Invalid parameters: ${error.errors.map(e => e.message).join(', ')}`
         );
+        const todoistError = validationError.toTodoistError();
         return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(
-                {
-                  success: false,
-                  error: {
-                    code: validationError.code,
-                    message: validationError.message,
-                    details: error.errors,
-                    retryable: false,
-                  },
-                },
-                null,
-                2
-              ),
-            },
-          ],
+          success: false,
+          error: {
+            code: todoistError.code,
+            message: todoistError.message,
+            details: { validationErrors: error.errors },
+            retryable: todoistError.retryable,
+            retry_after: todoistError.retry_after,
+          },
+          metadata: {
+            operation_time: Date.now() - startTime,
+          },
         };
       }
 
       if (error instanceof TodoistAPIError) {
+        const todoistError = error.toTodoistError();
         return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(
-                {
-                  success: false,
-                  error: {
-                    code: error.code,
-                    message: error.message,
-                    retryable: error.isRetryable(),
-                    retry_after: error.retryAfter,
-                  },
-                },
-                null,
-                2
-              ),
-            },
-          ],
+          success: false,
+          error: {
+            code: todoistError.code,
+            message: todoistError.message,
+            details: todoistError.details,
+            retryable: todoistError.retryable,
+            retry_after: todoistError.retry_after,
+          },
+          metadata: {
+            operation_time: Date.now() - startTime,
+          },
         };
       }
 
       // Unknown error
       return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(
-              {
-                success: false,
-                error: {
-                  code: TodoistErrorCode.UNKNOWN_ERROR,
-                  message:
-                    error instanceof Error ? error.message : 'Unknown error occurred',
-                  retryable: false,
-                },
-              },
-              null,
-              2
-            ),
-          },
-        ],
+        success: false,
+        error: {
+          code: TodoistErrorCode.UNKNOWN_ERROR,
+          message:
+            error instanceof Error ? error.message : 'Unknown error occurred',
+          retryable: false,
+        },
+        metadata: {
+          operation_time: Date.now() - startTime,
+        },
       };
     }
   }
@@ -455,8 +437,11 @@ export class TodoistRemindersTool {
 
     if (!reminder) {
       throw new TodoistAPIError(
-        'Reminder not found',
         TodoistErrorCode.NOT_FOUND,
+        'Reminder not found',
+        undefined,
+        false,
+        undefined,
         404
       );
     }

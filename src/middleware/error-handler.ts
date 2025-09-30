@@ -111,7 +111,7 @@ export class ErrorHandler {
       // Log error with appropriate level
       this.logError(todoistError, severity, enhancedContext);
 
-      // Build response
+      // Build response with metadata (including optional retry_after)
       const response: StandardErrorResponse = {
         success: false,
         error: todoistError,
@@ -120,13 +120,11 @@ export class ErrorHandler {
           correlation_id: enhancedContext.correlationId,
           severity,
           timestamp: enhancedContext.error_handled_at,
+          ...(todoistError.retryable && todoistError.retry_after
+            ? { retry_after: todoistError.retry_after }
+            : {}),
         },
       };
-
-      // Add retry information for retryable errors
-      if (todoistError.retryable && todoistError.retry_after) {
-        response.metadata!.retry_after = todoistError.retry_after;
-      }
 
       return response;
     } catch (handlerError) {
@@ -229,13 +227,22 @@ export class ErrorHandler {
    * Check if error is a validation error (Zod or similar)
    */
   private isValidationError(error: unknown): boolean {
-    return (
-      error !== null &&
-      typeof error === 'object' &&
-      ('issues' in error ||
-        'errors' in error ||
-        ('name' in error && (error as any).name === 'ZodError'))
-    );
+    if (!error || typeof error !== 'object') {
+      return false;
+    }
+
+    const candidate = error as {
+      name?: unknown;
+      issues?: unknown;
+      errors?: unknown;
+    };
+
+    const hasIssuesArray = Array.isArray(candidate.issues);
+    const hasErrorsArray = Array.isArray(candidate.errors as unknown[]);
+    const isNamedZod =
+      typeof candidate.name === 'string' && candidate.name === 'ZodError';
+
+    return hasIssuesArray || hasErrorsArray || isNamedZod;
   }
 
   /**
@@ -274,19 +281,22 @@ export class ErrorHandler {
    * Check if error is a network error
    */
   private isNetworkError(error: unknown): boolean {
-    if (!error || typeof error !== 'object') return false;
+    if (!error || typeof error !== 'object') {
+      return false;
+    }
 
-    const errorObj = error as any;
+    const candidate = this.toNetworkErrorLike(error);
+    const message =
+      typeof candidate.message === 'string' ? candidate.message : '';
+
     return (
-      errorObj.code === 'ECONNREFUSED' ||
-      errorObj.code === 'ENOTFOUND' ||
-      errorObj.code === 'ETIMEDOUT' ||
-      errorObj.code === 'ECONNRESET' ||
-      errorObj.name === 'NetworkError' ||
-      (errorObj.message &&
-        typeof errorObj.message === 'string' &&
-        (errorObj.message.includes('network') ||
-          errorObj.message.includes('timeout')))
+      candidate.code === 'ECONNREFUSED' ||
+      candidate.code === 'ENOTFOUND' ||
+      candidate.code === 'ETIMEDOUT' ||
+      candidate.code === 'ECONNRESET' ||
+      candidate.name === 'NetworkError' ||
+      message.includes('network') ||
+      message.includes('timeout')
     );
   }
 
@@ -294,14 +304,17 @@ export class ErrorHandler {
    * Convert network error to Todoist error format
    */
   private convertNetworkError(error: unknown): TodoistError {
-    const errorObj = error as any;
-    const message = errorObj.message || 'Network error occurred';
+    const candidate = this.toNetworkErrorLike(error);
+    const message =
+      typeof candidate.message === 'string'
+        ? candidate.message
+        : 'Network error occurred';
 
     return {
       code: TodoistErrorCode.NETWORK_ERROR,
       message: `Failed to connect to Todoist API: ${message}`,
       details: {
-        networkErrorCode: errorObj.code,
+        networkErrorCode: candidate.code,
         originalMessage: message,
       },
       retryable: true,
@@ -326,6 +339,24 @@ export class ErrorHandler {
           : undefined,
       },
       retryable: false,
+    };
+  }
+
+  private toNetworkErrorLike(error: unknown): {
+    code?: string;
+    name?: string;
+    message?: unknown;
+  } {
+    if (!error || typeof error !== 'object') {
+      return {};
+    }
+
+    const record = error as Record<string, unknown>;
+
+    return {
+      code: typeof record.code === 'string' ? record.code : undefined,
+      name: typeof record.name === 'string' ? record.name : undefined,
+      message: record.message,
     };
   }
 

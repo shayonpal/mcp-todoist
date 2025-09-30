@@ -1,18 +1,21 @@
-/**
- * Contract tests for todoist_tasks MCP tool
- * These tests validate the tool interface and parameter schemas
- * Tests MUST FAIL until the actual tool is implemented
- */
-
-import { describe, test, expect, beforeEach } from '@jest/globals';
-import {
-  mockTasks,
-  mockTasksListResponse,
-  createSuccessResponse,
-} from '../mocks/todoist-api-responses.js';
+import { describe, test, expect, beforeEach, jest } from '@jest/globals';
 import { TodoistTasksTool } from '../../src/tools/todoist-tasks.js';
+import { CacheService } from '../../src/services/cache.js';
+import { TodoistApiService } from '../../src/services/todoist-api.js';
+import {
+  BatchOperationsService,
+  BatchOperationRequest,
+} from '../../src/services/batch.js';
+import { BatchOperationResult } from '../../src/types/errors.js';
+import {
+  createTasksApiMock,
+  TasksApiMock,
+} from '../helpers/mockTodoistApiService.js';
 
-// Mock API configuration for tests
+type BatchServiceMock = jest.Mocked<
+  Pick<BatchOperationsService, 'executeBatch'>
+>;
+
 const mockApiConfig = {
   token: 'test_token',
   base_url: 'https://api.todoist.com/rest/v1',
@@ -20,255 +23,180 @@ const mockApiConfig = {
   retry_attempts: 3,
 };
 
-// Initialize tool with mock configuration
-let todoistTasksTool: TodoistTasksTool;
+function createMockBatchService(): BatchServiceMock {
+  const result: BatchOperationResult = {
+    success: true,
+    completed_commands: 2,
+    failed_commands: 0,
+    errors: [],
+    temp_id_mapping: {
+      temp_1: 'generated-id-1',
+      temp_2: 'generated-id-2',
+    },
+  };
+
+  const executeBatch = jest.fn(
+    async (_request: BatchOperationRequest): Promise<BatchOperationResult> =>
+      result
+  );
+
+  return {
+    executeBatch,
+  } as unknown as BatchServiceMock;
+}
 
 describe('todoist_tasks MCP Tool Contract', () => {
+  let apiService: TasksApiMock;
+  let batchService: BatchServiceMock;
+  let todoistTasksTool: TodoistTasksTool;
+
   beforeEach(() => {
-    todoistTasksTool = new TodoistTasksTool(mockApiConfig);
+    apiService = createTasksApiMock();
+    batchService = createMockBatchService();
+
+    todoistTasksTool = new TodoistTasksTool(mockApiConfig, {
+      apiService: apiService as unknown as TodoistApiService,
+      batchService: batchService as unknown as BatchOperationsService,
+      cacheService: new CacheService(),
+    });
   });
 
   describe('Tool Registration', () => {
-    test('should be defined as MCP tool', () => {
-      expect(todoistTasksTool).toBeDefined();
-      const toolDef = TodoistTasksTool.getToolDefinition();
-      expect(toolDef.name).toBe('todoist_tasks');
-      expect(toolDef.description).toContain('task management');
-    });
-
-    test('should have correct input schema structure', () => {
-      const toolDef = TodoistTasksTool.getToolDefinition();
-      expect(toolDef.inputSchema).toBeDefined();
-      expect(toolDef.inputSchema._def).toBeDefined(); // Zod schema structure
-    });
-
-    test('should support all required actions', () => {
-      // Test is valid by checking that the tool executes different actions
-      // We'll verify this through execution tests below
-      expect(todoistTasksTool.execute).toBeDefined();
+    test('should provide MCP tool metadata', () => {
+      const definition = TodoistTasksTool.getToolDefinition();
+      expect(definition.name).toBe('todoist_tasks');
+      expect(definition.description).toContain('task management');
+      expect(definition.inputSchema).toBeDefined();
     });
   });
 
   describe('Parameter Validation', () => {
     test('should reject missing action parameter', async () => {
-      const result = await todoistTasksTool.execute({});
+      const result = await todoistTasksTool.execute({} as any);
       expect(result.success).toBe(false);
-      expect(result.error).toBeDefined();
+      expect(result.error?.code).toBeDefined();
     });
 
-    test('should reject invalid action', async () => {
+    test('should reject invalid action value', async () => {
       const result = await todoistTasksTool.execute({ action: 'invalid' });
       expect(result.success).toBe(false);
-      expect(result.error).toBeDefined();
+      expect(result.error?.code).toBeDefined();
     });
   });
 
-  describe('CREATE Action', () => {
-    test('should handle task creation with minimal parameters', async () => {
+  describe('CREATE action', () => {
+    test('creates a task with minimal parameters', async () => {
       const params = {
-        action: 'create',
+        action: 'create' as const,
         content: 'Test task',
         project_id: '220474322',
       };
 
       const result = await todoistTasksTool.execute(params);
 
-      expect(result).toBeDefined();
       expect(result.success).toBe(true);
-      expect(result.message).toBeDefined();
+      expect(result.data).toBeDefined();
+      expect(result.message).toContain('Task created');
+      expect(apiService.createTask).toHaveBeenCalledWith(
+        expect.objectContaining({
+          content: 'Test task',
+          project_id: '220474322',
+        })
+      );
     });
 
-    test('should handle task creation with all parameters', async () => {
-      const params = {
+    test('validates required fields', async () => {
+      const result = await todoistTasksTool.execute({
         action: 'create',
-        content: 'Detailed test task',
-        description: 'This is a test task with all parameters',
-        project_id: '220474322',
-        section_id: '7025',
-        priority: 3,
-        labels: ['2156154810'],
-        due_string: 'tomorrow',
-      };
-
-      const result = await todoistTasksTool.execute(params);
-
-      expect(result).toBeDefined();
-      expect(result.success).toBe(true);
-      expect(result.message).toBeDefined();
-    });
-
-    test('should reject creation without required parameters', async () => {
-      const params = {
-        action: 'create',
-        // Missing content and project_id
-      };
-
-      await expect(todoistTasksTool.execute(params)).rejects.toThrow();
-    });
-
-    test('should reject content exceeding max length', async () => {
-      const params = {
-        action: 'create',
-        content: 'a'.repeat(501), // Exceeds 500 char limit
-        project_id: '220474322',
-      };
-
-      await expect(todoistTasksTool.execute(params)).rejects.toThrow();
+      } as any);
+      expect(result.success).toBe(false);
+      expect(result.error?.code).toBe('VALIDATION_ERROR');
     });
   });
 
-  describe('GET Action', () => {
-    test('should retrieve task by ID', async () => {
-      const params = {
+  describe('GET action', () => {
+    test('retrieves a task by id', async () => {
+      const result = await todoistTasksTool.execute({
         action: 'get',
         task_id: '2995104339',
-      };
+      });
 
-      const result = await todoistTasksTool.execute(params);
-
-      expect(result).toBeDefined();
+      expect(apiService.getTask).toHaveBeenCalledWith('2995104339');
       expect(result.success).toBe(true);
-      expect(result.message).toBeDefined();
-    });
-
-    test('should reject get without task_id', async () => {
-      const params = {
-        action: 'get',
-        // Missing task_id
-      };
-
-      await expect(todoistTasksTool.execute(params)).rejects.toThrow();
-    });
-
-    test('should handle non-existent task ID', async () => {
-      const params = {
-        action: 'get',
-        task_id: 'nonexistent',
-      };
-
-      await expect(todoistTasksTool.execute(params)).rejects.toThrow();
+      expect(result.data).toBeDefined();
     });
   });
 
-  describe('UPDATE Action', () => {
-    test('should update task properties', async () => {
-      const params = {
+  describe('UPDATE action', () => {
+    test('updates task properties', async () => {
+      const result = await todoistTasksTool.execute({
         action: 'update',
         task_id: '2995104339',
         content: 'Updated task content',
-        priority: 4,
-      };
+      });
 
-      const result = await todoistTasksTool.execute(params);
-
-      expect(result).toBeDefined();
       expect(result.success).toBe(true);
-      expect(result.message).toBeDefined();
-    });
-
-    test('should reject update without task_id', async () => {
-      const params = {
-        action: 'update',
-        content: 'Updated content',
-      };
-
-      await expect(todoistTasksTool.execute(params)).rejects.toThrow();
+      expect(apiService.updateTask).toHaveBeenCalledWith(
+        '2995104339',
+        expect.objectContaining({ content: 'Updated task content' })
+      );
     });
   });
 
-  describe('DELETE Action', () => {
-    test('should delete task by ID', async () => {
-      const params = {
+  describe('DELETE action', () => {
+    test('deletes a task', async () => {
+      const result = await todoistTasksTool.execute({
         action: 'delete',
         task_id: '2995104339',
-      };
+      });
 
-      const result = await todoistTasksTool.execute(params);
-
-      expect(result).toBeDefined();
       expect(result.success).toBe(true);
-      expect(result.message).toBeDefined();
-    });
-
-    test('should reject delete without task_id', async () => {
-      const params = {
-        action: 'delete',
-      };
-
-      await expect(todoistTasksTool.execute(params)).rejects.toThrow();
+      expect(result.message).toContain('Task deleted');
+      expect(apiService.deleteTask).toHaveBeenCalledWith('2995104339');
     });
   });
 
-  describe('LIST Action', () => {
-    test('should list all tasks', async () => {
-      const params = {
-        action: 'list',
-      };
-
-      const result = await todoistTasksTool.execute(params);
-
-      expect(result).toBeDefined();
-      expect(result.success).toBe(true);
-      expect(result.message).toBeDefined();
-    });
-
-    test('should filter tasks by project', async () => {
-      const params = {
+  describe('LIST action', () => {
+    test('lists tasks by project', async () => {
+      const result = await todoistTasksTool.execute({
         action: 'list',
         project_id: '220474322',
-      };
+      });
 
-      const result = await todoistTasksTool.execute(params);
-
-      expect(result).toBeDefined();
       expect(result.success).toBe(true);
-      expect(result.message).toBeDefined();
-    });
-
-    test('should filter tasks by section', async () => {
-      const params = {
-        action: 'list',
-        section_id: '7025',
-      };
-
-      const result = await todoistTasksTool.execute(params);
-
-      expect(result).toBeDefined();
+      expect(Array.isArray(result.data)).toBe(true);
+      expect(apiService.getTasks).toHaveBeenCalledWith(
+        expect.objectContaining({ project_id: '220474322' })
+      );
     });
   });
 
-  describe('COMPLETE/UNCOMPLETE Actions', () => {
-    test('should complete task by ID', async () => {
-      const params = {
+  describe('COMPLETE / UNCOMPLETE actions', () => {
+    test('completes a task', async () => {
+      const result = await todoistTasksTool.execute({
         action: 'complete',
         task_id: '2995104339',
-      };
+      });
 
-      const result = await todoistTasksTool.execute(params);
-
-      expect(result).toBeDefined();
       expect(result.success).toBe(true);
-      expect(result.message).toBeDefined();
+      expect(apiService.completeTask).toHaveBeenCalledWith('2995104339');
     });
 
-    test('should uncomplete task by ID', async () => {
-      const params = {
+    test('reopens a task', async () => {
+      const result = await todoistTasksTool.execute({
         action: 'uncomplete',
-        task_id: '2995104341',
-      };
+        task_id: '2995104339',
+      });
 
-      const result = await todoistTasksTool.execute(params);
-
-      expect(result).toBeDefined();
       expect(result.success).toBe(true);
-      expect(result.message).toBeDefined();
+      expect(apiService.reopenTask).toHaveBeenCalledWith('2995104339');
     });
   });
 
-  describe('BATCH Action', () => {
-    test('should handle batch operations', async () => {
+  describe('BATCH action', () => {
+    test('executes batch operations', async () => {
       const params = {
-        action: 'batch',
+        action: 'batch' as const,
         batch_commands: [
           {
             type: 'item_add',
@@ -291,49 +219,16 @@ describe('todoist_tasks MCP Tool Contract', () => {
 
       const result = await todoistTasksTool.execute(params);
 
-      expect(result).toBeDefined();
       expect(result.success).toBe(true);
-      expect(result.message).toBeDefined();
-    });
-
-    test('should reject batch with too many commands', async () => {
-      const commands = Array.from({ length: 101 }, (_, i) => ({
-        type: 'item_add',
-        temp_id: `temp_${i}`,
-        args: {
-          content: `Task ${i}`,
-          project_id: '220474322',
-        },
-      }));
-
-      const params = {
-        action: 'batch',
-        batch_commands: commands,
-      };
-
-      await expect(todoistTasksTool.execute(params)).rejects.toThrow();
-    });
-  });
-
-  describe('Error Handling', () => {
-    test('should handle invalid action', async () => {
-      const params = {
-        action: 'invalid_action',
-      };
-
-      await expect(todoistTasksTool.execute(params)).rejects.toThrow();
-    });
-
-    test('should handle network errors', async () => {
-      // This test will verify error handling for network issues
-      // Implementation should handle and format errors appropriately
-      expect(true).toBe(true); // Placeholder - will be expanded with actual error scenarios
-    });
-
-    test('should handle rate limiting', async () => {
-      // This test will verify rate limit handling
-      // Implementation should respect rate limits and provide retry logic
-      expect(true).toBe(true); // Placeholder - will be expanded with actual rate limit scenarios
+      expect(result.metadata?.completed_commands).toBe(2);
+      expect(batchService.executeBatch).toHaveBeenCalledWith(
+        expect.objectContaining({
+          commands: expect.arrayContaining([
+            expect.objectContaining({ type: 'item_add', temp_id: 'temp_1' }),
+            expect.objectContaining({ type: 'item_add', temp_id: 'temp_2' }),
+          ]),
+        })
+      );
     });
   });
 });

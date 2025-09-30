@@ -40,5 +40,11 @@ module.exports = {
         '@typescript-eslint/no-explicit-any': 'off', // Allow any in test mocks
       },
     },
+    {
+      files: ['src/middleware/logging.ts'],
+      rules: {
+        'no-console': 'off', // Logger implementation requires console output
+      },
+    },
   ],
 };

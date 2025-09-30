@@ -4,21 +4,26 @@
  * Tests MUST FAIL until the actual schemas are implemented
  */
 
-import { describe, test, expect, beforeEach } from '@jest/globals';
+import * as validationSchemas from '../../src/schemas/validation.js';
+import { describe, test, expect } from '@jest/globals';
 
-// Mock validation schemas - will fail until implemented
-let validationSchemas: any;
+const expectFailure = <T>(result: { success: boolean; error?: T }): T => {
+  expect(result.success).toBe(false);
+  if (result.success || !result.error) {
+    throw new Error('Expected validation to fail');
+  }
+  return result.error;
+};
+
+const expectSuccess = <T>(result: { success: boolean; data?: T }): T => {
+  expect(result.success).toBe(true);
+  if (!result.success || result.data === undefined) {
+    throw new Error('Expected validation to succeed');
+  }
+  return result.data;
+};
 
 describe('Zod Schema Validation Tests', () => {
-  beforeEach(() => {
-    // This will fail until the actual schemas are implemented
-    try {
-      validationSchemas = require('../../src/schemas/validation.js');
-    } catch (error) {
-      validationSchemas = null;
-    }
-  });
-
   describe('Task Schema Validation', () => {
     test('should validate task creation parameters', () => {
       expect(validationSchemas).toBeDefined();
@@ -34,8 +39,8 @@ describe('Zod Schema Validation Tests', () => {
 
       const result =
         validationSchemas.CreateTaskSchema.safeParse(validTaskData);
-      expect(result.success).toBe(true);
-      expect(result.data).toEqual(validTaskData);
+      const data = expectSuccess(result);
+      expect(data).toEqual(validTaskData);
     });
 
     test('should reject task creation with missing required fields', () => {
@@ -46,8 +51,8 @@ describe('Zod Schema Validation Tests', () => {
 
       const result =
         validationSchemas.CreateTaskSchema.safeParse(invalidTaskData);
-      expect(result.success).toBe(false);
-      expect(result.error.issues).toEqual(
+      const error = expectFailure(result);
+      expect(error.issues).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
             path: ['content'],
@@ -69,8 +74,8 @@ describe('Zod Schema Validation Tests', () => {
 
       const result =
         validationSchemas.CreateTaskSchema.safeParse(longContentTask);
-      expect(result.success).toBe(false);
-      expect(result.error.issues[0].message).toContain('500');
+      const error = expectFailure(result);
+      expect(error.issues[0].message).toContain('500');
     });
 
     test('should validate priority range', () => {
@@ -82,8 +87,8 @@ describe('Zod Schema Validation Tests', () => {
 
       const result =
         validationSchemas.CreateTaskSchema.safeParse(invalidPriorityTask);
-      expect(result.success).toBe(false);
-      expect(result.error.issues[0].message).toContain('4');
+      const error = expectFailure(result);
+      expect(error.issues[0].message).toContain('4');
     });
 
     test('should validate labels array constraints', () => {
@@ -95,8 +100,8 @@ describe('Zod Schema Validation Tests', () => {
 
       const result =
         validationSchemas.CreateTaskSchema.safeParse(tooManyLabelsTask);
-      expect(result.success).toBe(false);
-      expect(result.error.issues[0].message).toContain('100');
+      const error = expectFailure(result);
+      expect(error.issues[0].message).toContain('100');
     });
 
     test('should validate due date formats', () => {
@@ -115,7 +120,7 @@ describe('Zod Schema Validation Tests', () => {
         };
 
         const result = validationSchemas.CreateTaskSchema.safeParse(taskData);
-        expect(result.success).toBe(true);
+        expectSuccess(result);
       });
 
       // Invalid date format
@@ -127,7 +132,7 @@ describe('Zod Schema Validation Tests', () => {
 
       const result =
         validationSchemas.CreateTaskSchema.safeParse(invalidDateTask);
-      expect(result.success).toBe(false);
+      expectFailure(result);
     });
 
     test('should validate task update parameters', () => {
@@ -142,7 +147,7 @@ describe('Zod Schema Validation Tests', () => {
 
       const result =
         validationSchemas.UpdateTaskSchema.safeParse(validUpdateData);
-      expect(result.success).toBe(true);
+      expectSuccess(result);
 
       // Should require task ID
       const noIdUpdate = {
@@ -151,8 +156,8 @@ describe('Zod Schema Validation Tests', () => {
 
       const noIdResult =
         validationSchemas.UpdateTaskSchema.safeParse(noIdUpdate);
-      expect(noIdResult.success).toBe(false);
-      expect(noIdResult.error.issues[0].path).toEqual(['task_id']);
+      const error = expectFailure(noIdResult);
+      expect(error.issues[0].path).toEqual(['task_id']);
     });
 
     test('should validate task query parameters', () => {
@@ -168,14 +173,14 @@ describe('Zod Schema Validation Tests', () => {
 
       const result =
         validationSchemas.TaskQuerySchema.safeParse(validQueryData);
-      expect(result.success).toBe(true);
+      expectSuccess(result);
 
       // All parameters should be optional
       const emptyQuery = {};
       const emptyResult =
         validationSchemas.TaskQuerySchema.safeParse(emptyQuery);
-      expect(emptyResult.success).toBe(true);
-      expect(emptyResult.data.lang).toBe('en'); // Default value
+      const data = expectSuccess(emptyResult);
+      expect(data.lang).toBe('en'); // Default value
     });
   });
 
@@ -193,7 +198,7 @@ describe('Zod Schema Validation Tests', () => {
 
       const result =
         validationSchemas.CreateProjectSchema.safeParse(validProjectData);
-      expect(result.success).toBe(true);
+      expectSuccess(result);
     });
 
     test('should validate project name constraints', () => {
@@ -204,8 +209,8 @@ describe('Zod Schema Validation Tests', () => {
 
       const noNameResult =
         validationSchemas.CreateProjectSchema.safeParse(noNameProject);
-      expect(noNameResult.success).toBe(false);
-      expect(noNameResult.error.issues[0].path).toEqual(['name']);
+      const noNameError = expectFailure(noNameResult);
+      expect(noNameError.issues[0].path).toEqual(['name']);
 
       // Name too long
       const longNameProject = {
@@ -214,8 +219,8 @@ describe('Zod Schema Validation Tests', () => {
 
       const longNameResult =
         validationSchemas.CreateProjectSchema.safeParse(longNameProject);
-      expect(longNameResult.success).toBe(false);
-      expect(longNameResult.error.issues[0].message).toContain('120');
+      const longNameError = expectFailure(longNameResult);
+      expect(longNameError.issues[0].message).toContain('120');
     });
 
     test('should validate view_style enum', () => {
@@ -230,7 +235,7 @@ describe('Zod Schema Validation Tests', () => {
 
         const result =
           validationSchemas.CreateProjectSchema.safeParse(projectData);
-        expect(result.success).toBe(true);
+        expectSuccess(result);
       });
 
       // Invalid view style
@@ -242,9 +247,9 @@ describe('Zod Schema Validation Tests', () => {
 
       const result =
         validationSchemas.CreateProjectSchema.safeParse(invalidStyleProject);
-      expect(result.success).toBe(false);
-      expect(result.error.issues[0].message).toContain('list');
-      expect(result.error.issues[0].message).toContain('board');
+      const error = expectFailure(result);
+      expect(error.issues[0].message).toContain('list');
+      expect(error.issues[0].message).toContain('board');
     });
 
     test('should validate boolean fields', () => {
@@ -259,8 +264,8 @@ describe('Zod Schema Validation Tests', () => {
 
         const result =
           validationSchemas.CreateProjectSchema.safeParse(projectData);
-        expect(result.success).toBe(false);
-        expect(result.error.issues[0].path).toEqual([field]);
+        const error = expectFailure(result);
+        expect(error.issues[0].path).toEqual([field]);
       });
     });
   });
@@ -277,7 +282,7 @@ describe('Zod Schema Validation Tests', () => {
 
       const result =
         validationSchemas.CreateSectionSchema.safeParse(validSectionData);
-      expect(result.success).toBe(true);
+      expectSuccess(result);
     });
 
     test('should require name and project_id', () => {
@@ -289,9 +294,9 @@ describe('Zod Schema Validation Tests', () => {
       const result = validationSchemas.CreateSectionSchema.safeParse(
         incompleteSectionData
       );
-      expect(result.success).toBe(false);
+      const error = expectFailure(result);
 
-      const missingFields = result.error.issues.map((issue: any) => issue.path[0]);
+      const missingFields = error.issues.map((issue: any) => issue.path[0]);
       expect(missingFields).toContain('name');
       expect(missingFields).toContain('project_id');
     });
@@ -304,8 +309,8 @@ describe('Zod Schema Validation Tests', () => {
 
       const result =
         validationSchemas.CreateSectionSchema.safeParse(longNameSection);
-      expect(result.success).toBe(false);
-      expect(result.error.issues[0].message).toContain('120');
+      const error = expectFailure(result);
+      expect(error.issues[0].message).toContain('120');
     });
 
     test('should validate order as positive integer', () => {
@@ -320,7 +325,7 @@ describe('Zod Schema Validation Tests', () => {
 
         const result =
           validationSchemas.CreateSectionSchema.safeParse(sectionData);
-        expect(result.success).toBe(false);
+        expectFailure(result);
       });
     });
   });
@@ -336,7 +341,7 @@ describe('Zod Schema Validation Tests', () => {
 
       const result =
         validationSchemas.CreateCommentSchema.safeParse(validCommentData);
-      expect(result.success).toBe(true);
+      expectSuccess(result);
     });
 
     test('should validate content length constraints', () => {
@@ -347,8 +352,8 @@ describe('Zod Schema Validation Tests', () => {
 
       const result =
         validationSchemas.CreateCommentSchema.safeParse(longContentComment);
-      expect(result.success).toBe(false);
-      expect(result.error.issues[0].message).toMatch(/15[,]?000/);
+      const error = expectFailure(result);
+      expect(error.issues[0].message).toMatch(/15[,]?000/);
     });
 
     test('should require either task_id or project_id', () => {
@@ -359,10 +364,10 @@ describe('Zod Schema Validation Tests', () => {
 
       const result =
         validationSchemas.CreateCommentSchema.safeParse(noTargetComment);
-      expect(result.success).toBe(false);
+      const error = expectFailure(result);
 
       // Should have custom validation for either/or requirement
-      expect(result.error.issues[0].message).toContain('task_id or project_id');
+      expect(error.issues[0].message).toContain('task_id or project_id');
     });
 
     test('should reject both task_id and project_id', () => {
@@ -374,8 +379,8 @@ describe('Zod Schema Validation Tests', () => {
 
       const result =
         validationSchemas.CreateCommentSchema.safeParse(bothTargetsComment);
-      expect(result.success).toBe(false);
-      expect(result.error.issues[0].message).toContain('only one');
+      const error = expectFailure(result);
+      expect(error.issues[0].message).toContain('only one');
     });
 
     test('should validate attachment structure', () => {
@@ -392,7 +397,7 @@ describe('Zod Schema Validation Tests', () => {
 
       const result =
         validationSchemas.CreateCommentSchema.safeParse(validAttachment);
-      expect(result.success).toBe(true);
+      expectSuccess(result);
 
       // Invalid attachment structure
       const invalidAttachment = {
@@ -403,7 +408,7 @@ describe('Zod Schema Validation Tests', () => {
 
       const invalidResult =
         validationSchemas.CreateCommentSchema.safeParse(invalidAttachment);
-      expect(invalidResult.success).toBe(false);
+      expectFailure(invalidResult);
     });
   });
 
@@ -421,7 +426,7 @@ describe('Zod Schema Validation Tests', () => {
 
       const result =
         validationSchemas.CreateFilterSchema.safeParse(validFilterData);
-      expect(result.success).toBe(true);
+      expectSuccess(result);
     });
 
     test('should require name and query', () => {
@@ -432,9 +437,9 @@ describe('Zod Schema Validation Tests', () => {
 
       const result =
         validationSchemas.CreateFilterSchema.safeParse(incompleteFilterData);
-      expect(result.success).toBe(false);
+      const error = expectFailure(result);
 
-      const missingFields = result.error.issues.map((issue: any) => issue.path[0]);
+      const missingFields = error.issues.map((issue: any) => issue.path[0]);
       expect(missingFields).toContain('name');
       expect(missingFields).toContain('query');
     });
@@ -447,8 +452,8 @@ describe('Zod Schema Validation Tests', () => {
 
       const result =
         validationSchemas.CreateFilterSchema.safeParse(longNameFilter);
-      expect(result.success).toBe(false);
-      expect(result.error.issues[0].message).toContain('120');
+      const error = expectFailure(result);
+      expect(error.issues[0].message).toContain('120');
     });
 
     test('should validate query syntax (basic validation)', () => {
@@ -470,7 +475,7 @@ describe('Zod Schema Validation Tests', () => {
 
         const result =
           validationSchemas.CreateFilterSchema.safeParse(filterData);
-        expect(result.success).toBe(true);
+        expectSuccess(result);
       });
     });
   });
@@ -488,7 +493,7 @@ describe('Zod Schema Validation Tests', () => {
 
       const result =
         validationSchemas.CreateLabelSchema.safeParse(validLabelData);
-      expect(result.success).toBe(true);
+      expectSuccess(result);
     });
 
     test('should validate label name constraints', () => {
@@ -500,8 +505,8 @@ describe('Zod Schema Validation Tests', () => {
 
       const result =
         validationSchemas.CreateLabelSchema.safeParse(longNameLabel);
-      expect(result.success).toBe(false);
-      expect(result.error.issues[0].message).toContain('120');
+      const error = expectFailure(result);
+      expect(error.issues[0].message).toContain('120');
 
       // Empty name
       const emptyNameLabel = {
@@ -511,7 +516,7 @@ describe('Zod Schema Validation Tests', () => {
 
       const emptyResult =
         validationSchemas.CreateLabelSchema.safeParse(emptyNameLabel);
-      expect(emptyResult.success).toBe(false);
+      expectFailure(emptyResult);
     });
 
     test('should validate label name format', () => {
@@ -531,7 +536,7 @@ describe('Zod Schema Validation Tests', () => {
         };
 
         const result = validationSchemas.CreateLabelSchema.safeParse(labelData);
-        expect(result.success).toBe(true);
+        expectSuccess(result);
       });
 
       // Invalid characters
@@ -549,7 +554,7 @@ describe('Zod Schema Validation Tests', () => {
         };
 
         const result = validationSchemas.CreateLabelSchema.safeParse(labelData);
-        expect(result.success).toBe(false);
+        expectFailure(result);
       });
     });
   });
@@ -580,7 +585,7 @@ describe('Zod Schema Validation Tests', () => {
 
       const result =
         validationSchemas.BatchOperationSchema.safeParse(validBatchData);
-      expect(result.success).toBe(true);
+      expectSuccess(result);
     });
 
     test('should validate batch size limits', () => {
@@ -597,8 +602,8 @@ describe('Zod Schema Validation Tests', () => {
 
       const result =
         validationSchemas.BatchOperationSchema.safeParse(tooManyCommands);
-      expect(result.success).toBe(false);
-      expect(result.error.issues[0].message).toContain('100');
+      const error = expectFailure(result);
+      expect(error.issues[0].message).toContain('100');
     });
 
     test('should validate command types', () => {
@@ -627,7 +632,7 @@ describe('Zod Schema Validation Tests', () => {
 
         const result =
           validationSchemas.BatchOperationSchema.safeParse(batchData);
-        expect(result.success).toBe(true);
+        expectSuccess(result);
       });
 
       // Invalid command type
@@ -643,7 +648,7 @@ describe('Zod Schema Validation Tests', () => {
 
       const result =
         validationSchemas.BatchOperationSchema.safeParse(invalidCommand);
-      expect(result.success).toBe(false);
+      expectFailure(result);
     });
 
     test('should validate temp_id uniqueness within batch', () => {
@@ -670,156 +675,8 @@ describe('Zod Schema Validation Tests', () => {
 
       const result =
         validationSchemas.BatchOperationSchema.safeParse(duplicateTempIds);
-      expect(result.success).toBe(false);
-      expect(result.error.issues[0].message).toContain('unique');
-    });
-  });
-
-  describe.skip('Error Schema Validation', () => {
-    test('should validate error response structure', () => {
-      expect(validationSchemas.ErrorResponseSchema).toBeDefined();
-
-      const validErrorData = {
-        code: 'VALIDATION_ERROR',
-        message: 'Invalid request data',
-        details: {
-          field: 'content',
-          expected: 'string',
-          received: 'null',
-        },
-        retryable: false,
-        retry_after: null,
-      };
-
-      const result =
-        validationSchemas.ErrorResponseSchema.safeParse(validErrorData);
-      expect(result.success).toBe(true);
-    });
-
-    test('should validate error codes enum', () => {
-      const validErrorCodes = [
-        'INVALID_TOKEN',
-        'RATE_LIMIT_EXCEEDED',
-        'RESOURCE_NOT_FOUND',
-        'VALIDATION_ERROR',
-        'SYNC_ERROR',
-        'BATCH_PARTIAL_FAILURE',
-      ];
-
-      validErrorCodes.forEach(code => {
-        const errorData = {
-          code,
-          message: 'Test error',
-          retryable: false,
-        };
-
-        const result =
-          validationSchemas.ErrorResponseSchema.safeParse(errorData);
-        expect(result.success).toBe(true);
-      });
-
-      // Invalid error code
-      const invalidCode = {
-        code: 'INVALID_ERROR_CODE',
-        message: 'Test error',
-        retryable: false,
-      };
-
-      const result =
-        validationSchemas.ErrorResponseSchema.safeParse(invalidCode);
-      expect(result.success).toBe(false);
-    });
-  });
-
-  describe.skip('Custom Validation Functions', () => {
-    test('should validate Todoist query syntax', () => {
-      expect(validationSchemas.validateTodoistQuery).toBeDefined();
-
-      const validQueries = [
-        'today',
-        'overdue',
-        'p1 | p2',
-        '(today & p1) | (overdue & p2)',
-        '#Work & @urgent',
-        'due before: +7 days',
-        'assigned to: me',
-      ];
-
-      validQueries.forEach(query => {
-        const isValid = validationSchemas.validateTodoistQuery(query);
-        expect(isValid).toBe(true);
-      });
-
-      const invalidQueries = [
-        '((unbalanced',
-        'invalid & syntax (((',
-        'unknown_operator ?? test',
-        'due before: invalid_date',
-      ];
-
-      invalidQueries.forEach(query => {
-        const isValid = validationSchemas.validateTodoistQuery(query);
-        expect(isValid).toBe(false);
-      });
-    });
-
-    test('should validate file attachment types', () => {
-      expect(validationSchemas.validateFileType).toBeDefined();
-
-      const allowedTypes = [
-        'image/jpeg',
-        'image/png',
-        'image/gif',
-        'application/pdf',
-        'text/plain',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'application/vnd.ms-excel',
-      ];
-
-      allowedTypes.forEach(type => {
-        const isValid = validationSchemas.validateFileType(type);
-        expect(isValid).toBe(true);
-      });
-
-      const blockedTypes = [
-        'application/x-executable',
-        'application/x-msdownload',
-        'application/x-msdos-program',
-        'text/javascript',
-      ];
-
-      blockedTypes.forEach(type => {
-        const isValid = validationSchemas.validateFileType(type);
-        expect(isValid).toBe(false);
-      });
-    });
-
-    test('should validate URL formats', () => {
-      expect(validationSchemas.validateUrl).toBeDefined();
-
-      const validUrls = [
-        'https://example.com',
-        'https://example.com/path',
-        'https://example.com/path?query=value',
-        'https://subdomain.example.com',
-      ];
-
-      validUrls.forEach(url => {
-        const isValid = validationSchemas.validateUrl(url);
-        expect(isValid).toBe(true);
-      });
-
-      const invalidUrls = [
-        'http://example.com', // Should require HTTPS
-        'ftp://example.com',
-        'invalid-url',
-        'javascript:alert(1)',
-      ];
-
-      invalidUrls.forEach(url => {
-        const isValid = validationSchemas.validateUrl(url);
-        expect(isValid).toBe(false);
-      });
+      const error = expectFailure(result);
+      expect(error.issues[0].message).toContain('unique');
     });
   });
 });

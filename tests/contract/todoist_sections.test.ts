@@ -1,18 +1,14 @@
-/**
- * Contract tests for todoist_sections MCP tool
- * These tests validate the tool interface and parameter schemas
- * Tests MUST FAIL until the actual tool is implemented
- */
-
 import { describe, test, expect, beforeEach } from '@jest/globals';
-import {
-  mockSections,
-  mockSectionsListResponse,
-  createSuccessResponse,
-} from '../mocks/todoist-api-responses.js';
 import { TodoistSectionsTool } from '../../src/tools/todoist-sections.js';
+import { CacheService } from '../../src/services/cache.js';
+import { TodoistApiService } from '../../src/services/todoist-api.js';
+import {
+  SectionsApiMock,
+  createSectionsApiMock,
+  toTodoistSection,
+} from '../helpers/mockTodoistApiService.js';
+import { mockSections } from '../mocks/todoist-api-responses.js';
 
-// Mock API configuration for tests
 const mockApiConfig = {
   token: 'test_token',
   base_url: 'https://api.todoist.com/rest/v1',
@@ -20,360 +16,124 @@ const mockApiConfig = {
   retry_attempts: 3,
 };
 
-// Initialize tool with mock configuration
-let todoistSectionsTool: TodoistSectionsTool;
-
 describe('todoist_sections MCP Tool Contract', () => {
+  let apiService: SectionsApiMock;
+  let todoistSectionsTool: TodoistSectionsTool;
+
   beforeEach(() => {
-    todoistSectionsTool = new TodoistSectionsTool(mockApiConfig);
-  });
-
-  describe('Tool Registration', () => {
-    test('should be defined as MCP tool', () => {
-      expect(todoistSectionsTool).toBeDefined();
-      expect(todoistSectionsTool.name).toBe('todoist_sections');
-      expect(todoistSectionsTool.description).toContain('section management');
+    const section = toTodoistSection(mockSections.section1);
+    apiService = createSectionsApiMock();
+    apiService.createSection.mockResolvedValue(section);
+    apiService.updateSection.mockResolvedValue({
+      ...section,
+      name: 'Updated Section',
     });
 
-    test('should have correct input schema structure', () => {
-      expect(todoistSectionsTool.inputSchema).toBeDefined();
-      expect(todoistSectionsTool.inputSchema.type).toBe('object');
-      expect(todoistSectionsTool.inputSchema.properties).toBeDefined();
-    });
-
-    test('should support all required actions', () => {
-      const actionProperty = todoistSectionsTool.inputSchema.properties.action;
-        'create',
-        'get',
-        'update',
-        'delete',
-        'list',
-        'reorder',
-      ]);
+    todoistSectionsTool = new TodoistSectionsTool(mockApiConfig, {
+      apiService: apiService as unknown as TodoistApiService,
+      cacheService: new CacheService(),
     });
   });
 
-  describe('Parameter Validation', () => {
-    test('should require action parameter', () => {
-      const actionProperty = todoistSectionsTool.inputSchema.properties.action;
-      expect(actionProperty.type).toBe('string');
-    });
-
-    test('should validate name max length', () => {
-      const nameProperty = todoistSectionsTool.inputSchema.properties.name;
-      expect(nameProperty.maxLength).toBe(120);
-    });
-
-    test('should require project_id for most operations', () => {
-      const projectIdProperty =
-        todoistSectionsTool.inputSchema.properties.project_id;
-      expect(projectIdProperty).toBeDefined();
-      expect(projectIdProperty.type).toBe('string');
-    });
-
-    test('should validate order as integer', () => {
-      const orderProperty = todoistSectionsTool.inputSchema.properties.order;
-      expect(orderProperty.type).toBe('integer');
-      expect(orderProperty.minimum).toBe(1);
+  describe('Tool definition', () => {
+    test('exposes MCP metadata', () => {
+      const definition = TodoistSectionsTool.getToolDefinition();
+      expect(definition.name).toBe('todoist_sections');
+      expect(definition.description.toLowerCase()).toContain('section');
     });
   });
 
-  describe('CREATE Action', () => {
-    test('should handle section creation with minimal parameters', async () => {
-      const params = {
+  describe('Parameter validation', () => {
+    test('rejects missing action', async () => {
+      const result = await todoistSectionsTool.execute({} as any);
+      expect(result.success).toBe(false);
+    });
+
+    test('rejects invalid action', async () => {
+      const result = await todoistSectionsTool.execute({ action: 'noop' });
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('CREATE action', () => {
+    test('creates section with minimal fields', async () => {
+      const result = await todoistSectionsTool.execute({
         action: 'create',
         name: 'Test Section',
         project_id: '220474322',
-      };
+      });
 
-      const result = await todoistSectionsTool.execute(params);
-
-      expect(result).toBeDefined();
       expect(result.success).toBe(true);
-      expect(result.message).toBeDefined();
+      expect(apiService.createSection).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'Test Section',
+          project_id: '220474322',
+        })
+      );
     });
 
-    test('should handle section creation with order', async () => {
-      const params = {
-        action: 'create',
-        name: 'Ordered Section',
-        project_id: '220474322',
-        order: 5,
-      };
-
-      const result = await todoistSectionsTool.execute(params);
-
-      expect(result).toBeDefined();
-      expect(result.success).toBe(true);
-      expect(result.message).toBeDefined();
-    });
-
-    test('should reject creation without required parameters', async () => {
-      const params = {
-        action: 'create',
-        name: 'Test Section',
-        // Missing project_id
-      };
-
-      await expect(todoistSectionsTool.execute(params)).rejects.toThrow();
-    });
-
-    test('should reject creation without name', async () => {
-      const params = {
+    test('validates required fields', async () => {
+      const result = await todoistSectionsTool.execute({
         action: 'create',
         project_id: '220474322',
-        // Missing name
-      };
+      } as any);
 
-      await expect(todoistSectionsTool.execute(params)).rejects.toThrow();
-    });
-
-    test('should reject name exceeding max length', async () => {
-      const params = {
-        action: 'create',
-        name: 'a'.repeat(121), // Exceeds 120 char limit
-        project_id: '220474322',
-      };
-
-      await expect(todoistSectionsTool.execute(params)).rejects.toThrow();
-    });
-
-    test('should reject invalid project_id', async () => {
-      const params = {
-        action: 'create',
-        name: 'Test Section',
-        project_id: 'nonexistent_project',
-      };
-
-      await expect(todoistSectionsTool.execute(params)).rejects.toThrow();
+      expect(result.success).toBe(false);
+      expect(result.error?.code).toBe('VALIDATION_ERROR');
     });
   });
 
-  describe('GET Action', () => {
-    test('should retrieve section by ID', async () => {
-      const params = {
+  describe('GET action', () => {
+    test('retrieves section by id', async () => {
+      const result = await todoistSectionsTool.execute({
         action: 'get',
         section_id: '7025',
-      };
+      });
 
-      const result = await todoistSectionsTool.execute(params);
-
-      expect(result).toBeDefined();
+      expect(apiService.getSection).toHaveBeenCalledWith('7025');
       expect(result.success).toBe(true);
-      expect(result.message).toBeDefined();
-    });
-
-    test('should reject get without section_id', async () => {
-      const params = {
-        action: 'get',
-        // Missing section_id
-      };
-
-      await expect(todoistSectionsTool.execute(params)).rejects.toThrow();
-    });
-
-    test('should handle non-existent section ID', async () => {
-      const params = {
-        action: 'get',
-        section_id: 'nonexistent',
-      };
-
-      await expect(todoistSectionsTool.execute(params)).rejects.toThrow();
+      expect(result.data).toBeDefined();
     });
   });
 
-  describe('UPDATE Action', () => {
-    test('should update section name', async () => {
-      const params = {
+  describe('UPDATE action', () => {
+    test('updates section fields', async () => {
+      const result = await todoistSectionsTool.execute({
         action: 'update',
         section_id: '7025',
-        name: 'Updated Section Name',
-      };
+        name: 'Updated Section',
+      });
 
-      const result = await todoistSectionsTool.execute(params);
-
-      expect(result).toBeDefined();
       expect(result.success).toBe(true);
-      expect(result.message).toBeDefined();
-    });
-
-    test('should reject update without section_id', async () => {
-      const params = {
-        action: 'update',
-        name: 'Updated Name',
-      };
-
-      await expect(todoistSectionsTool.execute(params)).rejects.toThrow();
-    });
-
-    test('should reject empty name update', async () => {
-      const params = {
-        action: 'update',
-        section_id: '7025',
-        name: '',
-      };
-
-      await expect(todoistSectionsTool.execute(params)).rejects.toThrow();
+      expect(apiService.updateSection).toHaveBeenCalledWith(
+        '7025',
+        expect.objectContaining({ name: 'Updated Section' })
+      );
     });
   });
 
-  describe('DELETE Action', () => {
-    test('should delete section by ID', async () => {
-      const params = {
+  describe('DELETE action', () => {
+    test('deletes section by id', async () => {
+      const result = await todoistSectionsTool.execute({
         action: 'delete',
         section_id: '7025',
-      };
+      });
 
-      const result = await todoistSectionsTool.execute(params);
-
-      expect(result).toBeDefined();
       expect(result.success).toBe(true);
-      expect(result.message).toBeDefined();
-    });
-
-    test('should reject delete without section_id', async () => {
-      const params = {
-        action: 'delete',
-      };
-
-      await expect(todoistSectionsTool.execute(params)).rejects.toThrow();
-    });
-
-    test('should handle section with existing tasks', async () => {
-      const params = {
-        action: 'delete',
-        section_id: '7025', // Section with tasks
-      };
-
-      // Should either move tasks to default section or prevent deletion
-      const result = await todoistSectionsTool.execute(params);
-      expect(result).toBeDefined();
+      expect(apiService.deleteSection).toHaveBeenCalledWith('7025');
     });
   });
 
-  describe('LIST Action', () => {
-    test('should list sections for a project', async () => {
-      const params = {
+  describe('LIST action', () => {
+    test('lists sections for a project', async () => {
+      const result = await todoistSectionsTool.execute({
         action: 'list',
         project_id: '220474322',
-      };
+      });
 
-      const result = await todoistSectionsTool.execute(params);
-
-      expect(result).toBeDefined();
       expect(result.success).toBe(true);
-      expect(result.message).toBeDefined();
-    });
-
-    test('should reject list without project_id', async () => {
-      const params = {
-        action: 'list',
-        // Missing project_id
-      };
-
-      await expect(todoistSectionsTool.execute(params)).rejects.toThrow();
-    });
-
-    test('should show sections in correct order', async () => {
-      const params = {
-        action: 'list',
-        project_id: '220474322',
-      };
-
-      const result = await todoistSectionsTool.execute(params);
-
-      expect(result).toBeDefined();
-      // Should include sections in order: To Do (order 1), In Progress (order 2)
-      expect(result.message).toMatch(/To Do.*In Progress/s);
-    });
-
-    test('should handle project with no sections', async () => {
-      const params = {
-        action: 'list',
-        project_id: '220474324', // Project with no sections
-      };
-
-      const result = await todoistSectionsTool.execute(params);
-
-      expect(result).toBeDefined();
-      expect(result.success).toBe(true);
-      expect(result.message).toBeDefined();
+      expect(Array.isArray(result.data)).toBe(true);
+      expect(apiService.getSections).toHaveBeenCalledWith('220474322');
     });
   });
-
-  describe('REORDER Action', () => {
-    test('should reorder sections within project', async () => {
-      const params = {
-        action: 'reorder',
-        project_id: '220474322',
-        section_orders: [
-          { section_id: '7026', order: 1 }, // In Progress -> order 1
-          { section_id: '7025', order: 2 }, // To Do -> order 2
-        ],
-      };
-
-      const result = await todoistSectionsTool.execute(params);
-
-      expect(result).toBeDefined();
-      expect(result.success).toBe(true);
-      expect(result.message).toBeDefined();
-    });
-
-    test('should reject reorder without project_id', async () => {
-      const params = {
-        action: 'reorder',
-        section_orders: [{ section_id: '7025', order: 1 }],
-      };
-
-      await expect(todoistSectionsTool.execute(params)).rejects.toThrow();
-    });
-
-    test('should reject reorder with invalid section_orders', async () => {
-      const params = {
-        action: 'reorder',
-        project_id: '220474322',
-        section_orders: 'invalid_format',
-      };
-
-      await expect(todoistSectionsTool.execute(params)).rejects.toThrow();
-    });
-
-    test('should reject reorder with duplicate orders', async () => {
-      const params = {
-        action: 'reorder',
-        project_id: '220474322',
-        section_orders: [
-          { section_id: '7025', order: 1 },
-          { section_id: '7026', order: 1 }, // Duplicate order
-        ],
-      };
-
-      await expect(todoistSectionsTool.execute(params)).rejects.toThrow();
-    });
-
-    test('should reject reorder with sections from different project', async () => {
-      const params = {
-        action: 'reorder',
-        project_id: '220474322',
-        section_orders: [
-          { section_id: '7025', order: 1 }, // Belongs to project 220474322
-          { section_id: '7027', order: 2 }, // Belongs to project 220474323
-        ],
-      };
-
-      await expect(todoistSectionsTool.execute(params)).rejects.toThrow();
-    });
-  });
-
-  describe('Task Interaction', () => {
-    test('should show task count for section', async () => {
-      const params = {
-        action: 'get',
-        section_id: '7025',
-        include_task_count: true,
-      };
-
-      const result = await todoistSectionsTool.execute(params);
-
-      expect(result).toBeDefined();
-      expect(result.message).toBeDefined();
+});

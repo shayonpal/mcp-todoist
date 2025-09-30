@@ -8,6 +8,7 @@ import {
   TodoistLabel,
   TodoistSection,
 } from '../types/todoist.js';
+import { logger } from '../middleware/logging.js';
 
 /**
  * Cache entry with TTL management
@@ -300,33 +301,32 @@ export class CacheService {
           this.setSections(project.id, sections);
         } catch (error) {
           // Continue with other projects if one fails
-          console.warn(
-            `Failed to cache sections for project ${project.id}:`,
-            error
-          );
+          logger.warn(`Failed to cache sections for project ${project.id}`, {
+            error,
+          });
         }
       }
     } catch (error) {
-      console.error('Cache warmup failed:', error);
+      logger.error('Cache warmup failed', { error });
       throw error;
     }
   }
 
   // Cache statistics and monitoring
-  getStats() {
+  getStats(): DetailedCacheStats {
+    const projectStats = this.projectsCache.getStats();
+    const labelStats = this.labelsCache.getStats();
+    const sectionStats = this.sectionsCache.getStats();
+
     return {
-      projects: this.projectsCache.getStats(),
-      labels: this.labelsCache.getStats(),
-      sections: this.sectionsCache.getStats(),
+      projects: projectStats,
+      labels: labelStats,
+      sections: sectionStats,
       overall: {
         totalEntries:
-          this.projectsCache.getStats().entries +
-          this.labelsCache.getStats().entries +
-          this.sectionsCache.getStats().entries,
+          projectStats.entries + labelStats.entries + sectionStats.entries,
         averageHitRate:
-          (this.projectsCache.getStats().hitRate +
-            this.labelsCache.getStats().hitRate +
-            this.sectionsCache.getStats().hitRate) /
+          (projectStats.hitRate + labelStats.hitRate + sectionStats.hitRate) /
           3,
       },
     };
@@ -340,7 +340,11 @@ export class CacheService {
   }
 
   // Check cache health (expired entries, hit rates)
-  getHealthStatus() {
+  getHealthStatus(): {
+    healthy: boolean;
+    stats: DetailedCacheStats;
+    recommendations: string[];
+  } {
     const stats = this.getStats();
     const isHealthy =
       stats.overall.totalEntries < 10000 && // Not too many entries
@@ -353,7 +357,7 @@ export class CacheService {
     };
   }
 
-  private getOptimizationRecommendations(stats: any): string[] {
+  private getOptimizationRecommendations(stats: DetailedCacheStats): string[] {
     const recommendations: string[] = [];
 
     if (stats.overall.averageHitRate < 0.3) {
@@ -382,4 +386,14 @@ export class CacheService {
 
     return recommendations;
   }
+}
+
+interface DetailedCacheStats {
+  projects: CacheStats;
+  labels: CacheStats;
+  sections: CacheStats;
+  overall: {
+    totalEntries: number;
+    averageHitRate: number;
+  };
 }

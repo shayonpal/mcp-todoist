@@ -88,9 +88,15 @@ export class TodoistSectionsTool {
   private readonly apiService: TodoistApiService;
   private readonly cacheService: CacheService;
 
-  constructor(apiConfig: APIConfiguration) {
-    this.apiService = new TodoistApiService(apiConfig);
-    this.cacheService = new CacheService();
+  constructor(
+    apiConfig: APIConfiguration,
+    deps: {
+      apiService?: TodoistApiService;
+      cacheService?: CacheService;
+    } = {}
+  ) {
+    this.apiService = deps.apiService ?? new TodoistApiService(apiConfig);
+    this.cacheService = deps.cacheService ?? new CacheService();
   }
 
   /**

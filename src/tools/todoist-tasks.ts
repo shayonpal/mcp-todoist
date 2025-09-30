@@ -7,6 +7,7 @@ import {
   UpdateTaskSchema,
   TaskQuerySchema,
   BatchOperationSchema,
+  BatchOperationObjectSchema,
 } from '../schemas/validation.js';
 import {
   TodoistTask,
@@ -51,10 +52,11 @@ const TodoistTasksInputSchema = z.discriminatedUnion('action', [
     action: z.literal('uncomplete'),
     task_id: z.string().min(1, 'Task ID is required'),
   }),
-  z.object({
-    action: z.literal('batch'),
-    ...BatchOperationSchema.shape,
-  }),
+  z
+    .object({
+      action: z.literal('batch'),
+    })
+    .merge(BatchOperationObjectSchema),
 ]);
 
 type TodoistTasksInput = z.infer<typeof TodoistTasksInputSchema>;
@@ -117,10 +119,18 @@ export class TodoistTasksTool {
   private readonly batchService: BatchOperationsService;
   private readonly cacheService: CacheService;
 
-  constructor(apiConfig: APIConfiguration) {
-    this.apiService = new TodoistApiService(apiConfig);
-    this.batchService = new BatchOperationsService(this.apiService);
-    this.cacheService = new CacheService();
+  constructor(
+    apiConfig: APIConfiguration,
+    deps: {
+      apiService?: TodoistApiService;
+      batchService?: BatchOperationsService;
+      cacheService?: CacheService;
+    } = {}
+  ) {
+    this.apiService = deps.apiService ?? new TodoistApiService(apiConfig);
+    this.batchService =
+      deps.batchService ?? new BatchOperationsService(this.apiService);
+    this.cacheService = deps.cacheService ?? new CacheService();
   }
 
   /**
@@ -350,6 +360,8 @@ export class TodoistTasksTool {
   private async handleBatch(
     input: Extract<TodoistTasksInput, { action: 'batch' }>
   ): Promise<TodoistTasksOutput> {
+    BatchOperationSchema.parse({ batch_commands: input.batch_commands });
+
     // Convert input commands to proper BatchCommand format
     const commands = input.batch_commands.map(cmd => ({
       ...cmd,

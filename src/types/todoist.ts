@@ -113,10 +113,10 @@ export interface TodoistReminder {
   item_id: string; // Task ID for which reminder is set
   type: 'relative' | 'absolute' | 'location'; // Reminder type
   due?: {
-    date: string; // ISO 8601 datetime (absolute reminders only)
+    date?: string; // ISO 8601 datetime (absolute reminders only)
     timezone?: string | null; // Timezone for due date
     is_recurring: boolean; // Whether reminder repeats
-    string: string; // Natural language representation (e.g., "tomorrow at 10:00")
+    string?: string; // Natural language representation (e.g., "tomorrow at 10:00")
     lang: string; // Language for parsing
   };
   minute_offset?: number; // Minutes before task due date (relative reminders only)
