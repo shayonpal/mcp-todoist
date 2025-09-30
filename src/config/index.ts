@@ -9,7 +9,7 @@ config();
  * Configuration constants
  */
 export const CONFIG_DEFAULTS = {
-  TODOIST_API_BASE_URL: 'https://api.todoist.com/rest/v1',
+  TODOIST_API_BASE_URL: 'https://api.todoist.com/api/v1',
   REQUEST_TIMEOUT: 10000, // 10 seconds
   RETRY_ATTEMPTS: 3,
   RATE_LIMIT_BUFFER: 0.8, // Use 80% of rate limit capacity

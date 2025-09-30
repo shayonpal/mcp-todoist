@@ -133,7 +133,7 @@ export interface TodoistReminder {
  */
 export interface APIConfiguration {
   token: string; // Bearer token from MCP client
-  base_url: string; // Always https://api.todoist.com/rest/v1
+  base_url: string; // Always https://api.todoist.com/api/v1
   timeout: number; // Request timeout in ms (default: 10000)
   retry_attempts: number; // Max retry attempts (default: 3)
 }
