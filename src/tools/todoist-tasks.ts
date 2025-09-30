@@ -178,8 +178,7 @@ export class TodoistTasksTool {
       case 'create':
         if (!input.content)
           throw new ValidationError('content is required for create action');
-        if (!input.project_id)
-          throw new ValidationError('project_id is required for create action');
+        // project_id is optional - if not provided, task goes to Inbox
         break;
       case 'get':
       case 'delete':
