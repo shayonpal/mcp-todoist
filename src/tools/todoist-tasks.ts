@@ -306,7 +306,7 @@ export class TodoistTasksTool {
       Object.entries(updateData).filter(([_, value]) => value !== undefined)
     );
 
-    const task = await this.apiService.updateTask(task_id, cleanedData);
+    const task = await this.apiService.updateTask(task_id!, cleanedData);
     const enrichedTask = await this.enrichTaskWithMetadata(task);
 
     return {

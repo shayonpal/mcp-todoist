@@ -251,7 +251,7 @@ export class TodoistProjectsTool {
     );
 
     const project = await this.apiService.updateProject(
-      project_id,
+      project_id!,
       cleanedData
     );
 

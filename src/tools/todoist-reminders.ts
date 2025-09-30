@@ -9,88 +9,36 @@ import {
 
 /**
  * Input schema for the todoist_reminders tool
+ * Flattened for MCP client compatibility
  */
-const TodoistRemindersInputSchema = z.union([
-  // Create relative reminder (minutes before task due)
-  z.object({
-    action: z.literal('create'),
-    type: z.literal('relative'),
-    item_id: z.string().min(1, 'Task ID is required'),
-    minute_offset: z
-      .number()
-      .int()
-      .min(0, 'Minute offset must be non-negative')
-      .max(43200, 'Minute offset cannot exceed 30 days'),
-    notify_uid: z.string().optional(),
-  }),
-  // Create absolute reminder (specific datetime)
-  z.object({
-    action: z.literal('create'),
-    type: z.literal('absolute'),
-    item_id: z.string().min(1, 'Task ID is required'),
-    due: z.object({
+const TodoistRemindersInputSchema = z.object({
+  action: z.enum(['create', 'get', 'update', 'delete', 'list']),
+  // Reminder type (for create/update actions)
+  type: z.enum(['relative', 'absolute', 'location']).optional(),
+  // Item/Reminder IDs
+  item_id: z.string().optional(),
+  reminder_id: z.string().optional(),
+  // Relative reminder fields
+  minute_offset: z.number().int().optional(),
+  // Absolute reminder fields
+  due: z
+    .object({
       date: z.string().optional(),
       string: z.string().optional(),
       timezone: z.string().nullable().optional(),
-      is_recurring: z.boolean().default(false),
-      lang: z.string().default('en'),
-    }),
-    notify_uid: z.string().optional(),
-  }),
-  // Create location reminder (geofenced)
-  z.object({
-    action: z.literal('create'),
-    type: z.literal('location'),
-    item_id: z.string().min(1, 'Task ID is required'),
-    name: z.string().min(1, 'Location name is required'),
-    loc_lat: z.string().min(1, 'Latitude is required'),
-    loc_long: z.string().min(1, 'Longitude is required'),
-    loc_trigger: z.enum(['on_enter', 'on_leave']),
-    radius: z
-      .number()
-      .int()
-      .min(1, 'Radius must be at least 1 meter')
-      .max(5000, 'Radius cannot exceed 5000 meters'),
-    notify_uid: z.string().optional(),
-  }),
-  // Get specific reminder
-  z.object({
-    action: z.literal('get'),
-    reminder_id: z.string().min(1, 'Reminder ID is required'),
-  }),
-  // Update reminder
-  z.object({
-    action: z.literal('update'),
-    reminder_id: z.string().min(1, 'Reminder ID is required'),
-    type: z.enum(['relative', 'absolute', 'location']).optional(),
-    notify_uid: z.string().optional(),
-    due: z
-      .object({
-        date: z.string().optional(),
-        string: z.string().optional(),
-        timezone: z.string().nullable().optional(),
-        is_recurring: z.boolean().default(false),
-        lang: z.string().default('en'),
-      })
-      .optional(),
-    minute_offset: z.number().int().min(0).max(43200).optional(),
-    name: z.string().optional(),
-    loc_lat: z.string().optional(),
-    loc_long: z.string().optional(),
-    loc_trigger: z.enum(['on_enter', 'on_leave']).optional(),
-    radius: z.number().int().min(1).max(5000).optional(),
-  }),
-  // Delete reminder
-  z.object({
-    action: z.literal('delete'),
-    reminder_id: z.string().min(1, 'Reminder ID is required'),
-  }),
-  // List reminders (optionally filtered by task)
-  z.object({
-    action: z.literal('list'),
-    item_id: z.string().optional(),
-  }),
-]);
+      is_recurring: z.boolean().optional(),
+      lang: z.string().optional(),
+    })
+    .optional(),
+  // Location reminder fields
+  name: z.string().optional(),
+  loc_lat: z.string().optional(),
+  loc_long: z.string().optional(),
+  loc_trigger: z.enum(['on_enter', 'on_leave']).optional(),
+  radius: z.number().int().optional(),
+  // Common fields
+  notify_uid: z.string().optional(),
+});
 
 type TodoistRemindersInput = z.infer<typeof TodoistRemindersInputSchema>;
 
@@ -292,6 +240,56 @@ export class TodoistRemindersTool {
   }
 
   /**
+   * Validate that required fields are present for each action
+   */
+  private validateActionRequirements(input: TodoistRemindersInput): void {
+    switch (input.action) {
+      case 'create':
+        if (!input.item_id!)
+          throw new ValidationError('item_id is required for create action');
+        if (!input.type)
+          throw new ValidationError('type is required for create action');
+
+        // Type-specific validation
+        if (input.type === 'relative') {
+          if (input.minute_offset === undefined)
+            throw new ValidationError('minute_offset is required for relative reminders');
+        } else if (input.type === 'absolute') {
+          if (!input.due)
+            throw new ValidationError('due is required for absolute reminders');
+        } else if (input.type === 'location') {
+          if (!input.name)
+            throw new ValidationError('name is required for location reminders');
+          if (!input.loc_lat)
+            throw new ValidationError('loc_lat is required for location reminders');
+          if (!input.loc_long)
+            throw new ValidationError('loc_long is required for location reminders');
+          if (!input.loc_trigger)
+            throw new ValidationError('loc_trigger is required for location reminders');
+          if (!input.radius)
+            throw new ValidationError('radius is required for location reminders');
+        }
+        break;
+      case 'get':
+      case 'delete':
+        if (!input.reminder_id!)
+          throw new ValidationError(
+            `reminder_id is required for ${input.action} action`
+          );
+        break;
+      case 'update':
+        if (!input.reminder_id!)
+          throw new ValidationError('reminder_id is required for update action');
+        break;
+      case 'list':
+        // No required fields for list (item_id is optional filter)
+        break;
+      default:
+        throw new ValidationError('Invalid action specified');
+    }
+  }
+
+  /**
    * Execute a reminder operation
    */
   async execute(params: unknown): Promise<TodoistRemindersOutput> {
@@ -300,6 +298,9 @@ export class TodoistRemindersTool {
     try {
       // Validate input parameters
       const validatedParams = TodoistRemindersInputSchema.parse(params);
+
+      // Validate action-specific required fields
+      this.validateActionRequirements(validatedParams);
 
       let result: TodoistRemindersOutput;
 
@@ -401,7 +402,12 @@ export class TodoistRemindersTool {
     if (params.type === 'relative') {
       reminderData.minute_offset = params.minute_offset;
     } else if (params.type === 'absolute') {
-      reminderData.due = params.due;
+      // Ensure defaults for required fields
+      reminderData.due = {
+        ...params.due!,
+        is_recurring: params.due!.is_recurring ?? false,
+        lang: params.due!.lang ?? 'en',
+      };
     } else if (params.type === 'location') {
       reminderData.name = params.name;
       reminderData.loc_lat = params.loc_lat;
@@ -466,7 +472,14 @@ export class TodoistRemindersTool {
 
     if (params.type) updateData.type = params.type;
     if (params.notify_uid) updateData.notify_uid = params.notify_uid;
-    if (params.due) updateData.due = params.due;
+    if (params.due) {
+      // Ensure defaults for required fields
+      updateData.due = {
+        ...params.due,
+        is_recurring: params.due.is_recurring ?? false,
+        lang: params.due.lang ?? 'en',
+      };
+    }
     if (params.minute_offset !== undefined)
       updateData.minute_offset = params.minute_offset;
     if (params.name) updateData.name = params.name;
@@ -476,7 +489,7 @@ export class TodoistRemindersTool {
     if (params.radius !== undefined) updateData.radius = params.radius;
 
     const reminder = await this.apiService.updateReminder(
-      params.reminder_id,
+      params.reminder_id!,
       updateData
     );
 
@@ -496,7 +509,7 @@ export class TodoistRemindersTool {
   private async handleDelete(
     params: TodoistRemindersInput
   ): Promise<TodoistRemindersOutput> {
-    await this.apiService.deleteReminder(params.reminder_id);
+    await this.apiService.deleteReminder(params.reminder_id!);
 
     return {
       success: true,
