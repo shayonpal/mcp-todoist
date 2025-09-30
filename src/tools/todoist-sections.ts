@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { toMcpJsonSchema } from '../utils/json-schema.js';
 import { TodoistApiService } from '../services/todoist-api.js';
 import { CacheService } from '../services/cache.js';
 import { CreateSectionSchema } from '../schemas/validation.js';
@@ -107,7 +108,8 @@ export class TodoistSectionsTool {
       name: 'todoist_sections',
       description:
         'Section management within Todoist projects - create, read, update, delete, and reorder sections for better task organization',
-      inputSchema: TodoistSectionsInputSchema.describe(
+      inputSchema: toMcpJsonSchema(
+        TodoistSectionsInputSchema,
         'Section management operations'
       ),
     };

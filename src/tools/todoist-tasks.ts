@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { toMcpJsonSchema } from '../utils/json-schema.js';
 import { TodoistApiService } from '../services/todoist-api.js';
 import { BatchOperationsService } from '../services/batch.js';
 import { CacheService } from '../services/cache.js';
@@ -141,7 +142,8 @@ export class TodoistTasksTool {
       name: 'todoist_tasks',
       description:
         'Comprehensive task management for Todoist - create, read, update, delete, and query tasks with full CRUD operations and batch support',
-      inputSchema: TodoistTasksInputSchema.describe(
+      inputSchema: toMcpJsonSchema(
+        TodoistTasksInputSchema,
         'Task management operations'
       ),
     };

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { toMcpJsonSchema } from '../utils/json-schema.js';
 import { TodoistApiService } from '../services/todoist-api.js';
 import { TodoistComment, APIConfiguration } from '../types/todoist.js';
 import {
@@ -104,7 +105,8 @@ export class TodoistCommentsTool {
       name: 'todoist_comments',
       description:
         'Comment management for Todoist tasks and projects - create, read, update, delete comments with 15,000 character limit and file attachment support',
-      inputSchema: TodoistCommentsInputSchema.describe(
+      inputSchema: toMcpJsonSchema(
+        TodoistCommentsInputSchema,
         'Comment management operations'
       ),
     };

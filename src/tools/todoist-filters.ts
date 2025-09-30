@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { toMcpJsonSchema } from '../utils/json-schema.js';
 import { TodoistApiService } from '../services/todoist-api.js';
 import { CreateFilterSchema } from '../schemas/validation.js';
 import {
@@ -111,7 +112,8 @@ export class TodoistFiltersTool {
       name: 'todoist_filters',
       description:
         'Filter management and task querying for Todoist - query existing filters, retrieve tasks within filters, and manage saved filter criteria',
-      inputSchema: TodoistFiltersInputSchema.describe(
+      inputSchema: toMcpJsonSchema(
+        TodoistFiltersInputSchema,
         'Filter management and query operations'
       ),
     };

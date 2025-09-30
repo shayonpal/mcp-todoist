@@ -1,13 +1,16 @@
 # Todoist MCP Server
 
-MCP server enabling programmatic Todoist task and project management through optimized tool set.
+MCP server enabling programmatic Todoist task and project management through optimized tool set using Todoist REST API v1.
 
 ## Features
 
-- **5 Core Tools**: Tasks, Projects, Sections, Comments, and Filters management
+- **6 Core Tools**: Tasks, Projects, Sections, Comments, Filters, and Reminders management
+- **Todoist REST API v1**: Uses the official Todoist REST API v1 for all operations
 - **Batch Operations**: Support for up to 100 operations per request
 - **Rate Limiting**: Respects Todoist API limits with retry logic
 - **Type Safety**: Full TypeScript implementation with Zod validation
+- **Natural Language Due Dates**: Supports human-friendly date formats like "tomorrow", "every day", "every 4th"
+- **Reminders**: Full CRUD support for task reminders
 - **Testing**: Comprehensive test suite with contract and integration tests
 
 ## Prerequisites
@@ -78,6 +81,7 @@ Add to your MCP client configuration (e.g., Claude Desktop):
 - `todoist_sections` - Section management within projects
 - `todoist_comments` - Comment management with file attachments
 - `todoist_filters` - Filter management for custom task queries
+- `todoist_reminders` - Reminder management for tasks (create, update, delete, list)
 
 ## License
 

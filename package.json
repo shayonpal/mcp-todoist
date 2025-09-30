@@ -4,11 +4,14 @@
   "description": "MCP server enabling programmatic Todoist task and project management through optimized tool set",
   "main": "dist/server.js",
   "type": "module",
+  "bin": {
+    "mcp-todoist": "./dist/server.js"
+  },
   "engines": {
     "node": ">=18.0.0"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && chmod 755 dist/server.js",
     "start": "node dist/server.js",
     "dev": "tsx src/server.ts",
     "test": "jest",
@@ -29,11 +32,12 @@
   "author": "Shayon Pal",
   "license": "MIT",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^0.5.0",
+    "@modelcontextprotocol/sdk": "^1.18.2",
     "axios": "^1.6.2",
     "dotenv": "^16.3.1",
     "uuid": "^13.0.0",
-    "zod": "^3.22.4"
+    "zod": "^3.22.4",
+    "zod-to-json-schema": "^3.24.6"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",

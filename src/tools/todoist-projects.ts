@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { toMcpJsonSchema } from '../utils/json-schema.js';
 import { TodoistApiService } from '../services/todoist-api.js';
 import { CacheService } from '../services/cache.js';
 import { CreateProjectSchema } from '../schemas/validation.js';
@@ -108,7 +109,8 @@ export class TodoistProjectsTool {
       name: 'todoist_projects',
       description:
         'Complete project management for Todoist - create, read, update, archive, and query projects with metadata support',
-      inputSchema: TodoistProjectsInputSchema.describe(
+      inputSchema: toMcpJsonSchema(
+        TodoistProjectsInputSchema,
         'Project management operations'
       ),
     };

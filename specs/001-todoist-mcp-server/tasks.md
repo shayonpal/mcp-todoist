@@ -135,8 +135,8 @@
 - [x] T064g Introduce per-suite mock factory helpers (e.g., `createTasksApiMock`) with precise `jest.Mock<Promise<TodoistTask>, [...]>` signatures
 - [x] T064h Alternatively expose targeted helper builders (`withTasksMocks`, `withFilterMocks`, etc.) that return only required mock methods
 - [ ] T064i Gradually remove `// @ts-nocheck` from contract/integration tests by tightening mocks
-- [ ] T065 [P] Update README.md to explicitly mention v1 API usage and add reminders to feature list
-- [ ] T066 [P] Update .env.example if it contains API URL references
+- [x] T065 [P] Update README.md to explicitly mention v1 API usage and add reminders to feature list
+- [x] T066 [P] Update .env.example if it contains API URL references
 - [ ] T067 Manual verification of all 7 quickstart.md scenarios with v1 endpoints and reminders
 
 ### Phase 4.4: Code Quality & Cleanup

@@ -250,12 +250,8 @@ export class StructuredLogger {
 
     const formatted = this.formatLogEntry(entry);
 
-    // Output to appropriate stream
-    if (level === LogLevel.ERROR) {
-      console.error(formatted);
-    } else {
-      console.log(formatted);
-    }
+    // Output to stderr only (stdout is reserved for MCP protocol)
+    console.error(formatted);
   }
 
   /**
