@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { TodoistAPIError } from '../types/errors';
-import { TodoistErrorCode } from '../types/errors';
+import { TodoistAPIError } from '../types/errors.js';
+import { TodoistErrorCode } from '../types/errors.js';
 
 /**
  * Output interface for all Todoist tools

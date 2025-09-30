@@ -30,7 +30,7 @@
     "model-context-protocol"
   ],
   "author": "Shayon Pal",
-  "license": "MIT",
+  "license": "GPL-3.0",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.18.2",
     "axios": "^1.6.2",

@@ -143,7 +143,10 @@ const buildTasksMocks = (): TasksApiMock => {
   const secondaryTask = toTodoistTask(mockTasks.task2);
 
   const getTasks = createMockFn<TodoistApiService['getTasks']>();
-  getTasks.mockResolvedValue([primaryTask, secondaryTask]);
+  getTasks.mockResolvedValue({
+    results: [primaryTask, secondaryTask],
+    next_cursor: null,
+  });
 
   const getTask = createMockFn<TodoistApiService['getTask']>();
   getTask.mockResolvedValue(primaryTask);
@@ -376,7 +379,10 @@ const buildFiltersMocks = (): FiltersApiMock => {
   deleteFilter.mockResolvedValue(undefined);
 
   const getTasks = createMockFn<TodoistApiService['getTasks']>();
-  getTasks.mockResolvedValue([task]);
+  getTasks.mockResolvedValue({
+    results: [task],
+    next_cursor: null,
+  });
 
   return {
     ...createRateLimitMock(),

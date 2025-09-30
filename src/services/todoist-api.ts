@@ -314,8 +314,13 @@ export class TodoistApiService {
   }
 
   // Task operations
-  async getTasks(params?: TaskQueryParams): Promise<{ results: TodoistTask[]; next_cursor: string | null }> {
-    const response = await this.executeRequest<{ results: TodoistTask[]; next_cursor: string | null }>('/tasks', {
+  async getTasks(
+    params?: TaskQueryParams
+  ): Promise<{ results: TodoistTask[]; next_cursor: string | null }> {
+    const response = await this.executeRequest<{
+      results: TodoistTask[];
+      next_cursor: string | null;
+    }>('/tasks', {
       method: 'GET',
       params,
     });
@@ -338,7 +343,10 @@ export class TodoistApiService {
     if (cursor) params.cursor = cursor;
     if (limit) params.limit = limit;
 
-    const response = await this.executeRequest<{ results: TodoistTask[]; next_cursor: string | null }>('/tasks/filter', {
+    const response = await this.executeRequest<{
+      results: TodoistTask[];
+      next_cursor: string | null;
+    }>('/tasks/filter', {
       method: 'GET',
       params,
     });
@@ -400,7 +408,11 @@ export class TodoistApiService {
     }
   ): Promise<void> {
     // Validate that only one destination is specified
-    const destinations = [destination.project_id, destination.section_id, destination.parent_id].filter(Boolean);
+    const destinations = [
+      destination.project_id,
+      destination.section_id,
+      destination.parent_id,
+    ].filter(Boolean);
     if (destinations.length !== 1) {
       throw new TodoistAPIError(
         TodoistErrorCode.VALIDATION_ERROR,
@@ -430,7 +442,10 @@ export class TodoistApiService {
 
   // Project operations
   async getProjects(): Promise<TodoistProject[]> {
-    const response = await this.executeRequest<{ results: TodoistProject[]; next_cursor: string | null }>('/projects', {
+    const response = await this.executeRequest<{
+      results: TodoistProject[];
+      next_cursor: string | null;
+    }>('/projects', {
       method: 'GET',
     });
 
@@ -472,7 +487,10 @@ export class TodoistApiService {
   // Section operations
   async getSections(projectId?: string): Promise<TodoistSection[]> {
     const params = projectId ? { project_id: projectId } : undefined;
-    const response = await this.executeRequest<{ results: TodoistSection[]; next_cursor: string | null }>('/sections', {
+    const response = await this.executeRequest<{
+      results: TodoistSection[];
+      next_cursor: string | null;
+    }>('/sections', {
       method: 'GET',
       params,
     });
@@ -517,7 +535,10 @@ export class TodoistApiService {
     task_id?: string;
     project_id?: string;
   }): Promise<TodoistComment[]> {
-    const response = await this.executeRequest<{ results: TodoistComment[]; next_cursor: string | null }>('/comments', {
+    const response = await this.executeRequest<{
+      results: TodoistComment[];
+      next_cursor: string | null;
+    }>('/comments', {
       method: 'GET',
       params,
     });
@@ -559,7 +580,10 @@ export class TodoistApiService {
 
   // Label operations
   async getLabels(): Promise<TodoistLabel[]> {
-    const response = await this.executeRequest<{ results: TodoistLabel[]; next_cursor: string | null }>('/labels', {
+    const response = await this.executeRequest<{
+      results: TodoistLabel[];
+      next_cursor: string | null;
+    }>('/labels', {
       method: 'GET',
     });
 
@@ -745,7 +769,10 @@ export class TodoistApiService {
 
   // Filter methods
   async getFilters(): Promise<TodoistFilter[]> {
-    const response = await this.executeRequest<{ results: TodoistFilter[]; next_cursor: string | null }>('/filters', {});
+    const response = await this.executeRequest<{
+      results: TodoistFilter[];
+      next_cursor: string | null;
+    }>('/filters', {});
 
     // API v1 returns paginated response with { results: [...], next_cursor: ... }
     return response.results || [];

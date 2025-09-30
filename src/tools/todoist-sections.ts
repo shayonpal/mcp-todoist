@@ -2,15 +2,8 @@ import { z } from 'zod';
 import { TodoistApiService } from '../services/todoist-api.js';
 import { CacheService } from '../services/cache.js';
 import { TodoistSection, APIConfiguration } from '../types/todoist.js';
-import {
-  TodoistAPIError,
-  TodoistErrorCode,
-  ValidationError,
-} from '../types/errors.js';
-import {
-  handleToolError,
-  removeUndefinedProperties,
-} from '../utils/tool-helpers.js';
+import { ValidationError } from '../types/errors.js';
+import { handleToolError } from '../utils/tool-helpers.js';
 
 /**
  * Input schema for the todoist_sections tool
@@ -100,10 +93,16 @@ export class TodoistSectionsTool {
           action: {
             type: 'string',
             enum: ['create', 'get', 'update', 'delete', 'list', 'reorder'],
-            description: 'Action to perform'
+            description: 'Action to perform',
           },
-          section_id: { type: 'string', description: 'Section ID (required for get/update/delete)' },
-          project_id: { type: 'string', description: 'Project ID (required for create/list/reorder)' },
+          section_id: {
+            type: 'string',
+            description: 'Section ID (required for get/update/delete)',
+          },
+          project_id: {
+            type: 'string',
+            description: 'Project ID (required for create/list/reorder)',
+          },
           name: { type: 'string', description: 'Section name' },
           order: { type: 'number', description: 'Section order' },
           section_orders: {
@@ -113,12 +112,12 @@ export class TodoistSectionsTool {
               type: 'object',
               properties: {
                 id: { type: 'string' },
-                order: { type: 'number' }
-              }
-            }
-          }
+                order: { type: 'number' },
+              },
+            },
+          },
         },
-        required: ['action']
+        required: ['action'],
       },
     };
   }
@@ -151,7 +150,9 @@ export class TodoistSectionsTool {
         break;
       case 'reorder':
         if (!input.project_id!)
-          throw new ValidationError('project_id is required for reorder action');
+          throw new ValidationError(
+            'project_id is required for reorder action'
+          );
         if (!input.section_orders! || input.section_orders!.length === 0)
           throw new ValidationError(
             'section_orders is required for reorder action'
@@ -375,8 +376,8 @@ export class TodoistSectionsTool {
       );
       const existingSectionIds = new Set(existingSections.map(s => s.id));
 
-      const invalidSectionIds = input.section_orders!
-        .map(so => so.id)
+      const invalidSectionIds = input
+        .section_orders!.map(so => so.id)
         .filter(id => !existingSectionIds.has(id));
 
       if (invalidSectionIds.length > 0) {

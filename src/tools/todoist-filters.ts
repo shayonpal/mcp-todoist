@@ -5,15 +5,8 @@ import {
   TodoistTask,
   APIConfiguration,
 } from '../types/todoist.js';
-import {
-  TodoistAPIError,
-  TodoistErrorCode,
-  ValidationError,
-} from '../types/errors.js';
-import {
-  handleToolError,
-  removeUndefinedProperties,
-} from '../utils/tool-helpers.js';
+import { ValidationError } from '../types/errors.js';
+import { handleToolError } from '../utils/tool-helpers.js';
 
 /**
  * Input schema for the todoist_filters tool
@@ -109,18 +102,35 @@ export class TodoistFiltersTool {
         properties: {
           action: {
             type: 'string',
-            enum: ['list_filters', 'get_filter', 'query_filter', 'create_filter', 'update_filter', 'delete_filter'],
-            description: 'Action to perform'
+            enum: [
+              'list_filters',
+              'get_filter',
+              'query_filter',
+              'create_filter',
+              'update_filter',
+              'delete_filter',
+            ],
+            description: 'Action to perform',
           },
-          filter_id: { type: 'string', description: 'Filter ID (required for get_filter/query_filter/update_filter/delete_filter)' },
+          filter_id: {
+            type: 'string',
+            description:
+              'Filter ID (required for get_filter/query_filter/update_filter/delete_filter)',
+          },
           name: { type: 'string', description: 'Filter name' },
-          query: { type: 'string', description: 'Filter query (Todoist query syntax)' },
+          query: {
+            type: 'string',
+            description: 'Filter query (Todoist query syntax)',
+          },
           color: { type: 'string', description: 'Filter color' },
           is_favorite: { type: 'boolean', description: 'Mark as favorite' },
           order: { type: 'number', description: 'Filter order' },
-          lang: { type: 'string', description: 'Language code for query parsing' }
+          lang: {
+            type: 'string',
+            description: 'Language code for query parsing',
+          },
         },
-        required: ['action']
+        required: ['action'],
       },
     };
   }
@@ -132,9 +142,13 @@ export class TodoistFiltersTool {
     switch (input.action) {
       case 'create_filter':
         if (!input.name)
-          throw new ValidationError('name is required for create_filter action');
+          throw new ValidationError(
+            'name is required for create_filter action'
+          );
         if (!input.query)
-          throw new ValidationError('query is required for create_filter action');
+          throw new ValidationError(
+            'query is required for create_filter action'
+          );
         break;
       case 'get_filter':
       case 'query_filter':

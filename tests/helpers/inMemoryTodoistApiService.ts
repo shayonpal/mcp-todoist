@@ -74,7 +74,9 @@ export class InMemoryTodoistApiService {
   }
 
   // Task operations
-  async getTasks(params: Record<string, any> = {}): Promise<TodoistTask[]> {
+  async getTasks(
+    params: Record<string, any> = {}
+  ): Promise<{ results: TodoistTask[]; next_cursor: string | null }> {
     let tasks = Array.from(this.tasks.values());
     if (params.project_id) {
       tasks = tasks.filter(task => task.project_id === params.project_id);
@@ -82,7 +84,7 @@ export class InMemoryTodoistApiService {
     if (params.section_id) {
       tasks = tasks.filter(task => task.section_id === params.section_id);
     }
-    return this.clone(tasks);
+    return { results: this.clone(tasks), next_cursor: null };
   }
 
   async getTask(taskId: string): Promise<TodoistTask> {

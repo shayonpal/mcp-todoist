@@ -11,11 +11,7 @@ import {
   TaskWithMetadata,
   APIConfiguration,
 } from '../types/todoist.js';
-import {
-  TodoistAPIError,
-  TodoistErrorCode,
-  ValidationError,
-} from '../types/errors.js';
+import { ValidationError } from '../types/errors.js';
 import {
   handleToolError,
   removeUndefinedProperties,
@@ -58,7 +54,7 @@ const TodoistTasksInputSchema = z.object({
   limit: z.number().int().max(200).optional(),
   // Batch operation fields
   batch_commands: z.array(BatchCommandSchema).optional(),
-});;
+});
 
 type TodoistTasksInput = z.infer<typeof TodoistTasksInputSchema>;
 
@@ -147,33 +143,77 @@ export class TodoistTasksTool {
         properties: {
           action: {
             type: 'string',
-            enum: ['create', 'get', 'update', 'delete', 'list', 'complete', 'uncomplete', 'batch'],
-            description: 'Action to perform'
+            enum: [
+              'create',
+              'get',
+              'update',
+              'delete',
+              'list',
+              'complete',
+              'uncomplete',
+              'batch',
+            ],
+            description: 'Action to perform',
           },
-          task_id: { type: 'string', description: 'Task ID (required for get/update/delete/complete/uncomplete)' },
+          task_id: {
+            type: 'string',
+            description:
+              'Task ID (required for get/update/delete/complete/uncomplete)',
+          },
           content: { type: 'string', description: 'Task content/title' },
           description: { type: 'string', description: 'Task description' },
-          project_id: { type: 'string', description: 'Project ID (for create/update/list actions). When listing tasks, use this to filter by project including Inbox. Get project IDs from todoist_projects tool.' },
+          project_id: {
+            type: 'string',
+            description:
+              'Project ID (for create/update/list actions). When listing tasks, use this to filter by project including Inbox. Get project IDs from todoist_projects tool.',
+          },
           section_id: { type: 'string', description: 'Section ID' },
           parent_id: { type: 'string', description: 'Parent task ID' },
           priority: { type: 'number', description: 'Priority (1-4)' },
-          labels: { type: 'array', items: { type: 'string' }, description: 'Label names (not IDs) - e.g., ["Work", "Important"]. Get available label names from todoist_labels tool.' },
-          due_string: { type: 'string', description: 'Natural language due date' },
+          labels: {
+            type: 'array',
+            items: { type: 'string' },
+            description:
+              'Label names (not IDs) - e.g., ["Work", "Important"]. Get available label names from todoist_labels tool.',
+          },
+          due_string: {
+            type: 'string',
+            description: 'Natural language due date',
+          },
           due_date: { type: 'string', description: 'Due date (YYYY-MM-DD)' },
-          due_datetime: { type: 'string', description: 'Due datetime (ISO 8601)' },
+          due_datetime: {
+            type: 'string',
+            description: 'Due datetime (ISO 8601)',
+          },
           assignee_id: { type: 'string', description: 'Assignee user ID' },
-          label_id: { type: 'string', description: 'Filter by label ID (for list)' },
-          query: { type: 'string', description: 'Filter query string (for list). Examples: "today" (due today), "tomorrow", "p1" (priority 1), "p2" (priority 2), "overdue", "no date", "#ProjectName" (tasks in project), "@LabelName" (tasks with label), "p1 & today" (high priority + due today). For content search use "search:" prefix: "search: meeting" (tasks containing "meeting"), "search: email & today" (tasks with "email" due today). For Inbox tasks, use project_id parameter instead of query.' },
-          lang: { type: 'string', description: 'Language code for query parsing (for list)' },
-          cursor: { type: 'string', description: 'Pagination cursor for next page (for list)' },
-          limit: { type: 'number', description: 'Number of results per page, max 200 (for list)' },
+          label_id: {
+            type: 'string',
+            description: 'Filter by label ID (for list)',
+          },
+          query: {
+            type: 'string',
+            description:
+              'Filter query string (for list). Examples: "today" (due today), "tomorrow", "p1" (priority 1), "p2" (priority 2), "overdue", "no date", "#ProjectName" (tasks in project), "@LabelName" (tasks with label), "p1 & today" (high priority + due today). For content search use "search:" prefix: "search: meeting" (tasks containing "meeting"), "search: email & today" (tasks with "email" due today). For Inbox tasks, use project_id parameter instead of query.',
+          },
+          lang: {
+            type: 'string',
+            description: 'Language code for query parsing (for list)',
+          },
+          cursor: {
+            type: 'string',
+            description: 'Pagination cursor for next page (for list)',
+          },
+          limit: {
+            type: 'number',
+            description: 'Number of results per page, max 200 (for list)',
+          },
           batch_commands: {
             type: 'array',
             description: 'Batch commands (for batch action)',
-            items: { type: 'object' }
-          }
+            items: { type: 'object' },
+          },
         },
-        required: ['action']
+        required: ['action'],
       },
     };
   }
@@ -334,15 +374,24 @@ export class TodoistTasksTool {
   private async handleUpdate(
     input: TodoistTasksInput
   ): Promise<TodoistTasksOutput> {
-    const { task_id, action, batch_commands, label_id, lang, query, cursor, limit, ...updateData } = input;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { task_id, ...updateData } = input;
 
     // Separate move fields from update fields
-    const moveFields: { project_id?: string; section_id?: string; parent_id?: string } = {};
+    const moveFields: {
+      project_id?: string;
+      section_id?: string;
+      parent_id?: string;
+    } = {};
     const otherFields: Record<string, unknown> = {};
 
     Object.entries(updateData).forEach(([key, value]) => {
       if (value !== undefined) {
-        if (key === 'project_id' || key === 'section_id' || key === 'parent_id') {
+        if (
+          key === 'project_id' ||
+          key === 'section_id' ||
+          key === 'parent_id'
+        ) {
           moveFields[key as keyof typeof moveFields] = value as string;
         } else {
           otherFields[key] = value;

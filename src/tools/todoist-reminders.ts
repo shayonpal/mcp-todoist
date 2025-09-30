@@ -6,10 +6,7 @@ import {
   TodoistErrorCode,
   ValidationError,
 } from '../types/errors.js';
-import {
-  handleToolError,
-  removeUndefinedProperties,
-} from '../utils/tool-helpers.js';
+import { handleToolError } from '../utils/tool-helpers.js';
 
 /**
  * Input schema for the todoist_reminders tool
@@ -214,10 +211,19 @@ export class TodoistRemindersTool {
             properties: {
               date: { type: 'string', description: 'ISO 8601 datetime' },
               string: { type: 'string', description: 'Natural language date' },
-              timezone: { type: 'string', description: 'Timezone for due date' },
-              is_recurring: { type: 'boolean', description: 'Whether reminder repeats' },
-              lang: { type: 'string', description: 'Language for parsing (default: en)' }
-            }
+              timezone: {
+                type: 'string',
+                description: 'Timezone for due date',
+              },
+              is_recurring: {
+                type: 'boolean',
+                description: 'Whether reminder repeats',
+              },
+              lang: {
+                type: 'string',
+                description: 'Language for parsing (default: en)',
+              },
+            },
           },
           name: {
             type: 'string',
@@ -264,21 +270,33 @@ export class TodoistRemindersTool {
         // Type-specific validation
         if (input.type === 'relative') {
           if (input.minute_offset === undefined)
-            throw new ValidationError('minute_offset is required for relative reminders');
+            throw new ValidationError(
+              'minute_offset is required for relative reminders'
+            );
         } else if (input.type === 'absolute') {
           if (!input.due)
             throw new ValidationError('due is required for absolute reminders');
         } else if (input.type === 'location') {
           if (!input.name)
-            throw new ValidationError('name is required for location reminders');
+            throw new ValidationError(
+              'name is required for location reminders'
+            );
           if (!input.loc_lat)
-            throw new ValidationError('loc_lat is required for location reminders');
+            throw new ValidationError(
+              'loc_lat is required for location reminders'
+            );
           if (!input.loc_long)
-            throw new ValidationError('loc_long is required for location reminders');
+            throw new ValidationError(
+              'loc_long is required for location reminders'
+            );
           if (!input.loc_trigger)
-            throw new ValidationError('loc_trigger is required for location reminders');
+            throw new ValidationError(
+              'loc_trigger is required for location reminders'
+            );
           if (!input.radius)
-            throw new ValidationError('radius is required for location reminders');
+            throw new ValidationError(
+              'radius is required for location reminders'
+            );
         }
         break;
       case 'get':
@@ -290,7 +308,9 @@ export class TodoistRemindersTool {
         break;
       case 'update':
         if (!input.reminder_id!)
-          throw new ValidationError('reminder_id is required for update action');
+          throw new ValidationError(
+            'reminder_id is required for update action'
+          );
         break;
       case 'list':
         // No required fields for list (item_id is optional filter)
@@ -346,7 +366,10 @@ export class TodoistRemindersTool {
 
       return result;
     } catch (error) {
-      return handleToolError(error, Date.now() - startTime) as TodoistRemindersOutput;
+      return handleToolError(
+        error,
+        Date.now() - startTime
+      ) as TodoistRemindersOutput;
     }
   }
 

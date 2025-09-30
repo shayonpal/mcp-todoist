@@ -2,11 +2,7 @@ import { z } from 'zod';
 import { TodoistApiService } from '../services/todoist-api.js';
 import { CacheService } from '../services/cache.js';
 import { TodoistProject, APIConfiguration } from '../types/todoist.js';
-import {
-  TodoistAPIError,
-  TodoistErrorCode,
-  ValidationError,
-} from '../types/errors.js';
+import { ValidationError } from '../types/errors.js';
 import {
   handleToolError,
   removeUndefinedProperties,
@@ -103,18 +99,37 @@ export class TodoistProjectsTool {
         properties: {
           action: {
             type: 'string',
-            enum: ['create', 'get', 'update', 'delete', 'list', 'archive', 'unarchive'],
-            description: 'Action to perform'
+            enum: [
+              'create',
+              'get',
+              'update',
+              'delete',
+              'list',
+              'archive',
+              'unarchive',
+            ],
+            description: 'Action to perform',
           },
-          project_id: { type: 'string', description: 'Project ID (required for get/update/delete/archive/unarchive)' },
+          project_id: {
+            type: 'string',
+            description:
+              'Project ID (required for get/update/delete/archive/unarchive)',
+          },
           name: { type: 'string', description: 'Project name' },
           parent_id: { type: 'string', description: 'Parent project ID' },
           color: { type: 'string', description: 'Project color' },
           is_favorite: { type: 'boolean', description: 'Mark as favorite' },
-          view_style: { type: 'string', enum: ['list', 'board'], description: 'View style' },
-          include_archived: { type: 'boolean', description: 'Include archived projects (for list)' }
+          view_style: {
+            type: 'string',
+            enum: ['list', 'board'],
+            description: 'View style',
+          },
+          include_archived: {
+            type: 'boolean',
+            description: 'Include archived projects (for list)',
+          },
         },
-        required: ['action']
+        required: ['action'],
       },
     };
   }

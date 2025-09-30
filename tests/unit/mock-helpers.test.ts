@@ -93,7 +93,7 @@ describe('mock helpers', () => {
       mock.updateFilter('id', { query: 'today' })
     ).resolves.toBeDefined();
     await expect(mock.deleteFilter('id')).resolves.toBeUndefined();
-    await expect(mock.getTasks({ filter: 'today' })).resolves.toBeDefined();
+    await expect(mock.getTasks({ query: 'today' })).resolves.toBeDefined();
   });
 
   test('createRemindersApiMock exposes reminder lifecycle', async () => {
