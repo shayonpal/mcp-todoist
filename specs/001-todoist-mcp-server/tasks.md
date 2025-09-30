@@ -134,13 +134,13 @@
 - [x] T064f Update contract tests to use getToolDefinition() for schema inspection instead of instance properties
 - [x] T064g Introduce per-suite mock factory helpers (e.g., `createTasksApiMock`) with precise `jest.Mock<Promise<TodoistTask>, [...]>` signatures
 - [x] T064h Alternatively expose targeted helper builders (`withTasksMocks`, `withFilterMocks`, etc.) that return only required mock methods
-- [ ] T064i Gradually remove `// @ts-nocheck` from contract/integration tests by tightening mocks
+- [ ] T064i ~~Gradually remove `// @ts-nocheck` from contract/integration tests by tightening mocks~~ → **MOVED TO TODOIST** (Task ID: 6f2QGXc6M2p8cpg2 in "Todoist MCP" project) - Will be completed later as technical debt cleanup
 - [x] T065 [P] Update README.md to explicitly mention v1 API usage and add reminders to feature list
 - [x] T066 [P] Update .env.example if it contains API URL references
-- [ ] T067 Manual verification of all 7 quickstart.md scenarios with v1 endpoints and reminders
+- [x] T067 Manual verification of all 7 quickstart.md scenarios with v1 endpoints and reminders
 
 ### Phase 4.4: Code Quality & Cleanup
-- [ ] T042 Cleanup and remove code duplication across tool implementations (migrated from Phase 3.5)
+- [x] T042 Cleanup and remove code duplication across tool implementations (migrated from Phase 3.5)
 
 ## Dependencies
 - Setup (T001-T006) must complete first
@@ -220,13 +220,14 @@ Task: "Update .env.example if it contains API URL references"
 - **Natural Language Due Dates**: Supported via due_string parameter (e.g., "every day", "tomorrow", "every 4th", "day after tomorrow", "every sept 7")
 - **Reminders**: New feature implementation in Phase 4.2 (FR-011 requirement)
 
-## Current Status (as of Phase 4.3.1)
+## Current Status (as of Phase 4.4)
 - ✅ Phase 3.1-3.6: Complete (T001-T048)
 - ✅ Phase 4.1: API version migration complete (v2 → v1) - T049-T055
 - ✅ Phase 4.2: Reminders feature implemented (FR-011) - T056-T062
-- ✅ Phase 4.3: Main validation complete - T063-T064
-- ⚠️  Phase 4.3.1: Test assertion fixes needed - T064a-T064f (6 test failures)
-- 📋 Total tasks: 73 (64 complete, 9 remaining: 6 test fixes + 3 documentation)
+- ✅ Phase 4.3: Main validation complete - T063-T067
+- ✅ Phase 4.3.1: Test assertion fixes complete - T064a-T064h
+- ✅ Phase 4.4: Code quality cleanup complete - T042
+- 📋 Total tasks: 73 (72 complete, 1 remaining: T064i type safety deferred to Todoist backlog)
 
 ## Validation Checklist
 *GATE: Verified before execution*
@@ -248,5 +249,5 @@ Task: "Update .env.example if it contains API URL references"
 - [x] Natural language due dates verified with real-world examples (T063)
 - [x] All test files updated to use v1 endpoints (T054)
 - [x] Test suite compiles and runs with v1 API (T064)
-- [ ] All test assertions fixed (T064a-T064f) - 6 validation test failures remain
-- [ ] Documentation updated to reflect v1 API and reminders feature (T065-T067)
+- [x] All test assertions fixed (T064a-T064h) - test fixes complete
+- [x] Documentation updated to reflect v1 API and reminders feature (T065-T067)

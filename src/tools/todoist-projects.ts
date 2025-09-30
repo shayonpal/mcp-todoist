@@ -7,6 +7,10 @@ import {
   TodoistErrorCode,
   ValidationError,
 } from '../types/errors.js';
+import {
+  handleToolError,
+  removeUndefinedProperties,
+} from '../utils/tool-helpers.js';
 
 /**
  * Input schema for the todoist_projects tool
@@ -223,9 +227,7 @@ export class TodoistProjectsTool {
     };
 
     // Remove undefined properties
-    const cleanedData = Object.fromEntries(
-      Object.entries(projectData).filter(([_, value]) => value !== undefined)
-    );
+    const cleanedData = removeUndefinedProperties(projectData);
 
     const project = await this.apiService.createProject(cleanedData);
 
@@ -263,9 +265,7 @@ export class TodoistProjectsTool {
     const { project_id, ...updateData } = input;
 
     // Remove undefined properties
-    const cleanedData = Object.fromEntries(
-      Object.entries(updateData).filter(([_, value]) => value !== undefined)
-    );
+    const cleanedData = removeUndefinedProperties(updateData);
 
     const project = await this.apiService.updateProject(
       project_id!,
@@ -369,32 +369,6 @@ export class TodoistProjectsTool {
     error: unknown,
     operationTime: number
   ): TodoistProjectsOutput {
-    let todoistError;
-
-    if (error instanceof TodoistAPIError) {
-      todoistError = error.toTodoistError();
-    } else if (error instanceof z.ZodError) {
-      todoistError = {
-        code: TodoistErrorCode.VALIDATION_ERROR,
-        message: 'Invalid input parameters',
-        details: { validationErrors: error.errors },
-        retryable: false,
-      };
-    } else {
-      todoistError = {
-        code: TodoistErrorCode.UNKNOWN_ERROR,
-        message: (error as Error).message || 'An unexpected error occurred',
-        details: { originalError: error },
-        retryable: false,
-      };
-    }
-
-    return {
-      success: false,
-      error: todoistError,
-      metadata: {
-        operation_time: operationTime,
-      },
-    };
+    return handleToolError(error, operationTime) as TodoistProjectsOutput;
   }
 }

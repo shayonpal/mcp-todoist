@@ -16,6 +16,10 @@ import {
   TodoistErrorCode,
   ValidationError,
 } from '../types/errors.js';
+import {
+  handleToolError,
+  removeUndefinedProperties,
+} from '../utils/tool-helpers.js';
 
 /**
  * Input schema for the todoist_tasks tool
@@ -149,17 +153,17 @@ export class TodoistTasksTool {
           task_id: { type: 'string', description: 'Task ID (required for get/update/delete/complete/uncomplete)' },
           content: { type: 'string', description: 'Task content/title' },
           description: { type: 'string', description: 'Task description' },
-          project_id: { type: 'string', description: 'Project ID' },
+          project_id: { type: 'string', description: 'Project ID (for create/update/list actions). When listing tasks, use this to filter by project including Inbox. Get project IDs from todoist_projects tool.' },
           section_id: { type: 'string', description: 'Section ID' },
           parent_id: { type: 'string', description: 'Parent task ID' },
           priority: { type: 'number', description: 'Priority (1-4)' },
-          labels: { type: 'array', items: { type: 'string' }, description: 'Label IDs' },
+          labels: { type: 'array', items: { type: 'string' }, description: 'Label names (not IDs) - e.g., ["Work", "Important"]. Get available label names from todoist_labels tool.' },
           due_string: { type: 'string', description: 'Natural language due date' },
           due_date: { type: 'string', description: 'Due date (YYYY-MM-DD)' },
           due_datetime: { type: 'string', description: 'Due datetime (ISO 8601)' },
           assignee_id: { type: 'string', description: 'Assignee user ID' },
           label_id: { type: 'string', description: 'Filter by label ID (for list)' },
-          query: { type: 'string', description: 'Filter query string (for list) - e.g., "today", "priority 1", "@label_name"' },
+          query: { type: 'string', description: 'Filter query string (for list). Examples: "today" (due today), "tomorrow", "p1" (priority 1), "p2" (priority 2), "overdue", "no date", "#ProjectName" (tasks in project), "@LabelName" (tasks with label), "p1 & today" (high priority + due today). For content search use "search:" prefix: "search: meeting" (tasks containing "meeting"), "search: email & today" (tasks with "email" due today). For Inbox tasks, use project_id parameter instead of query.' },
           lang: { type: 'string', description: 'Language code for query parsing (for list)' },
           cursor: { type: 'string', description: 'Pagination cursor for next page (for list)' },
           limit: { type: 'number', description: 'Number of results per page, max 200 (for list)' },
@@ -296,9 +300,7 @@ export class TodoistTasksTool {
     };
 
     // Remove undefined properties
-    const cleanedData = Object.fromEntries(
-      Object.entries(taskData).filter(([_, value]) => value !== undefined)
-    );
+    const cleanedData = removeUndefinedProperties(taskData);
 
     const task = await this.apiService.createTask(cleanedData);
     const enrichedTask = await this.enrichTaskWithMetadata(task);
@@ -334,18 +336,45 @@ export class TodoistTasksTool {
   ): Promise<TodoistTasksOutput> {
     const { task_id, action, batch_commands, label_id, lang, query, cursor, limit, ...updateData } = input;
 
-    // Remove undefined properties
-    const cleanedData = Object.fromEntries(
-      Object.entries(updateData).filter(([_, value]) => value !== undefined)
-    );
+    // Separate move fields from update fields
+    const moveFields: { project_id?: string; section_id?: string; parent_id?: string } = {};
+    const otherFields: Record<string, unknown> = {};
 
-    const task = await this.apiService.updateTask(task_id!, cleanedData);
+    Object.entries(updateData).forEach(([key, value]) => {
+      if (value !== undefined) {
+        if (key === 'project_id' || key === 'section_id' || key === 'parent_id') {
+          moveFields[key as keyof typeof moveFields] = value as string;
+        } else {
+          otherFields[key] = value;
+        }
+      }
+    });
+
+    const hasMoveFields = Object.keys(moveFields).length > 0;
+    const hasUpdateFields = Object.keys(otherFields).length > 0;
+
+    // Perform move operation if needed
+    if (hasMoveFields) {
+      await this.apiService.moveTask(task_id!, moveFields);
+    }
+
+    // Perform update operation if needed
+    if (hasUpdateFields) {
+      await this.apiService.updateTask(task_id!, otherFields);
+    }
+
+    // Fetch the final task state
+    const task = await this.apiService.getTask(task_id!);
     const enrichedTask = await this.enrichTaskWithMetadata(task);
+
+    const operations = [];
+    if (hasMoveFields) operations.push('moved');
+    if (hasUpdateFields) operations.push('updated');
 
     return {
       success: true,
       data: enrichedTask,
-      message: 'Task updated successfully',
+      message: `Task ${operations.join(' and ')} successfully`,
     };
   }
 
@@ -369,17 +398,29 @@ export class TodoistTasksTool {
   private async handleList(
     input: TodoistTasksInput
   ): Promise<TodoistTasksOutput> {
-    const queryParams: Record<string, string | number> = {};
+    let response: { results: TodoistTask[]; next_cursor: string | null };
 
-    if (input.project_id) queryParams.project_id = input.project_id;
-    if (input.section_id) queryParams.section_id = input.section_id;
-    if (input.label_id) queryParams.label_id = input.label_id;
-    if (input.query) queryParams.query = input.query;
-    if (input.lang) queryParams.lang = input.lang;
-    if (input.cursor) queryParams.cursor = input.cursor;
-    if (input.limit) queryParams.limit = input.limit;
+    // Route to appropriate endpoint based on parameters
+    if (input.query) {
+      // Use /tasks/filter endpoint for query-based filtering
+      response = await this.apiService.getTasksByFilter(
+        input.query,
+        input.lang,
+        input.cursor,
+        input.limit
+      );
+    } else {
+      // Use /tasks endpoint for project/section/label filtering
+      const queryParams: Record<string, string | number> = {};
+      if (input.project_id) queryParams.project_id = input.project_id;
+      if (input.section_id) queryParams.section_id = input.section_id;
+      if (input.label_id) queryParams.label_id = input.label_id;
+      if (input.cursor) queryParams.cursor = input.cursor;
+      if (input.limit) queryParams.limit = input.limit;
 
-    const response = await this.apiService.getTasks(queryParams);
+      response = await this.apiService.getTasks(queryParams);
+    }
+
     const enrichedTasks = await Promise.all(
       response.results.map(task => this.enrichTaskWithMetadata(task))
     );
@@ -580,32 +621,6 @@ export class TodoistTasksTool {
     error: unknown,
     operationTime: number
   ): TodoistTasksOutput {
-    let todoistError;
-
-    if (error instanceof TodoistAPIError) {
-      todoistError = error.toTodoistError();
-    } else if (error instanceof z.ZodError) {
-      todoistError = {
-        code: TodoistErrorCode.VALIDATION_ERROR,
-        message: 'Invalid input parameters',
-        details: { validationErrors: error.errors },
-        retryable: false,
-      };
-    } else {
-      todoistError = {
-        code: TodoistErrorCode.UNKNOWN_ERROR,
-        message: (error as Error).message || 'An unexpected error occurred',
-        details: { originalError: error },
-        retryable: false,
-      };
-    }
-
-    return {
-      success: false,
-      error: todoistError,
-      metadata: {
-        operation_time: operationTime,
-      },
-    };
+    return handleToolError(error, operationTime) as TodoistTasksOutput;
   }
 }

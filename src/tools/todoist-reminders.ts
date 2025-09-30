@@ -6,6 +6,10 @@ import {
   TodoistErrorCode,
   ValidationError,
 } from '../types/errors.js';
+import {
+  handleToolError,
+  removeUndefinedProperties,
+} from '../utils/tool-helpers.js';
 
 /**
  * Input schema for the todoist_reminders tool
@@ -342,56 +346,7 @@ export class TodoistRemindersTool {
 
       return result;
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        const validationError = new ValidationError(
-          `Invalid parameters: ${error.errors.map(e => e.message).join(', ')}`
-        );
-        const todoistError = validationError.toTodoistError();
-        return {
-          success: false,
-          error: {
-            code: todoistError.code,
-            message: todoistError.message,
-            details: { validationErrors: error.errors },
-            retryable: todoistError.retryable,
-            retry_after: todoistError.retry_after,
-          },
-          metadata: {
-            operation_time: Date.now() - startTime,
-          },
-        };
-      }
-
-      if (error instanceof TodoistAPIError) {
-        const todoistError = error.toTodoistError();
-        return {
-          success: false,
-          error: {
-            code: todoistError.code,
-            message: todoistError.message,
-            details: todoistError.details,
-            retryable: todoistError.retryable,
-            retry_after: todoistError.retry_after,
-          },
-          metadata: {
-            operation_time: Date.now() - startTime,
-          },
-        };
-      }
-
-      // Unknown error
-      return {
-        success: false,
-        error: {
-          code: TodoistErrorCode.UNKNOWN_ERROR,
-          message:
-            error instanceof Error ? error.message : 'Unknown error occurred',
-          retryable: false,
-        },
-        metadata: {
-          operation_time: Date.now() - startTime,
-        },
-      };
+      return handleToolError(error, Date.now() - startTime) as TodoistRemindersOutput;
     }
   }
 

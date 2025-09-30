@@ -327,6 +327,29 @@ export class TodoistApiService {
     };
   }
 
+  async getTasksByFilter(
+    query: string,
+    lang?: string,
+    cursor?: string,
+    limit?: number
+  ): Promise<{ results: TodoistTask[]; next_cursor: string | null }> {
+    const params: Record<string, string | number> = { query };
+    if (lang) params.lang = lang;
+    if (cursor) params.cursor = cursor;
+    if (limit) params.limit = limit;
+
+    const response = await this.executeRequest<{ results: TodoistTask[]; next_cursor: string | null }>('/tasks/filter', {
+      method: 'GET',
+      params,
+    });
+
+    // API v1 returns paginated response with { results: [...], next_cursor: ... }
+    return {
+      results: response.results || [],
+      next_cursor: response.next_cursor || null,
+    };
+  }
+
   async getTask(taskId: string): Promise<TodoistTask> {
     return this.executeRequest<TodoistTask>(`/tasks/${taskId}`, {
       method: 'GET',
@@ -366,6 +389,43 @@ export class TodoistApiService {
     return this.executeRequest<void>(`/tasks/${taskId}/reopen`, {
       method: 'POST',
     });
+  }
+
+  async moveTask(
+    taskId: string,
+    destination: {
+      project_id?: string;
+      section_id?: string;
+      parent_id?: string;
+    }
+  ): Promise<void> {
+    // Validate that only one destination is specified
+    const destinations = [destination.project_id, destination.section_id, destination.parent_id].filter(Boolean);
+    if (destinations.length !== 1) {
+      throw new TodoistAPIError(
+        TodoistErrorCode.VALIDATION_ERROR,
+        'Exactly one of project_id, section_id, or parent_id must be specified for move operation',
+        undefined,
+        false,
+        undefined,
+        400
+      );
+    }
+
+    const uuid = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+
+    const commands = [
+      {
+        type: 'item_move',
+        uuid,
+        args: {
+          id: taskId,
+          ...destination,
+        },
+      },
+    ];
+
+    await this.sync(commands);
   }
 
   // Project operations
