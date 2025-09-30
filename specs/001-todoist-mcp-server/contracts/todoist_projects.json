@@ -1,0 +1,227 @@
+{
+  "name": "todoist_projects",
+  "description": "Complete project management for Todoist - create, read, update, archive, and query projects with metadata support",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "action": {
+        "type": "string",
+        "enum": ["create", "get", "update", "delete", "list", "archive", "unarchive"],
+        "description": "Operation to perform on projects"
+      },
+      "project_id": {
+        "type": "string",
+        "description": "Project ID (required for get, update, delete, archive, unarchive)"
+      },
+      "name": {
+        "type": "string",
+        "maxLength": 120,
+        "description": "Project name (required for create)"
+      },
+      "parent_id": {
+        "type": "string",
+        "description": "Parent project ID for nested projects"
+      },
+      "color": {
+        "type": "string",
+        "description": "Project color (predefined color ID)"
+      },
+      "is_favorite": {
+        "type": "boolean",
+        "description": "Whether project is favorited"
+      },
+      "view_style": {
+        "type": "string",
+        "enum": ["list", "board"],
+        "description": "Project view style"
+      },
+      "include_archived": {
+        "type": "boolean",
+        "default": false,
+        "description": "Include archived projects in list action"
+      }
+    },
+    "required": ["action"],
+    "allOf": [
+      {
+        "if": {"properties": {"action": {"const": "create"}}},
+        "then": {"required": ["name"]}
+      },
+      {
+        "if": {"properties": {"action": {"enum": ["get", "update", "delete", "archive", "unarchive"]}}},
+        "then": {"required": ["project_id"]}
+      }
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "success": {"type": "boolean"},
+      "data": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "id": {"type": "string"},
+              "name": {"type": "string"},
+              "comment_count": {"type": "integer"},
+              "order": {"type": "integer"},
+              "color": {"type": "string"},
+              "is_shared": {"type": "boolean"},
+              "is_favorite": {"type": "boolean"},
+              "is_inbox_project": {"type": "boolean"},
+              "is_team_inbox": {"type": "boolean"},
+              "view_style": {"type": "string"},
+              "url": {"type": "string"},
+              "parent_id": {"type": "string"}
+            },
+            "description": "Single project object"
+          },
+          {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {"type": "string"},
+                "name": {"type": "string"},
+                "comment_count": {"type": "integer"},
+                "order": {"type": "integer"},
+                "color": {"type": "string"},
+                "is_shared": {"type": "boolean"},
+                "is_favorite": {"type": "boolean"},
+                "is_inbox_project": {"type": "boolean"},
+                "is_team_inbox": {"type": "boolean"},
+                "view_style": {"type": "string"},
+                "url": {"type": "string"},
+                "parent_id": {"type": "string"}
+              }
+            },
+            "description": "Array of project objects"
+          }
+        ]
+      },
+      "message": {"type": "string"},
+      "metadata": {
+        "type": "object",
+        "properties": {
+          "total_count": {"type": "integer"},
+          "active_count": {"type": "integer"},
+          "archived_count": {"type": "integer"},
+          "operation_time": {"type": "number"},
+          "rate_limit_remaining": {"type": "integer"},
+          "rate_limit_reset": {"type": "string"}
+        }
+      },
+      "error": {
+        "type": "object",
+        "properties": {
+          "code": {"type": "string"},
+          "message": {"type": "string"},
+          "details": {"type": "object"},
+          "retryable": {"type": "boolean"},
+          "retry_after": {"type": "number"}
+        }
+      }
+    },
+    "required": ["success"]
+  },
+  "examples": [
+    {
+      "name": "Create a new project",
+      "input": {
+        "action": "create",
+        "name": "Website Redesign",
+        "color": "blue",
+        "is_favorite": true,
+        "view_style": "board"
+      },
+      "output": {
+        "success": true,
+        "data": {
+          "id": "2203306141",
+          "name": "Website Redesign",
+          "color": "blue",
+          "is_favorite": true,
+          "view_style": "board",
+          "is_shared": false,
+          "comment_count": 0,
+          "order": 1
+        },
+        "message": "Project created successfully"
+      }
+    },
+    {
+      "name": "List all projects",
+      "input": {
+        "action": "list"
+      },
+      "output": {
+        "success": true,
+        "data": [
+          {
+            "id": "2203306141",
+            "name": "Website Redesign",
+            "color": "blue",
+            "is_favorite": true,
+            "view_style": "board",
+            "comment_count": 5,
+            "order": 1
+          },
+          {
+            "id": "2203306142",
+            "name": "Personal Tasks",
+            "color": "green",
+            "is_favorite": false,
+            "view_style": "list",
+            "comment_count": 0,
+            "order": 2
+          }
+        ],
+        "metadata": {
+          "total_count": 2,
+          "active_count": 2,
+          "archived_count": 0
+        }
+      }
+    },
+    {
+      "name": "Archive a project",
+      "input": {
+        "action": "archive",
+        "project_id": "2203306141"
+      },
+      "output": {
+        "success": true,
+        "message": "Project archived successfully"
+      }
+    }
+  ],
+  "errors": [
+    {
+      "code": "INVALID_TOKEN",
+      "message": "Invalid or expired API token",
+      "retryable": false
+    },
+    {
+      "code": "RATE_LIMIT_EXCEEDED",
+      "message": "API rate limit exceeded",
+      "retryable": true,
+      "retry_after": 60
+    },
+    {
+      "code": "VALIDATION_ERROR",
+      "message": "Invalid parameters provided",
+      "retryable": false
+    },
+    {
+      "code": "RESOURCE_NOT_FOUND",
+      "message": "Project not found",
+      "retryable": false
+    },
+    {
+      "code": "PROJECT_HAS_TASKS",
+      "message": "Cannot delete project with existing tasks",
+      "retryable": false
+    }
+  ]
+}

@@ -1,0 +1,269 @@
+{
+  "name": "todoist_tasks",
+  "description": "Comprehensive task management for Todoist - create, read, update, delete, and query tasks with full CRUD operations and batch support",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "action": {
+        "type": "string",
+        "enum": ["create", "get", "update", "delete", "list", "complete", "uncomplete", "batch"],
+        "description": "Operation to perform on tasks"
+      },
+      "task_id": {
+        "type": "string",
+        "description": "Task ID (required for get, update, delete, complete, uncomplete)"
+      },
+      "task_ids": {
+        "type": "array",
+        "items": {"type": "string"},
+        "description": "Array of task IDs for batch operations"
+      },
+      "content": {
+        "type": "string",
+        "maxLength": 500,
+        "description": "Task content/title (required for create)"
+      },
+      "description": {
+        "type": "string",
+        "maxLength": 16384,
+        "description": "Extended task description"
+      },
+      "project_id": {
+        "type": "string",
+        "description": "Project ID (required for create)"
+      },
+      "section_id": {
+        "type": "string",
+        "description": "Section ID within project"
+      },
+      "parent_id": {
+        "type": "string",
+        "description": "Parent task ID for subtasks"
+      },
+      "priority": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 4,
+        "description": "Priority level (1=lowest, 4=highest)"
+      },
+      "labels": {
+        "type": "array",
+        "items": {"type": "string"},
+        "maxItems": 100,
+        "description": "Array of label IDs"
+      },
+      "due_string": {
+        "type": "string",
+        "description": "Natural language due date (e.g., 'tomorrow at 3pm')"
+      },
+      "due_date": {
+        "type": "string",
+        "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+        "description": "Due date in YYYY-MM-DD format"
+      },
+      "due_datetime": {
+        "type": "string",
+        "format": "date-time",
+        "description": "Due datetime in ISO 8601 format with timezone"
+      },
+      "assignee_id": {
+        "type": "string",
+        "description": "User ID to assign task to (shared projects only)"
+      },
+      "filter": {
+        "type": "string",
+        "description": "Todoist query filter for list action"
+      },
+      "lang": {
+        "type": "string",
+        "default": "en",
+        "description": "Language for natural language processing"
+      },
+      "batch_commands": {
+        "type": "array",
+        "maxItems": 100,
+        "items": {
+          "type": "object",
+          "properties": {
+            "type": {"type": "string", "enum": ["item_add", "item_update", "item_delete", "item_complete", "item_uncomplete"]},
+            "temp_id": {"type": "string"},
+            "args": {"type": "object"}
+          },
+          "required": ["type", "args"]
+        },
+        "description": "Batch commands for batch action (max 100)"
+      }
+    },
+    "required": ["action"],
+    "allOf": [
+      {
+        "if": {"properties": {"action": {"const": "create"}}},
+        "then": {"required": ["content", "project_id"]}
+      },
+      {
+        "if": {"properties": {"action": {"enum": ["get", "update", "delete", "complete", "uncomplete"]}}},
+        "then": {"required": ["task_id"]}
+      },
+      {
+        "if": {"properties": {"action": {"const": "batch"}}},
+        "then": {"required": ["batch_commands"]}
+      }
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "success": {"type": "boolean"},
+      "data": {
+        "oneOf": [
+          {
+            "type": "object",
+            "description": "Single task object"
+          },
+          {
+            "type": "array",
+            "items": {"type": "object"},
+            "description": "Array of task objects"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "sync_status": {"type": "object"},
+              "temp_id_mapping": {"type": "object"},
+              "full_sync": {"type": "boolean"}
+            },
+            "description": "Batch operation result"
+          }
+        ]
+      },
+      "message": {"type": "string"},
+      "metadata": {
+        "type": "object",
+        "properties": {
+          "total_count": {"type": "integer"},
+          "has_more": {"type": "boolean"},
+          "next_cursor": {"type": "string"},
+          "operation_time": {"type": "number"},
+          "rate_limit_remaining": {"type": "integer"},
+          "rate_limit_reset": {"type": "string"}
+        }
+      },
+      "error": {
+        "type": "object",
+        "properties": {
+          "code": {"type": "string"},
+          "message": {"type": "string"},
+          "details": {"type": "object"},
+          "retryable": {"type": "boolean"},
+          "retry_after": {"type": "number"}
+        }
+      }
+    },
+    "required": ["success"]
+  },
+  "examples": [
+    {
+      "name": "Create a new task",
+      "input": {
+        "action": "create",
+        "content": "Review quarterly reports",
+        "project_id": "2203306141",
+        "priority": 3,
+        "due_string": "tomorrow at 2pm",
+        "labels": ["work", "urgent"]
+      },
+      "output": {
+        "success": true,
+        "data": {
+          "id": "2995104339",
+          "content": "Review quarterly reports",
+          "project_id": "2203306141",
+          "priority": 3,
+          "labels": ["work", "urgent"],
+          "completed": false
+        },
+        "message": "Task created successfully"
+      }
+    },
+    {
+      "name": "Query tasks with filter",
+      "input": {
+        "action": "list",
+        "filter": "today & @work"
+      },
+      "output": {
+        "success": true,
+        "data": [
+          {
+            "id": "2995104339",
+            "content": "Review quarterly reports",
+            "project_id": "2203306141",
+            "labels": ["work", "urgent"],
+            "completed": false
+          }
+        ],
+        "metadata": {
+          "total_count": 1,
+          "has_more": false
+        }
+      }
+    },
+    {
+      "name": "Batch operations",
+      "input": {
+        "action": "batch",
+        "batch_commands": [
+          {
+            "type": "item_add",
+            "temp_id": "temp_123",
+            "args": {
+              "content": "First task",
+              "project_id": "2203306141"
+            }
+          },
+          {
+            "type": "item_add",
+            "temp_id": "temp_124",
+            "args": {
+              "content": "Second task",
+              "project_id": "2203306141",
+              "parent_id": "temp_123"
+            }
+          }
+        ]
+      },
+      "output": {
+        "success": true,
+        "data": {
+          "sync_status": {"temp_123": "ok", "temp_124": "ok"},
+          "temp_id_mapping": {"temp_123": "2995104340", "temp_124": "2995104341"},
+          "full_sync": false
+        },
+        "message": "Batch operation completed successfully"
+      }
+    }
+  ],
+  "errors": [
+    {
+      "code": "INVALID_TOKEN",
+      "message": "Invalid or expired API token",
+      "retryable": false
+    },
+    {
+      "code": "RATE_LIMIT_EXCEEDED",
+      "message": "API rate limit exceeded",
+      "retryable": true,
+      "retry_after": 60
+    },
+    {
+      "code": "VALIDATION_ERROR",
+      "message": "Invalid parameters provided",
+      "retryable": false
+    },
+    {
+      "code": "RESOURCE_NOT_FOUND",
+      "message": "Task not found",
+      "retryable": false
+    }
+  ]
+}

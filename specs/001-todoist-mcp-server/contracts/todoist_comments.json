@@ -1,0 +1,265 @@
+{
+  "name": "todoist_comments",
+  "description": "Comment management for Todoist tasks and projects - create, read, update, delete comments with 15,000 character limit and file attachment support",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "action": {
+        "type": "string",
+        "enum": ["create", "get", "update", "delete", "list"],
+        "description": "Operation to perform on comments"
+      },
+      "comment_id": {
+        "type": "string",
+        "description": "Comment ID (required for get, update, delete)"
+      },
+      "task_id": {
+        "type": "string",
+        "description": "Task ID (required for task comments - mutually exclusive with project_id)"
+      },
+      "project_id": {
+        "type": "string",
+        "description": "Project ID (required for project comments - mutually exclusive with task_id)"
+      },
+      "content": {
+        "type": "string",
+        "maxLength": 15000,
+        "description": "Comment content (required for create, max 15,000 characters)"
+      },
+      "attachment": {
+        "type": "object",
+        "properties": {
+          "resource_type": {"type": "string"},
+          "file_url": {"type": "string", "format": "uri"},
+          "file_name": {"type": "string"},
+          "file_size": {"type": "integer", "minimum": 0},
+          "file_type": {"type": "string"}
+        },
+        "description": "File attachment (one per comment)"
+      }
+    },
+    "required": ["action"],
+    "allOf": [
+      {
+        "if": {"properties": {"action": {"const": "create"}}},
+        "then": {
+          "required": ["content"],
+          "oneOf": [
+            {"required": ["task_id"]},
+            {"required": ["project_id"]}
+          ]
+        }
+      },
+      {
+        "if": {"properties": {"action": {"enum": ["get", "update", "delete"]}}},
+        "then": {"required": ["comment_id"]}
+      },
+      {
+        "if": {"properties": {"action": {"const": "list"}}},
+        "then": {
+          "oneOf": [
+            {"required": ["task_id"]},
+            {"required": ["project_id"]}
+          ]
+        }
+      }
+    ]
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "success": {"type": "boolean"},
+      "data": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "id": {"type": "string"},
+              "task_id": {"type": "string"},
+              "project_id": {"type": "string"},
+              "content": {"type": "string"},
+              "posted_at": {"type": "string", "format": "date-time"},
+              "attachment": {
+                "type": "object",
+                "properties": {
+                  "resource_type": {"type": "string"},
+                  "file_url": {"type": "string"},
+                  "file_name": {"type": "string"},
+                  "file_size": {"type": "integer"},
+                  "file_type": {"type": "string"},
+                  "upload_state": {"type": "string"}
+                }
+              }
+            },
+            "description": "Single comment object"
+          },
+          {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {"type": "string"},
+                "task_id": {"type": "string"},
+                "project_id": {"type": "string"},
+                "content": {"type": "string"},
+                "posted_at": {"type": "string", "format": "date-time"},
+                "attachment": {
+                  "type": "object",
+                  "properties": {
+                    "resource_type": {"type": "string"},
+                    "file_url": {"type": "string"},
+                    "file_name": {"type": "string"},
+                    "file_size": {"type": "integer"},
+                    "file_type": {"type": "string"},
+                    "upload_state": {"type": "string"}
+                  }
+                }
+              }
+            },
+            "description": "Array of comment objects"
+          }
+        ]
+      },
+      "message": {"type": "string"},
+      "metadata": {
+        "type": "object",
+        "properties": {
+          "total_count": {"type": "integer"},
+          "character_count": {"type": "integer"},
+          "has_attachments": {"type": "boolean"},
+          "operation_time": {"type": "number"},
+          "rate_limit_remaining": {"type": "integer"},
+          "rate_limit_reset": {"type": "string"}
+        }
+      },
+      "error": {
+        "type": "object",
+        "properties": {
+          "code": {"type": "string"},
+          "message": {"type": "string"},
+          "details": {"type": "object"},
+          "retryable": {"type": "boolean"},
+          "retry_after": {"type": "number"}
+        }
+      }
+    },
+    "required": ["success"]
+  },
+  "examples": [
+    {
+      "name": "Create a comment on a task",
+      "input": {
+        "action": "create",
+        "task_id": "2995104339",
+        "content": "This task requires additional research on market trends. I've found some preliminary data that suggests we should focus on the mobile segment first."
+      },
+      "output": {
+        "success": true,
+        "data": {
+          "id": "2992679862",
+          "task_id": "2995104339",
+          "content": "This task requires additional research on market trends. I've found some preliminary data that suggests we should focus on the mobile segment first.",
+          "posted_at": "2025-09-28T14:30:00Z"
+        },
+        "message": "Comment created successfully",
+        "metadata": {
+          "character_count": 147
+        }
+      }
+    },
+    {
+      "name": "List all comments for a task",
+      "input": {
+        "action": "list",
+        "task_id": "2995104339"
+      },
+      "output": {
+        "success": true,
+        "data": [
+          {
+            "id": "2992679862",
+            "task_id": "2995104339",
+            "content": "This task requires additional research on market trends.",
+            "posted_at": "2025-09-28T14:30:00Z"
+          },
+          {
+            "id": "2992679863",
+            "task_id": "2995104339",
+            "content": "Updated: Found the market research report.",
+            "posted_at": "2025-09-28T15:15:00Z",
+            "attachment": {
+              "resource_type": "file",
+              "file_name": "market-research.pdf",
+              "file_size": 2048576,
+              "file_type": "application/pdf",
+              "upload_state": "completed"
+            }
+          }
+        ],
+        "metadata": {
+          "total_count": 2,
+          "has_attachments": true
+        }
+      }
+    },
+    {
+      "name": "Update a comment",
+      "input": {
+        "action": "update",
+        "comment_id": "2992679862",
+        "content": "This task requires additional research on market trends. Update: Research completed and findings documented."
+      },
+      "output": {
+        "success": true,
+        "data": {
+          "id": "2992679862",
+          "task_id": "2995104339",
+          "content": "This task requires additional research on market trends. Update: Research completed and findings documented.",
+          "posted_at": "2025-09-28T14:30:00Z"
+        },
+        "message": "Comment updated successfully",
+        "metadata": {
+          "character_count": 117
+        }
+      }
+    }
+  ],
+  "errors": [
+    {
+      "code": "INVALID_TOKEN",
+      "message": "Invalid or expired API token",
+      "retryable": false
+    },
+    {
+      "code": "RATE_LIMIT_EXCEEDED",
+      "message": "API rate limit exceeded",
+      "retryable": true,
+      "retry_after": 60
+    },
+    {
+      "code": "VALIDATION_ERROR",
+      "message": "Invalid parameters provided",
+      "retryable": false
+    },
+    {
+      "code": "RESOURCE_NOT_FOUND",
+      "message": "Comment, task, or project not found",
+      "retryable": false
+    },
+    {
+      "code": "CONTENT_TOO_LONG",
+      "message": "Comment content exceeds 15,000 character limit",
+      "retryable": false
+    },
+    {
+      "code": "ATTACHMENT_ERROR",
+      "message": "File attachment failed to upload",
+      "retryable": true
+    },
+    {
+      "code": "MISSING_TARGET",
+      "message": "Either task_id or project_id must be provided",
+      "retryable": false
+    }
+  ]
+}
