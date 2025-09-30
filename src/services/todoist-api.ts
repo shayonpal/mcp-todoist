@@ -362,9 +362,13 @@ export class TodoistApiService {
 
   // Project operations
   async getProjects(): Promise<TodoistProject[]> {
-    return this.executeRequest<TodoistProject[]>('/projects', {
+    const response = await this.executeRequest<{ projects: TodoistProject[]; next_cursor: string | null }>('/projects', {
       method: 'GET',
     });
+
+    // API v1 returns paginated response with { projects: [...], next_cursor: ... }
+    // Extract the projects array
+    return response.projects || [];
   }
 
   async getProject(projectId: string): Promise<TodoistProject> {
