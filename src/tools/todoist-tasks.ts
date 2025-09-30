@@ -48,11 +48,13 @@ const TodoistTasksInputSchema = z.object({
   assignee_id: z.string().optional(),
   // List/Query fields
   label_id: z.string().optional(),
-  filter: z.string().optional(),
+  query: z.string().optional(),
   lang: z.string().optional(),
+  cursor: z.string().optional(),
+  limit: z.number().int().max(200).optional(),
   // Batch operation fields
   batch_commands: z.array(BatchCommandSchema).optional(),
-});
+});;
 
 type TodoistTasksInput = z.infer<typeof TodoistTasksInputSchema>;
 
@@ -157,8 +159,10 @@ export class TodoistTasksTool {
           due_datetime: { type: 'string', description: 'Due datetime (ISO 8601)' },
           assignee_id: { type: 'string', description: 'Assignee user ID' },
           label_id: { type: 'string', description: 'Filter by label ID (for list)' },
-          filter: { type: 'string', description: 'Filter query (for list)' },
-          lang: { type: 'string', description: 'Language code (for list)' },
+          query: { type: 'string', description: 'Filter query string (for list) - e.g., "today", "priority 1", "@label_name"' },
+          lang: { type: 'string', description: 'Language code for query parsing (for list)' },
+          cursor: { type: 'string', description: 'Pagination cursor for next page (for list)' },
+          limit: { type: 'number', description: 'Number of results per page, max 200 (for list)' },
           batch_commands: {
             type: 'array',
             description: 'Batch commands (for batch action)',
@@ -328,7 +332,7 @@ export class TodoistTasksTool {
   private async handleUpdate(
     input: TodoistTasksInput
   ): Promise<TodoistTasksOutput> {
-    const { task_id, ...updateData } = input;
+    const { task_id, action, batch_commands, label_id, lang, query, cursor, limit, ...updateData } = input;
 
     // Remove undefined properties
     const cleanedData = Object.fromEntries(
@@ -365,17 +369,19 @@ export class TodoistTasksTool {
   private async handleList(
     input: TodoistTasksInput
   ): Promise<TodoistTasksOutput> {
-    const queryParams: Record<string, string> = {};
+    const queryParams: Record<string, string | number> = {};
 
     if (input.project_id) queryParams.project_id = input.project_id;
     if (input.section_id) queryParams.section_id = input.section_id;
     if (input.label_id) queryParams.label_id = input.label_id;
-    if (input.filter) queryParams.filter = input.filter;
+    if (input.query) queryParams.query = input.query;
     if (input.lang) queryParams.lang = input.lang;
+    if (input.cursor) queryParams.cursor = input.cursor;
+    if (input.limit) queryParams.limit = input.limit;
 
-    const tasks = await this.apiService.getTasks(queryParams);
+    const response = await this.apiService.getTasks(queryParams);
     const enrichedTasks = await Promise.all(
-      tasks.map(task => this.enrichTaskWithMetadata(task))
+      response.results.map(task => this.enrichTaskWithMetadata(task))
     );
 
     return {
@@ -384,7 +390,8 @@ export class TodoistTasksTool {
       message: `Retrieved ${enrichedTasks.length} task(s)`,
       metadata: {
         total_count: enrichedTasks.length,
-        has_more: false, // Todoist API doesn't provide pagination info for this endpoint
+        has_more: !!response.next_cursor,
+        next_cursor: response.next_cursor || undefined,
       },
     };
   }

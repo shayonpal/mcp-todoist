@@ -39,8 +39,10 @@ type TaskQueryParams = {
   project_id?: string;
   section_id?: string;
   label_id?: string;
-  filter?: string;
+  query?: string;
   lang?: string;
+  cursor?: string;
+  limit?: number;
 };
 
 /**
@@ -312,14 +314,17 @@ export class TodoistApiService {
   }
 
   // Task operations
-  async getTasks(params?: TaskQueryParams): Promise<TodoistTask[]> {
+  async getTasks(params?: TaskQueryParams): Promise<{ results: TodoistTask[]; next_cursor: string | null }> {
     const response = await this.executeRequest<{ results: TodoistTask[]; next_cursor: string | null }>('/tasks', {
       method: 'GET',
       params,
     });
 
     // API v1 returns paginated response with { results: [...], next_cursor: ... }
-    return response.results || [];
+    return {
+      results: response.results || [],
+      next_cursor: response.next_cursor || null,
+    };
   }
 
   async getTask(taskId: string): Promise<TodoistTask> {

@@ -254,8 +254,8 @@ export class TodoistFiltersTool {
     const filter = await this.apiService.getFilter(input.filter_id!);
 
     // Then query tasks using the filter's query
-    const tasks = await this.apiService.getTasks({
-      filter: filter.query,
+    const response = await this.apiService.getTasks({
+      query: filter.query,
       lang: input.lang,
     });
 
@@ -267,11 +267,11 @@ export class TodoistFiltersTool {
           name: filter.name,
           query: filter.query,
         },
-        tasks,
+        tasks: response.results,
       },
-      message: `Filter query returned ${tasks.length} task(s)`,
+      message: `Filter query returned ${response.results.length} task(s)`,
       metadata: {
-        task_count: tasks.length,
+        task_count: response.results.length,
         query_parsed: filter.query,
       },
     };
