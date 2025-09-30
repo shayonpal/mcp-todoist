@@ -313,10 +313,13 @@ export class TodoistApiService {
 
   // Task operations
   async getTasks(params?: TaskQueryParams): Promise<TodoistTask[]> {
-    return this.executeRequest<TodoistTask[]>('/tasks', {
+    const response = await this.executeRequest<{ results: TodoistTask[]; next_cursor: string | null }>('/tasks', {
       method: 'GET',
       params,
     });
+
+    // API v1 returns paginated response with { results: [...], next_cursor: ... }
+    return response.results || [];
   }
 
   async getTask(taskId: string): Promise<TodoistTask> {
@@ -362,9 +365,12 @@ export class TodoistApiService {
 
   // Project operations
   async getProjects(): Promise<TodoistProject[]> {
-    return this.executeRequest<TodoistProject[]>('/projects', {
+    const response = await this.executeRequest<{ results: TodoistProject[]; next_cursor: string | null }>('/projects', {
       method: 'GET',
     });
+
+    // API v1 returns paginated response with { results: [...], next_cursor: ... }
+    return response.results || [];
   }
 
   async getProject(projectId: string): Promise<TodoistProject> {
@@ -401,10 +407,13 @@ export class TodoistApiService {
   // Section operations
   async getSections(projectId?: string): Promise<TodoistSection[]> {
     const params = projectId ? { project_id: projectId } : undefined;
-    return this.executeRequest<TodoistSection[]>('/sections', {
+    const response = await this.executeRequest<{ results: TodoistSection[]; next_cursor: string | null }>('/sections', {
       method: 'GET',
       params,
     });
+
+    // API v1 returns paginated response with { results: [...], next_cursor: ... }
+    return response.results || [];
   }
 
   async getSection(sectionId: string): Promise<TodoistSection> {
@@ -443,10 +452,13 @@ export class TodoistApiService {
     task_id?: string;
     project_id?: string;
   }): Promise<TodoistComment[]> {
-    return this.executeRequest<TodoistComment[]>('/comments', {
+    const response = await this.executeRequest<{ results: TodoistComment[]; next_cursor: string | null }>('/comments', {
       method: 'GET',
       params,
     });
+
+    // API v1 returns paginated response with { results: [...], next_cursor: ... }
+    return response.results || [];
   }
 
   async getComment(commentId: string): Promise<TodoistComment> {
@@ -482,9 +494,12 @@ export class TodoistApiService {
 
   // Label operations
   async getLabels(): Promise<TodoistLabel[]> {
-    return this.executeRequest<TodoistLabel[]>('/labels', {
+    const response = await this.executeRequest<{ results: TodoistLabel[]; next_cursor: string | null }>('/labels', {
       method: 'GET',
     });
+
+    // API v1 returns paginated response with { results: [...], next_cursor: ... }
+    return response.results || [];
   }
 
   async getLabel(labelId: string): Promise<TodoistLabel> {
@@ -665,7 +680,10 @@ export class TodoistApiService {
 
   // Filter methods
   async getFilters(): Promise<TodoistFilter[]> {
-    return this.executeRequest<TodoistFilter[]>('/filters', {});
+    const response = await this.executeRequest<{ results: TodoistFilter[]; next_cursor: string | null }>('/filters', {});
+
+    // API v1 returns paginated response with { results: [...], next_cursor: ... }
+    return response.results || [];
   }
 
   async getFilter(filterId: string): Promise<TodoistFilter> {
