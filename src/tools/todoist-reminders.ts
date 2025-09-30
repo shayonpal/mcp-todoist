@@ -177,7 +177,7 @@ export class TodoistRemindersTool {
       description:
         'Manage reminders for Todoist tasks. Supports three reminder types: relative (minutes before task due date), absolute (specific date and time), and location (geofenced area). Natural language due dates supported (e.g., "tomorrow at 10:00", "every day", "every 4th").',
       inputSchema: {
-        type: 'object',
+        type: 'object' as const,
         properties: {
           action: {
             type: 'string',
@@ -207,6 +207,13 @@ export class TodoistRemindersTool {
             type: 'object',
             description:
               'Due date object for absolute reminders (supports natural language)',
+            properties: {
+              date: { type: 'string', description: 'ISO 8601 datetime' },
+              string: { type: 'string', description: 'Natural language date' },
+              timezone: { type: 'string', description: 'Timezone for due date' },
+              is_recurring: { type: 'boolean', description: 'Whether reminder repeats' },
+              lang: { type: 'string', description: 'Language for parsing (default: en)' }
+            }
           },
           name: {
             type: 'string',

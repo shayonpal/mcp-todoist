@@ -94,7 +94,32 @@ export class TodoistCommentsTool {
       name: 'todoist_comments',
       description:
         'Comment management for Todoist tasks and projects - create, read, update, delete comments with 15,000 character limit and file attachment support',
-      inputSchema: TodoistCommentsInputSchema,
+      inputSchema: {
+        type: 'object' as const,
+        properties: {
+          action: {
+            type: 'string',
+            enum: ['create', 'get', 'update', 'delete', 'list_by_task', 'list_by_project'],
+            description: 'Action to perform'
+          },
+          comment_id: { type: 'string', description: 'Comment ID (required for get/update/delete)' },
+          task_id: { type: 'string', description: 'Task ID (for create/list_by_task)' },
+          project_id: { type: 'string', description: 'Project ID (for create/list_by_project)' },
+          content: { type: 'string', description: 'Comment content (max 15,000 characters)' },
+          attachment: {
+            type: 'object',
+            description: 'File attachment',
+            properties: {
+              resource_type: { type: 'string' },
+              file_url: { type: 'string' },
+              file_name: { type: 'string' },
+              file_size: { type: 'number' },
+              file_type: { type: 'string' }
+            }
+          }
+        },
+        required: ['action']
+      },
     };
   }
 

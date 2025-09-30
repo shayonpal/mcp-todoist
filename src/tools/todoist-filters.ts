@@ -100,7 +100,24 @@ export class TodoistFiltersTool {
       name: 'todoist_filters',
       description:
         'Filter management and task querying for Todoist - query existing filters, retrieve tasks within filters, and manage saved filter criteria',
-      inputSchema: TodoistFiltersInputSchema,
+      inputSchema: {
+        type: 'object' as const,
+        properties: {
+          action: {
+            type: 'string',
+            enum: ['list_filters', 'get_filter', 'query_filter', 'create_filter', 'update_filter', 'delete_filter'],
+            description: 'Action to perform'
+          },
+          filter_id: { type: 'string', description: 'Filter ID (required for get_filter/query_filter/update_filter/delete_filter)' },
+          name: { type: 'string', description: 'Filter name' },
+          query: { type: 'string', description: 'Filter query (Todoist query syntax)' },
+          color: { type: 'string', description: 'Filter color' },
+          is_favorite: { type: 'boolean', description: 'Mark as favorite' },
+          order: { type: 'number', description: 'Filter order' },
+          lang: { type: 'string', description: 'Language code for query parsing' }
+        },
+        required: ['action']
+      },
     };
   }
 

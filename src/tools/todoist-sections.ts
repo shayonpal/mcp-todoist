@@ -90,7 +90,32 @@ export class TodoistSectionsTool {
       name: 'todoist_sections',
       description:
         'Section management within Todoist projects - create, read, update, delete, and reorder sections for better task organization',
-      inputSchema: TodoistSectionsInputSchema,
+      inputSchema: {
+        type: 'object' as const,
+        properties: {
+          action: {
+            type: 'string',
+            enum: ['create', 'get', 'update', 'delete', 'list', 'reorder'],
+            description: 'Action to perform'
+          },
+          section_id: { type: 'string', description: 'Section ID (required for get/update/delete)' },
+          project_id: { type: 'string', description: 'Project ID (required for create/list/reorder)' },
+          name: { type: 'string', description: 'Section name' },
+          order: { type: 'number', description: 'Section order' },
+          section_orders: {
+            type: 'array',
+            description: 'Section reordering array (for reorder action)',
+            items: {
+              type: 'object',
+              properties: {
+                id: { type: 'string' },
+                order: { type: 'number' }
+              }
+            }
+          }
+        },
+        required: ['action']
+      },
     };
   }
 

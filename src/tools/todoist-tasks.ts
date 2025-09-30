@@ -136,7 +136,37 @@ export class TodoistTasksTool {
       name: 'todoist_tasks',
       description:
         'Comprehensive task management for Todoist - create, read, update, delete, and query tasks with full CRUD operations and batch support',
-      inputSchema: TodoistTasksInputSchema,
+      inputSchema: {
+        type: 'object' as const,
+        properties: {
+          action: {
+            type: 'string',
+            enum: ['create', 'get', 'update', 'delete', 'list', 'complete', 'uncomplete', 'batch'],
+            description: 'Action to perform'
+          },
+          task_id: { type: 'string', description: 'Task ID (required for get/update/delete/complete/uncomplete)' },
+          content: { type: 'string', description: 'Task content/title' },
+          description: { type: 'string', description: 'Task description' },
+          project_id: { type: 'string', description: 'Project ID' },
+          section_id: { type: 'string', description: 'Section ID' },
+          parent_id: { type: 'string', description: 'Parent task ID' },
+          priority: { type: 'number', description: 'Priority (1-4)' },
+          labels: { type: 'array', items: { type: 'string' }, description: 'Label IDs' },
+          due_string: { type: 'string', description: 'Natural language due date' },
+          due_date: { type: 'string', description: 'Due date (YYYY-MM-DD)' },
+          due_datetime: { type: 'string', description: 'Due datetime (ISO 8601)' },
+          assignee_id: { type: 'string', description: 'Assignee user ID' },
+          label_id: { type: 'string', description: 'Filter by label ID (for list)' },
+          filter: { type: 'string', description: 'Filter query (for list)' },
+          lang: { type: 'string', description: 'Language code (for list)' },
+          batch_commands: {
+            type: 'array',
+            description: 'Batch commands (for batch action)',
+            items: { type: 'object' }
+          }
+        },
+        required: ['action']
+      },
     };
   }
 
