@@ -307,13 +307,6 @@ export class TodoistProjectsTool {
   ): Promise<TodoistProjectsOutput> {
     const projects = await this.apiService.getProjects();
 
-    // Ensure projects is an array
-    if (!Array.isArray(projects)) {
-      throw new ValidationError(
-        `Unexpected API response format: expected array, got ${typeof projects}`
-      );
-    }
-
     // Filter projects based on archived status
     const filteredProjects = input.include_archived
       ? projects
