@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { toMcpJsonSchema } from '../utils/json-schema.js';
 import { TodoistApiService } from '../services/todoist-api.js';
 import { TodoistComment, APIConfiguration } from '../types/todoist.js';
 import {
@@ -10,45 +9,35 @@ import {
 
 /**
  * Input schema for the todoist_comments tool
+ * Flattened for MCP client compatibility
  */
-const TodoistCommentsInputSchema = z.discriminatedUnion('action', [
-  z.object({
-    action: z.literal('create'),
-    content: z.string().max(15000, 'Content must be 15,000 characters or less'),
-    task_id: z.string().min(1).optional(),
-    project_id: z.string().min(1).optional(),
-    attachment: z
-      .object({
-        resource_type: z.string(),
-        file_url: z.string().url(),
-        file_name: z.string(),
-        file_size: z.number().int().min(0),
-        file_type: z.string(),
-      })
-      .optional(),
-  }),
-  z.object({
-    action: z.literal('get'),
-    comment_id: z.string().min(1, 'Comment ID is required'),
-  }),
-  z.object({
-    action: z.literal('update'),
-    comment_id: z.string().min(1, 'Comment ID is required'),
-    content: z.string().max(15000, 'Content must be 15,000 characters or less'),
-  }),
-  z.object({
-    action: z.literal('delete'),
-    comment_id: z.string().min(1, 'Comment ID is required'),
-  }),
-  z.object({
-    action: z.literal('list_by_task'),
-    task_id: z.string().min(1),
-  }),
-  z.object({
-    action: z.literal('list_by_project'),
-    project_id: z.string().min(1),
-  }),
-]);
+const TodoistCommentsInputSchema = z.object({
+  action: z.enum([
+    'create',
+    'get',
+    'update',
+    'delete',
+    'list_by_task',
+    'list_by_project',
+  ]),
+  // Comment ID (for get, update, delete)
+  comment_id: z.string().optional(),
+  // Task/Project ID (for create, list_by_task, list_by_project)
+  task_id: z.string().optional(),
+  project_id: z.string().optional(),
+  // Create/Update fields
+  content: z.string().optional(),
+  // Attachment (for create)
+  attachment: z
+    .object({
+      resource_type: z.string(),
+      file_url: z.string(),
+      file_name: z.string(),
+      file_size: z.number().int(),
+      file_type: z.string(),
+    })
+    .optional(),
+});
 
 type TodoistCommentsInput = z.infer<typeof TodoistCommentsInputSchema>;
 
@@ -105,11 +94,50 @@ export class TodoistCommentsTool {
       name: 'todoist_comments',
       description:
         'Comment management for Todoist tasks and projects - create, read, update, delete comments with 15,000 character limit and file attachment support',
-      inputSchema: toMcpJsonSchema(
-        TodoistCommentsInputSchema,
-        'Comment management operations'
-      ),
+      inputSchema: TodoistCommentsInputSchema,
     };
+  }
+
+  /**
+   * Validate that required fields are present for each action
+   */
+  private validateActionRequirements(input: TodoistCommentsInput): void {
+    switch (input.action) {
+      case 'create':
+        if (!input.content)
+          throw new ValidationError('content is required for create action');
+        // Either task_id or project_id must be provided
+        if (!input.task_id && !input.project_id)
+          throw new ValidationError(
+            'Either task_id or project_id is required for create action'
+          );
+        break;
+      case 'get':
+      case 'delete':
+        if (!input.comment_id)
+          throw new ValidationError(
+            `comment_id is required for ${input.action} action`
+          );
+        break;
+      case 'update':
+        if (!input.comment_id)
+          throw new ValidationError('comment_id is required for update action');
+        if (!input.content)
+          throw new ValidationError('content is required for update action');
+        break;
+      case 'list_by_task':
+        if (!input.task_id)
+          throw new ValidationError('task_id is required for list_by_task action');
+        break;
+      case 'list_by_project':
+        if (!input.project_id)
+          throw new ValidationError(
+            'project_id is required for list_by_project action'
+          );
+        break;
+      default:
+        throw new ValidationError('Invalid action specified');
+    }
   }
 
   /**
@@ -121,6 +149,9 @@ export class TodoistCommentsTool {
     try {
       // Validate input
       const validatedInput = TodoistCommentsInputSchema.parse(input);
+
+      // Validate action-specific required fields
+      this.validateActionRequirements(validatedInput);
 
       let result: TodoistCommentsOutput;
 
@@ -169,7 +200,7 @@ export class TodoistCommentsTool {
    * Create a new comment
    */
   private async handleCreate(
-    input: Extract<TodoistCommentsInput, { action: 'create' }>
+    input: TodoistCommentsInput
   ): Promise<TodoistCommentsOutput> {
     // Validate that either task_id or project_id is provided
     if (!input.task_id && !input.project_id) {
@@ -207,7 +238,7 @@ export class TodoistCommentsTool {
    * Get a specific comment by ID
    */
   private async handleGet(
-    input: Extract<TodoistCommentsInput, { action: 'get' }>
+    input: TodoistCommentsInput
   ): Promise<TodoistCommentsOutput> {
     const comment = await this.apiService.getComment(input.comment_id);
 
@@ -226,7 +257,7 @@ export class TodoistCommentsTool {
    * Update an existing comment
    */
   private async handleUpdate(
-    input: Extract<TodoistCommentsInput, { action: 'update' }>
+    input: TodoistCommentsInput
   ): Promise<TodoistCommentsOutput> {
     const { comment_id, content } = input;
 
@@ -249,7 +280,7 @@ export class TodoistCommentsTool {
    * Delete a comment
    */
   private async handleDelete(
-    input: Extract<TodoistCommentsInput, { action: 'delete' }>
+    input: TodoistCommentsInput
   ): Promise<TodoistCommentsOutput> {
     await this.apiService.deleteComment(input.comment_id);
 

@@ -391,7 +391,7 @@ export class TodoistRemindersTool {
    * Handle create reminder action
    */
   private async handleCreate(
-    params: Extract<TodoistRemindersInput, { action: 'create' }>
+    params: TodoistRemindersInput
   ): Promise<TodoistRemindersOutput> {
     const reminderData: Partial<TodoistReminder> = {
       item_id: params.item_id,
@@ -430,7 +430,7 @@ export class TodoistRemindersTool {
    * Handle get reminder action
    */
   private async handleGet(
-    params: Extract<TodoistRemindersInput, { action: 'get' }>
+    params: TodoistRemindersInput
   ): Promise<TodoistRemindersOutput> {
     const reminders = await this.apiService.getReminders();
     const reminder = reminders.find(r => r.id === params.reminder_id);
@@ -460,7 +460,7 @@ export class TodoistRemindersTool {
    * Handle update reminder action
    */
   private async handleUpdate(
-    params: Extract<TodoistRemindersInput, { action: 'update' }>
+    params: TodoistRemindersInput
   ): Promise<TodoistRemindersOutput> {
     const updateData: Partial<TodoistReminder> = {};
 
@@ -494,7 +494,7 @@ export class TodoistRemindersTool {
    * Handle delete reminder action
    */
   private async handleDelete(
-    params: Extract<TodoistRemindersInput, { action: 'delete' }>
+    params: TodoistRemindersInput
   ): Promise<TodoistRemindersOutput> {
     await this.apiService.deleteReminder(params.reminder_id);
 
@@ -508,7 +508,7 @@ export class TodoistRemindersTool {
    * Handle list reminders action
    */
   private async handleList(
-    params: Extract<TodoistRemindersInput, { action: 'list' }>
+    params: TodoistRemindersInput
   ): Promise<TodoistRemindersOutput> {
     const reminders = await this.apiService.getReminders(params.item_id);
 

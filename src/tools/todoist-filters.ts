@@ -1,7 +1,5 @@
 import { z } from 'zod';
-import { toMcpJsonSchema } from '../utils/json-schema.js';
 import { TodoistApiService } from '../services/todoist-api.js';
-import { CreateFilterSchema } from '../schemas/validation.js';
 import {
   TodoistFilter,
   TodoistTask,
@@ -15,38 +13,28 @@ import {
 
 /**
  * Input schema for the todoist_filters tool
+ * Flattened for MCP client compatibility
  */
-const TodoistFiltersInputSchema = z.discriminatedUnion('action', [
-  z.object({
-    action: z.literal('list_filters'),
-  }),
-  z.object({
-    action: z.literal('get_filter'),
-    filter_id: z.string().min(1, 'Filter ID is required'),
-  }),
-  z.object({
-    action: z.literal('query_filter'),
-    filter_id: z.string().min(1, 'Filter ID is required'),
-    lang: z.string().default('en'),
-  }),
-  z.object({
-    action: z.literal('create_filter'),
-    ...CreateFilterSchema.shape,
-  }),
-  z.object({
-    action: z.literal('update_filter'),
-    filter_id: z.string().min(1, 'Filter ID is required'),
-    name: z.string().max(120).optional(),
-    query: z.string().optional(),
-    color: z.string().optional(),
-    is_favorite: z.boolean().optional(),
-    order: z.number().int().min(1).optional(),
-  }),
-  z.object({
-    action: z.literal('delete_filter'),
-    filter_id: z.string().min(1, 'Filter ID is required'),
-  }),
-]);
+const TodoistFiltersInputSchema = z.object({
+  action: z.enum([
+    'list_filters',
+    'get_filter',
+    'query_filter',
+    'create_filter',
+    'update_filter',
+    'delete_filter',
+  ]),
+  // Filter ID (for get_filter, query_filter, update_filter, delete_filter)
+  filter_id: z.string().optional(),
+  // Create/Update fields
+  name: z.string().optional(),
+  query: z.string().optional(),
+  color: z.string().optional(),
+  is_favorite: z.boolean().optional(),
+  order: z.number().int().optional(),
+  // Query fields
+  lang: z.string().optional(),
+});
 
 type TodoistFiltersInput = z.infer<typeof TodoistFiltersInputSchema>;
 
@@ -112,11 +100,36 @@ export class TodoistFiltersTool {
       name: 'todoist_filters',
       description:
         'Filter management and task querying for Todoist - query existing filters, retrieve tasks within filters, and manage saved filter criteria',
-      inputSchema: toMcpJsonSchema(
-        TodoistFiltersInputSchema,
-        'Filter management and query operations'
-      ),
+      inputSchema: TodoistFiltersInputSchema,
     };
+  }
+
+  /**
+   * Validate that required fields are present for each action
+   */
+  private validateActionRequirements(input: TodoistFiltersInput): void {
+    switch (input.action) {
+      case 'create_filter':
+        if (!input.name)
+          throw new ValidationError('name is required for create_filter action');
+        if (!input.query)
+          throw new ValidationError('query is required for create_filter action');
+        break;
+      case 'get_filter':
+      case 'query_filter':
+      case 'update_filter':
+      case 'delete_filter':
+        if (!input.filter_id)
+          throw new ValidationError(
+            `filter_id is required for ${input.action} action`
+          );
+        break;
+      case 'list_filters':
+        // No required fields for list_filters
+        break;
+      default:
+        throw new ValidationError('Invalid action specified');
+    }
   }
 
   /**
@@ -128,6 +141,9 @@ export class TodoistFiltersTool {
     try {
       // Validate input
       const validatedInput = TodoistFiltersInputSchema.parse(input);
+
+      // Validate action-specific required fields
+      this.validateActionRequirements(validatedInput);
 
       let result: TodoistFiltersOutput;
 
@@ -178,7 +194,7 @@ export class TodoistFiltersTool {
    * List all filters
    */
   private async handleListFilters(
-    _input: Extract<TodoistFiltersInput, { action: 'list_filters' }>
+    _input: TodoistFiltersInput
   ): Promise<TodoistFiltersOutput> {
     const filters = await this.apiService.getFilters();
 
@@ -200,7 +216,7 @@ export class TodoistFiltersTool {
    * Get a specific filter by ID
    */
   private async handleGetFilter(
-    input: Extract<TodoistFiltersInput, { action: 'get_filter' }>
+    input: TodoistFiltersInput
   ): Promise<TodoistFiltersOutput> {
     const filter = await this.apiService.getFilter(input.filter_id);
 
@@ -215,7 +231,7 @@ export class TodoistFiltersTool {
    * Query tasks using a filter
    */
   private async handleQueryFilter(
-    input: Extract<TodoistFiltersInput, { action: 'query_filter' }>
+    input: TodoistFiltersInput
   ): Promise<TodoistFiltersOutput> {
     // First get the filter to get its query
     const filter = await this.apiService.getFilter(input.filter_id);
@@ -248,7 +264,7 @@ export class TodoistFiltersTool {
    * Create a new filter
    */
   private async handleCreateFilter(
-    input: Extract<TodoistFiltersInput, { action: 'create_filter' }>
+    input: TodoistFiltersInput
   ): Promise<TodoistFiltersOutput> {
     const filterData = {
       name: input.name,
@@ -276,7 +292,7 @@ export class TodoistFiltersTool {
    * Update an existing filter
    */
   private async handleUpdateFilter(
-    input: Extract<TodoistFiltersInput, { action: 'update_filter' }>
+    input: TodoistFiltersInput
   ): Promise<TodoistFiltersOutput> {
     const { filter_id, ...updateData } = input;
 
@@ -298,7 +314,7 @@ export class TodoistFiltersTool {
    * Delete a filter
    */
   private async handleDeleteFilter(
-    input: Extract<TodoistFiltersInput, { action: 'delete_filter' }>
+    input: TodoistFiltersInput
   ): Promise<TodoistFiltersOutput> {
     await this.apiService.deleteFilter(input.filter_id);
 

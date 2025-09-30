@@ -1,14 +1,10 @@
 import { z } from 'zod';
-import { toMcpJsonSchema } from '../utils/json-schema.js';
 import { TodoistApiService } from '../services/todoist-api.js';
 import { BatchOperationsService } from '../services/batch.js';
 import { CacheService } from '../services/cache.js';
 import {
-  CreateTaskSchema,
-  UpdateTaskSchema,
-  TaskQuerySchema,
   BatchOperationSchema,
-  BatchOperationObjectSchema,
+  BatchCommandSchema,
 } from '../schemas/validation.js';
 import {
   TodoistTask,
@@ -23,42 +19,40 @@ import {
 
 /**
  * Input schema for the todoist_tasks tool
+ * Flattened for MCP client compatibility
  */
-const TodoistTasksInputSchema = z.discriminatedUnion('action', [
-  z.object({
-    action: z.literal('create'),
-    ...CreateTaskSchema.shape,
-  }),
-  z.object({
-    action: z.literal('get'),
-    task_id: z.string().min(1, 'Task ID is required'),
-  }),
-  z.object({
-    action: z.literal('update'),
-    ...UpdateTaskSchema.shape,
-  }),
-  z.object({
-    action: z.literal('delete'),
-    task_id: z.string().min(1, 'Task ID is required'),
-  }),
-  z.object({
-    action: z.literal('list'),
-    ...TaskQuerySchema.shape,
-  }),
-  z.object({
-    action: z.literal('complete'),
-    task_id: z.string().min(1, 'Task ID is required'),
-  }),
-  z.object({
-    action: z.literal('uncomplete'),
-    task_id: z.string().min(1, 'Task ID is required'),
-  }),
-  z
-    .object({
-      action: z.literal('batch'),
-    })
-    .merge(BatchOperationObjectSchema),
-]);
+const TodoistTasksInputSchema = z.object({
+  action: z.enum([
+    'create',
+    'get',
+    'update',
+    'delete',
+    'list',
+    'complete',
+    'uncomplete',
+    'batch',
+  ]),
+  // Task ID (for get, update, delete, complete, uncomplete)
+  task_id: z.string().optional(),
+  // Create/Update fields
+  content: z.string().optional(),
+  description: z.string().optional(),
+  project_id: z.string().optional(),
+  section_id: z.string().optional(),
+  parent_id: z.string().optional(),
+  priority: z.number().int().optional(),
+  labels: z.array(z.string()).optional(),
+  due_string: z.string().optional(),
+  due_date: z.string().optional(),
+  due_datetime: z.string().optional(),
+  assignee_id: z.string().optional(),
+  // List/Query fields
+  label_id: z.string().optional(),
+  filter: z.string().optional(),
+  lang: z.string().optional(),
+  // Batch operation fields
+  batch_commands: z.array(BatchCommandSchema).optional(),
+});
 
 type TodoistTasksInput = z.infer<typeof TodoistTasksInputSchema>;
 
@@ -142,11 +136,46 @@ export class TodoistTasksTool {
       name: 'todoist_tasks',
       description:
         'Comprehensive task management for Todoist - create, read, update, delete, and query tasks with full CRUD operations and batch support',
-      inputSchema: toMcpJsonSchema(
-        TodoistTasksInputSchema,
-        'Task management operations'
-      ),
+      inputSchema: TodoistTasksInputSchema,
     };
+  }
+
+  /**
+   * Validate that required fields are present for each action
+   */
+  private validateActionRequirements(input: TodoistTasksInput): void {
+    switch (input.action) {
+      case 'create':
+        if (!input.content)
+          throw new ValidationError('content is required for create action');
+        if (!input.project_id)
+          throw new ValidationError('project_id is required for create action');
+        break;
+      case 'get':
+      case 'delete':
+      case 'complete':
+      case 'uncomplete':
+        if (!input.task_id!)
+          throw new ValidationError(
+            `task_id is required for ${input.action} action`
+          );
+        break;
+      case 'update':
+        if (!input.task_id!)
+          throw new ValidationError('task_id is required for update action');
+        break;
+      case 'batch':
+        if (!input.batch_commands || input.batch_commands.length === 0)
+          throw new ValidationError(
+            'batch_commands is required for batch action'
+          );
+        break;
+      case 'list':
+        // No required fields for list
+        break;
+      default:
+        throw new ValidationError('Invalid action specified');
+    }
   }
 
   /**
@@ -158,6 +187,9 @@ export class TodoistTasksTool {
     try {
       // Validate input
       const validatedInput = TodoistTasksInputSchema.parse(input);
+
+      // Validate action-specific required fields
+      this.validateActionRequirements(validatedInput);
 
       let result: TodoistTasksOutput;
 
@@ -214,7 +246,7 @@ export class TodoistTasksTool {
    * Create a new task
    */
   private async handleCreate(
-    input: Extract<TodoistTasksInput, { action: 'create' }>
+    input: TodoistTasksInput
   ): Promise<TodoistTasksOutput> {
     const taskData = {
       content: input.content,
@@ -249,9 +281,9 @@ export class TodoistTasksTool {
    * Get a specific task by ID
    */
   private async handleGet(
-    input: Extract<TodoistTasksInput, { action: 'get' }>
+    input: TodoistTasksInput
   ): Promise<TodoistTasksOutput> {
-    const task = await this.apiService.getTask(input.task_id);
+    const task = await this.apiService.getTask(input.task_id!);
     const enrichedTask = await this.enrichTaskWithMetadata(task);
 
     return {
@@ -265,7 +297,7 @@ export class TodoistTasksTool {
    * Update an existing task
    */
   private async handleUpdate(
-    input: Extract<TodoistTasksInput, { action: 'update' }>
+    input: TodoistTasksInput
   ): Promise<TodoistTasksOutput> {
     const { task_id, ...updateData } = input;
 
@@ -288,9 +320,9 @@ export class TodoistTasksTool {
    * Delete a task
    */
   private async handleDelete(
-    input: Extract<TodoistTasksInput, { action: 'delete' }>
+    input: TodoistTasksInput
   ): Promise<TodoistTasksOutput> {
-    await this.apiService.deleteTask(input.task_id);
+    await this.apiService.deleteTask(input.task_id!);
 
     return {
       success: true,
@@ -302,7 +334,7 @@ export class TodoistTasksTool {
    * List tasks with optional filtering
    */
   private async handleList(
-    input: Extract<TodoistTasksInput, { action: 'list' }>
+    input: TodoistTasksInput
   ): Promise<TodoistTasksOutput> {
     const queryParams: Record<string, string> = {};
 
@@ -332,9 +364,9 @@ export class TodoistTasksTool {
    * Complete a task
    */
   private async handleComplete(
-    input: Extract<TodoistTasksInput, { action: 'complete' }>
+    input: TodoistTasksInput
   ): Promise<TodoistTasksOutput> {
-    await this.apiService.completeTask(input.task_id);
+    await this.apiService.completeTask(input.task_id!);
 
     return {
       success: true,
@@ -346,9 +378,9 @@ export class TodoistTasksTool {
    * Uncomplete (reopen) a task
    */
   private async handleUncomplete(
-    input: Extract<TodoistTasksInput, { action: 'uncomplete' }>
+    input: TodoistTasksInput
   ): Promise<TodoistTasksOutput> {
-    await this.apiService.reopenTask(input.task_id);
+    await this.apiService.reopenTask(input.task_id!);
 
     return {
       success: true,
@@ -360,12 +392,12 @@ export class TodoistTasksTool {
    * Execute batch operations
    */
   private async handleBatch(
-    input: Extract<TodoistTasksInput, { action: 'batch' }>
+    input: TodoistTasksInput
   ): Promise<TodoistTasksOutput> {
     BatchOperationSchema.parse({ batch_commands: input.batch_commands });
 
     // Convert input commands to proper BatchCommand format
-    const commands = input.batch_commands.map(cmd => ({
+    const commands = input.batch_commands!.map(cmd => ({
       ...cmd,
       uuid: cmd.uuid || `${Date.now()}-${Math.random()}`,
     }));

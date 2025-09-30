@@ -1,8 +1,6 @@
 import { z } from 'zod';
-import { toMcpJsonSchema } from '../utils/json-schema.js';
 import { TodoistApiService } from '../services/todoist-api.js';
 import { CacheService } from '../services/cache.js';
-import { CreateProjectSchema } from '../schemas/validation.js';
 import { TodoistProject, APIConfiguration } from '../types/todoist.js';
 import {
   TodoistAPIError,
@@ -12,42 +10,29 @@ import {
 
 /**
  * Input schema for the todoist_projects tool
+ * Flattened for MCP client compatibility
  */
-const TodoistProjectsInputSchema = z.discriminatedUnion('action', [
-  z.object({
-    action: z.literal('create'),
-    ...CreateProjectSchema.shape,
-  }),
-  z.object({
-    action: z.literal('get'),
-    project_id: z.string().min(1, 'Project ID is required'),
-  }),
-  z.object({
-    action: z.literal('update'),
-    project_id: z.string().min(1, 'Project ID is required'),
-    name: z.string().max(120).optional(),
-    parent_id: z.string().optional(),
-    color: z.string().optional(),
-    is_favorite: z.boolean().optional(),
-    view_style: z.enum(['list', 'board']).optional(),
-  }),
-  z.object({
-    action: z.literal('delete'),
-    project_id: z.string().min(1, 'Project ID is required'),
-  }),
-  z.object({
-    action: z.literal('list'),
-    include_archived: z.boolean().default(false),
-  }),
-  z.object({
-    action: z.literal('archive'),
-    project_id: z.string().min(1, 'Project ID is required'),
-  }),
-  z.object({
-    action: z.literal('unarchive'),
-    project_id: z.string().min(1, 'Project ID is required'),
-  }),
-]);
+const TodoistProjectsInputSchema = z.object({
+  action: z.enum([
+    'create',
+    'get',
+    'update',
+    'delete',
+    'list',
+    'archive',
+    'unarchive',
+  ]),
+  // Project ID (for get, update, delete, archive, unarchive)
+  project_id: z.string().optional(),
+  // Create/Update fields
+  name: z.string().optional(),
+  parent_id: z.string().optional(),
+  color: z.string().optional(),
+  is_favorite: z.boolean().optional(),
+  view_style: z.enum(['list', 'board']).optional(),
+  // List fields
+  include_archived: z.boolean().optional(),
+});
 
 type TodoistProjectsInput = z.infer<typeof TodoistProjectsInputSchema>;
 
@@ -109,11 +94,40 @@ export class TodoistProjectsTool {
       name: 'todoist_projects',
       description:
         'Complete project management for Todoist - create, read, update, archive, and query projects with metadata support',
-      inputSchema: toMcpJsonSchema(
-        TodoistProjectsInputSchema,
-        'Project management operations'
-      ),
+      inputSchema: TodoistProjectsInputSchema,
     };
+  }
+
+  /**
+   * Validate that required fields are present for each action
+   */
+  private validateActionRequirements(input: TodoistProjectsInput): void {
+    switch (input.action) {
+      case 'create':
+        if (!input.name)
+          throw new ValidationError('name is required for create action');
+        if (!input.color)
+          throw new ValidationError('color is required for create action');
+        break;
+      case 'get':
+      case 'delete':
+      case 'archive':
+      case 'unarchive':
+        if (!input.project_id!)
+          throw new ValidationError(
+            `project_id is required for ${input.action} action`
+          );
+        break;
+      case 'update':
+        if (!input.project_id!)
+          throw new ValidationError('project_id is required for update action');
+        break;
+      case 'list':
+        // No required fields for list
+        break;
+      default:
+        throw new ValidationError('Invalid action specified');
+    }
   }
 
   /**
@@ -125,6 +139,9 @@ export class TodoistProjectsTool {
     try {
       // Validate input
       const validatedInput = TodoistProjectsInputSchema.parse(input);
+
+      // Validate action-specific required fields
+      this.validateActionRequirements(validatedInput);
 
       let result: TodoistProjectsOutput;
 
@@ -178,7 +195,7 @@ export class TodoistProjectsTool {
    * Create a new project
    */
   private async handleCreate(
-    input: Extract<TodoistProjectsInput, { action: 'create' }>
+    input: TodoistProjectsInput
   ): Promise<TodoistProjectsOutput> {
     const projectData = {
       name: input.name,
@@ -209,9 +226,9 @@ export class TodoistProjectsTool {
    * Get a specific project by ID
    */
   private async handleGet(
-    input: Extract<TodoistProjectsInput, { action: 'get' }>
+    input: TodoistProjectsInput
   ): Promise<TodoistProjectsOutput> {
-    const project = await this.apiService.getProject(input.project_id);
+    const project = await this.apiService.getProject(input.project_id!);
 
     return {
       success: true,
@@ -224,7 +241,7 @@ export class TodoistProjectsTool {
    * Update an existing project
    */
   private async handleUpdate(
-    input: Extract<TodoistProjectsInput, { action: 'update' }>
+    input: TodoistProjectsInput
   ): Promise<TodoistProjectsOutput> {
     const { project_id, ...updateData } = input;
 
@@ -252,9 +269,9 @@ export class TodoistProjectsTool {
    * Delete a project
    */
   private async handleDelete(
-    input: Extract<TodoistProjectsInput, { action: 'delete' }>
+    input: TodoistProjectsInput
   ): Promise<TodoistProjectsOutput> {
-    await this.apiService.deleteProject(input.project_id);
+    await this.apiService.deleteProject(input.project_id!);
 
     // Invalidate projects cache since we deleted a project
     this.cacheService.invalidateProjects();
@@ -269,7 +286,7 @@ export class TodoistProjectsTool {
    * List projects with optional archived inclusion
    */
   private async handleList(
-    input: Extract<TodoistProjectsInput, { action: 'list' }>
+    input: TodoistProjectsInput
   ): Promise<TodoistProjectsOutput> {
     const projects = await this.apiService.getProjects();
 
@@ -298,9 +315,9 @@ export class TodoistProjectsTool {
    * Archive a project
    */
   private async handleArchive(
-    input: Extract<TodoistProjectsInput, { action: 'archive' }>
+    input: TodoistProjectsInput
   ): Promise<TodoistProjectsOutput> {
-    await this.apiService.archiveProject(input.project_id);
+    await this.apiService.archiveProject(input.project_id!);
 
     // Invalidate projects cache since we archived a project
     this.cacheService.invalidateProjects();
@@ -315,9 +332,9 @@ export class TodoistProjectsTool {
    * Unarchive a project
    */
   private async handleUnarchive(
-    input: Extract<TodoistProjectsInput, { action: 'unarchive' }>
+    input: TodoistProjectsInput
   ): Promise<TodoistProjectsOutput> {
-    await this.apiService.unarchiveProject(input.project_id);
+    await this.apiService.unarchiveProject(input.project_id!);
 
     // Invalidate projects cache since we unarchived a project
     this.cacheService.invalidateProjects();

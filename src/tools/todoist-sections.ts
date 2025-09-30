@@ -1,8 +1,6 @@
 import { z } from 'zod';
-import { toMcpJsonSchema } from '../utils/json-schema.js';
 import { TodoistApiService } from '../services/todoist-api.js';
 import { CacheService } from '../services/cache.js';
-import { CreateSectionSchema } from '../schemas/validation.js';
 import { TodoistSection, APIConfiguration } from '../types/todoist.js';
 import {
   TodoistAPIError,
@@ -12,43 +10,27 @@ import {
 
 /**
  * Input schema for the todoist_sections tool
+ * Flattened for MCP client compatibility
  */
-const TodoistSectionsInputSchema = z.discriminatedUnion('action', [
-  z.object({
-    action: z.literal('create'),
-    ...CreateSectionSchema.shape,
-  }),
-  z.object({
-    action: z.literal('get'),
-    section_id: z.string().min(1, 'Section ID is required'),
-  }),
-  z.object({
-    action: z.literal('update'),
-    section_id: z.string().min(1, 'Section ID is required'),
-    name: z.string().max(120).optional(),
-    order: z.number().int().min(1).optional(),
-  }),
-  z.object({
-    action: z.literal('delete'),
-    section_id: z.string().min(1, 'Section ID is required'),
-  }),
-  z.object({
-    action: z.literal('list'),
-    project_id: z.string().min(1, 'Project ID is required'),
-  }),
-  z.object({
-    action: z.literal('reorder'),
-    project_id: z.string().min(1, 'Project ID is required'),
-    section_orders: z
-      .array(
-        z.object({
-          id: z.string().min(1),
-          order: z.number().int().min(1),
-        })
-      )
-      .min(1, 'At least one section order must be provided'),
-  }),
-]);
+const TodoistSectionsInputSchema = z.object({
+  action: z.enum(['create', 'get', 'update', 'delete', 'list', 'reorder']),
+  // Section ID (for get, update, delete)
+  section_id: z.string().optional(),
+  // Project ID (for create, list, reorder)
+  project_id: z.string().optional(),
+  // Create/Update fields
+  name: z.string().optional(),
+  order: z.number().int().optional(),
+  // Reorder fields
+  section_orders: z
+    .array(
+      z.object({
+        id: z.string(),
+        order: z.number().int(),
+      })
+    )
+    .optional(),
+});
 
 type TodoistSectionsInput = z.infer<typeof TodoistSectionsInputSchema>;
 
@@ -108,11 +90,47 @@ export class TodoistSectionsTool {
       name: 'todoist_sections',
       description:
         'Section management within Todoist projects - create, read, update, delete, and reorder sections for better task organization',
-      inputSchema: toMcpJsonSchema(
-        TodoistSectionsInputSchema,
-        'Section management operations'
-      ),
+      inputSchema: TodoistSectionsInputSchema,
     };
+  }
+
+  /**
+   * Validate that required fields are present for each action
+   */
+  private validateActionRequirements(input: TodoistSectionsInput): void {
+    switch (input.action) {
+      case 'create':
+        if (!input.name)
+          throw new ValidationError('name is required for create action');
+        if (!input.project_id)
+          throw new ValidationError('project_id is required for create action');
+        break;
+      case 'get':
+      case 'delete':
+        if (!input.section_id)
+          throw new ValidationError(
+            `section_id is required for ${input.action} action`
+          );
+        break;
+      case 'update':
+        if (!input.section_id)
+          throw new ValidationError('section_id is required for update action');
+        break;
+      case 'list':
+        if (!input.project_id)
+          throw new ValidationError('project_id is required for list action');
+        break;
+      case 'reorder':
+        if (!input.project_id)
+          throw new ValidationError('project_id is required for reorder action');
+        if (!input.section_orders || input.section_orders.length === 0)
+          throw new ValidationError(
+            'section_orders is required for reorder action'
+          );
+        break;
+      default:
+        throw new ValidationError('Invalid action specified');
+    }
   }
 
   /**
@@ -124,6 +142,9 @@ export class TodoistSectionsTool {
     try {
       // Validate input
       const validatedInput = TodoistSectionsInputSchema.parse(input);
+
+      // Validate action-specific required fields
+      this.validateActionRequirements(validatedInput);
 
       let result: TodoistSectionsOutput;
 
@@ -174,7 +195,7 @@ export class TodoistSectionsTool {
    * Create a new section
    */
   private async handleCreate(
-    input: Extract<TodoistSectionsInput, { action: 'create' }>
+    input: TodoistSectionsInput
   ): Promise<TodoistSectionsOutput> {
     const sectionData = {
       name: input.name,
@@ -203,7 +224,7 @@ export class TodoistSectionsTool {
    * Get a specific section by ID
    */
   private async handleGet(
-    input: Extract<TodoistSectionsInput, { action: 'get' }>
+    input: TodoistSectionsInput
   ): Promise<TodoistSectionsOutput> {
     const section = await this.apiService.getSection(input.section_id);
 
@@ -231,7 +252,7 @@ export class TodoistSectionsTool {
    * Update an existing section
    */
   private async handleUpdate(
-    input: Extract<TodoistSectionsInput, { action: 'update' }>
+    input: TodoistSectionsInput
   ): Promise<TodoistSectionsOutput> {
     const { section_id, ...updateData } = input;
 
@@ -259,7 +280,7 @@ export class TodoistSectionsTool {
    * Delete a section
    */
   private async handleDelete(
-    input: Extract<TodoistSectionsInput, { action: 'delete' }>
+    input: TodoistSectionsInput
   ): Promise<TodoistSectionsOutput> {
     // Get section first to know which project cache to invalidate
     let projectId: string | undefined;
@@ -287,7 +308,7 @@ export class TodoistSectionsTool {
    * List sections in a project
    */
   private async handleList(
-    input: Extract<TodoistSectionsInput, { action: 'list' }>
+    input: TodoistSectionsInput
   ): Promise<TodoistSectionsOutput> {
     const sections = await this.apiService.getSections(input.project_id);
 
@@ -316,7 +337,7 @@ export class TodoistSectionsTool {
    * Reorder sections within a project
    */
   private async handleReorder(
-    input: Extract<TodoistSectionsInput, { action: 'reorder' }>
+    input: TodoistSectionsInput
   ): Promise<TodoistSectionsOutput> {
     // Validate that all section IDs exist and belong to the specified project
     try {
