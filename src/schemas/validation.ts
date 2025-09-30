@@ -198,6 +198,81 @@ export const DeleteLabelSchema = z.object({
 });
 
 /**
+ * Reminder-related validation schemas
+ */
+// Due date schema for reminders (must include time)
+const ReminderDueSchema = z.object({
+  date: z.string().optional(), // ISO 8601 datetime
+  string: z.string().optional(), // Natural language (e.g., "tomorrow at 10:00", "every day at 9am")
+  timezone: z.string().nullable().optional(),
+  is_recurring: z.boolean().default(false),
+  lang: z.string().default('en'),
+});
+
+// Base reminder create schema with discriminated union for types
+export const CreateReminderSchema = z.discriminatedUnion('type', [
+  // Relative reminder: minutes before task due date
+  z.object({
+    type: z.literal('relative'),
+    item_id: z.string().min(1, 'Task ID is required'),
+    minute_offset: z
+      .number()
+      .int()
+      .min(0, 'Minute offset must be non-negative')
+      .max(43200, 'Minute offset cannot exceed 30 days (43200 minutes)'), // Max 30 days
+    notify_uid: z.string().optional(),
+  }),
+  // Absolute reminder: specific date and time
+  z.object({
+    type: z.literal('absolute'),
+    item_id: z.string().min(1, 'Task ID is required'),
+    due: ReminderDueSchema,
+    notify_uid: z.string().optional(),
+  }),
+  // Location reminder: geofenced
+  z.object({
+    type: z.literal('location'),
+    item_id: z.string().min(1, 'Task ID is required'),
+    name: z.string().min(1, 'Location name is required'),
+    loc_lat: z.string().min(1, 'Latitude is required'),
+    loc_long: z.string().min(1, 'Longitude is required'),
+    loc_trigger: z.enum(['on_enter', 'on_leave']),
+    radius: z
+      .number()
+      .int()
+      .min(1, 'Radius must be at least 1 meter')
+      .max(5000, 'Radius cannot exceed 5000 meters'),
+    notify_uid: z.string().optional(),
+  }),
+]);
+
+// Update reminder schema allows partial updates
+export const UpdateReminderSchema = z.object({
+  id: z.string().min(1, 'Reminder ID is required'),
+  type: z.enum(['relative', 'absolute', 'location']).optional(),
+  notify_uid: z.string().optional(),
+  due: ReminderDueSchema.optional(),
+  minute_offset: z.number().int().min(0).max(43200).optional(),
+  name: z.string().optional(),
+  loc_lat: z.string().optional(),
+  loc_long: z.string().optional(),
+  loc_trigger: z.enum(['on_enter', 'on_leave']).optional(),
+  radius: z.number().int().min(1).max(5000).optional(),
+});
+
+export const DeleteReminderSchema = z.object({
+  id: z.string().min(1, 'Reminder ID is required'),
+});
+
+export const GetReminderSchema = z.object({
+  id: z.string().min(1, 'Reminder ID is required'),
+});
+
+export const ListRemindersSchema = z.object({
+  item_id: z.string().optional(), // Filter by task ID
+});
+
+/**
  * Batch operation validation schemas
  */
 export const BatchCommandSchema = z.object({
@@ -271,6 +346,8 @@ export type CreateFilterInput = z.infer<typeof CreateFilterSchema>;
 export type UpdateFilterInput = z.infer<typeof UpdateFilterSchema>;
 export type CreateLabelInput = z.infer<typeof CreateLabelSchema>;
 export type UpdateLabelInput = z.infer<typeof UpdateLabelSchema>;
+export type CreateReminderInput = z.infer<typeof CreateReminderSchema>;
+export type UpdateReminderInput = z.infer<typeof UpdateReminderSchema>;
 export type BatchCommandInput = z.infer<typeof BatchCommandSchema>;
 export type BatchOperationInput = z.infer<typeof BatchOperationSchema>;
 export type APIConfigurationInput = z.infer<typeof APIConfigurationSchema>;

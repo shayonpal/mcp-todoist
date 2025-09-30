@@ -11,6 +11,7 @@ import {
   TodoistComment,
   TodoistLabel,
   TodoistFilter,
+  TodoistReminder,
   APIConfiguration,
 } from '../types/todoist.js';
 import {
@@ -490,6 +491,133 @@ export class TodoistApiService {
       },
       true
     ); // Mark as sync endpoint for rate limiting
+  }
+
+  // Reminder operations - use sync API for all operations
+  // Reminders support three types: relative (minutes before due), absolute (specific datetime), location (geofenced)
+  async getReminders(itemId?: string): Promise<TodoistReminder[]> {
+    // Use sync API to get reminders
+    const resource_types = itemId
+      ? ['reminders', 'reminders_location']
+      : ['reminders', 'reminders_location'];
+
+    const response = await this.executeRequest<any>(
+      'https://api.todoist.com/api/v1/sync',
+      {
+        method: 'POST',
+        data: {
+          sync_token: '*',
+          resource_types,
+        },
+      },
+      true
+    );
+
+    // Combine time-based and location-based reminders
+    const reminders = [
+      ...(response.reminders || []),
+      ...(response.reminders_location || []),
+    ];
+
+    // Filter by item_id if provided
+    if (itemId) {
+      return reminders.filter((r: TodoistReminder) => r.item_id === itemId);
+    }
+
+    return reminders;
+  }
+
+  async createReminder(
+    reminderData: Partial<TodoistReminder>
+  ): Promise<TodoistReminder> {
+    // Generate temp_id and uuid for sync command
+    const tempId = `temp_${Date.now()}_${Math.random()
+      .toString(36)
+      .substring(7)}`;
+    const uuid = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+
+    const commands = [
+      {
+        type: 'reminder_add',
+        temp_id: tempId,
+        uuid,
+        args: reminderData,
+      },
+    ];
+
+    const response = await this.sync(commands);
+
+    // Extract the created reminder ID from temp_id_mapping
+    const reminderId = response.temp_id_mapping?.[tempId];
+
+    if (!reminderId) {
+      throw new TodoistAPIError(
+        'Failed to create reminder',
+        TodoistErrorCode.SERVER_ERROR,
+        500
+      );
+    }
+
+    // Fetch and return the created reminder
+    const reminders = await this.getReminders(reminderData.item_id);
+    const createdReminder = reminders.find(r => r.id === reminderId);
+
+    if (!createdReminder) {
+      // Return a constructed reminder if we can't fetch it
+      return {
+        id: reminderId,
+        ...reminderData,
+        is_deleted: false,
+      } as TodoistReminder;
+    }
+
+    return createdReminder;
+  }
+
+  async updateReminder(
+    reminderId: string,
+    reminderData: Partial<TodoistReminder>
+  ): Promise<TodoistReminder> {
+    const uuid = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+
+    const commands = [
+      {
+        type: 'reminder_update',
+        uuid,
+        args: {
+          id: reminderId,
+          ...reminderData,
+        },
+      },
+    ];
+
+    await this.sync(commands);
+
+    // Fetch and return the updated reminder
+    const reminders = await this.getReminders(reminderData.item_id);
+    const updatedReminder = reminders.find(r => r.id === reminderId);
+
+    if (!updatedReminder) {
+      throw new NotFoundError('Reminder not found after update');
+    }
+
+    return updatedReminder;
+  }
+
+  async deleteReminder(reminderId: string): Promise<void> {
+    const uuid = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+
+    const commands = [
+      {
+        type: 'reminder_delete',
+        uuid,
+        args: {
+          id: reminderId,
+        },
+      },
+    ];
+
+    await this.sync(commands);
   }
 
   // Filter methods

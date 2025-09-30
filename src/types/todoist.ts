@@ -104,6 +104,31 @@ export interface TodoistLabel {
 }
 
 /**
+ * Time-based or location-based notification for tasks
+ * Supports three types: relative (minutes before task due), absolute (specific date/time), location (geofenced)
+ */
+export interface TodoistReminder {
+  id: string;
+  notify_uid: string; // User ID to notify
+  item_id: string; // Task ID for which reminder is set
+  type: 'relative' | 'absolute' | 'location'; // Reminder type
+  due?: {
+    date: string; // ISO 8601 datetime (absolute reminders only)
+    timezone?: string | null; // Timezone for due date
+    is_recurring: boolean; // Whether reminder repeats
+    string: string; // Natural language representation (e.g., "tomorrow at 10:00")
+    lang: string; // Language for parsing
+  };
+  minute_offset?: number; // Minutes before task due date (relative reminders only)
+  name?: string; // Location name (location reminders only)
+  loc_lat?: string; // Location latitude (location reminders only)
+  loc_long?: string; // Location longitude (location reminders only)
+  loc_trigger?: 'on_enter' | 'on_leave'; // Location trigger type (location reminders only)
+  radius?: number; // Radius in meters (location reminders only)
+  is_deleted: boolean; // Whether reminder is marked as deleted
+}
+
+/**
  * Authentication credential linking the system to a user's Todoist account
  */
 export interface APIConfiguration {

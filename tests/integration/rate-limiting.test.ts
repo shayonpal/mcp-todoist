@@ -183,7 +183,7 @@ describe('Rate Limiting Integration Tests', () => {
       const result = await requestPromise;
 
       expect(result).toBeDefined();
-      expect(result.content[0].text).toContain('created');
+      expect(result.message).toContain('created');
 
       jest.useRealTimers();
     });
@@ -300,7 +300,7 @@ describe('Rate Limiting Integration Tests', () => {
       const result = await todoistTasksTool.execute(batchParams);
 
       expect(result).toBeDefined();
-      expect(result.content[0].text).toContain('successful');
+      expect(result.message).toContain('successful');
 
       // Check that rate limits were properly updated for batch operation
       const limitsAfterBatch = rateLimitService.getCurrentLimits();
@@ -397,8 +397,8 @@ describe('Rate Limiting Integration Tests', () => {
 
       expect(result).toBeDefined();
       // Should include warning in response
-      expect(result.content[0].text).toContain('rate limit warning');
-      expect(result.content[0].text).toContain('10%');
+      expect(result.message).toContain('rate limit warning');
+      expect(result.message).toContain('10%');
     });
   });
 
@@ -422,7 +422,7 @@ describe('Rate Limiting Integration Tests', () => {
       const result = await todoistTasksTool.execute(taskParams);
 
       expect(result).toBeDefined();
-      expect(result.content[0].text).toContain('warning'); // Should trigger warning
+      expect(result.message).toContain('warning'); // Should trigger warning
     });
 
     test('should support rate limit bypass for critical operations', async () => {
@@ -438,7 +438,7 @@ describe('Rate Limiting Integration Tests', () => {
       const result = await todoistTasksTool.execute(criticalParams);
 
       expect(result).toBeDefined();
-      expect(result.content[0].text).toContain('completed');
+      expect(result.message).toContain('completed');
     });
   });
 
@@ -500,7 +500,7 @@ describe('Rate Limiting Integration Tests', () => {
       const result = await todoistTasksTool.execute(taskParams);
 
       expect(result).toBeDefined();
-      expect(result.content[0].text).toContain('created');
+      expect(result.message).toContain('created');
     });
   });
 });
