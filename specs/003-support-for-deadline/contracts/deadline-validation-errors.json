@@ -1,0 +1,135 @@
+{
+  "contract_id": "deadline-validation-errors",
+  "operation": "Deadline validation error scenarios",
+  "mcp_tool": "todoist_tasks",
+
+  "error_scenarios": [
+    {
+      "name": "Invalid date format - US format",
+      "request": {
+        "action": "create",
+        "content": "Test task",
+        "deadline": "10/15/2025"
+      },
+      "response": {
+        "success": false,
+        "error": {
+          "code": "INVALID_PARAMS",
+          "message": "Invalid deadline format. Expected YYYY-MM-DD (e.g., 2025-10-15)"
+        }
+      }
+    },
+    {
+      "name": "Invalid date format - no separators",
+      "request": {
+        "action": "create",
+        "content": "Test task",
+        "deadline": "20251015"
+      },
+      "response": {
+        "success": false,
+        "error": {
+          "code": "INVALID_PARAMS",
+          "message": "Invalid deadline format. Expected YYYY-MM-DD (e.g., 2025-10-15)"
+        }
+      }
+    },
+    {
+      "name": "Invalid date format - wrong separators",
+      "request": {
+        "action": "create",
+        "content": "Test task",
+        "deadline": "2025/10/15"
+      },
+      "response": {
+        "success": false,
+        "error": {
+          "code": "INVALID_PARAMS",
+          "message": "Invalid deadline format. Expected YYYY-MM-DD (e.g., 2025-10-15)"
+        }
+      }
+    },
+    {
+      "name": "Invalid date format - partial date",
+      "request": {
+        "action": "create",
+        "content": "Test task",
+        "deadline": "2025-10"
+      },
+      "response": {
+        "success": false,
+        "error": {
+          "code": "INVALID_PARAMS",
+          "message": "Invalid deadline format. Expected YYYY-MM-DD (e.g., 2025-10-15)"
+        }
+      }
+    },
+    {
+      "name": "Invalid date format - non-numeric",
+      "request": {
+        "action": "create",
+        "content": "Test task",
+        "deadline": "tomorrow"
+      },
+      "response": {
+        "success": false,
+        "error": {
+          "code": "INVALID_PARAMS",
+          "message": "Invalid deadline format. Expected YYYY-MM-DD (e.g., 2025-10-15)"
+        }
+      }
+    },
+    {
+      "name": "Wrong type - number instead of string",
+      "request": {
+        "action": "create",
+        "content": "Test task",
+        "deadline": 20251015
+      },
+      "response": {
+        "success": false,
+        "error": {
+          "code": "INVALID_PARAMS",
+          "message": "Deadline must be a string in YYYY-MM-DD format"
+        }
+      }
+    },
+    {
+      "name": "Wrong type - object instead of string",
+      "request": {
+        "action": "create",
+        "content": "Test task",
+        "deadline": {
+          "date": "2025-10-15"
+        }
+      },
+      "response": {
+        "success": false,
+        "error": {
+          "code": "INVALID_PARAMS",
+          "message": "Deadline must be a string in YYYY-MM-DD format"
+        }
+      }
+    }
+  ],
+
+  "validation_rules": [
+    "Date format must be exactly YYYY-MM-DD",
+    "All components must be numeric",
+    "Separators must be hyphens",
+    "Year must be 4 digits, month and day must be 2 digits",
+    "Deadline parameter must be string type (not object or number)",
+    "Error messages must include format example"
+  ],
+
+  "test_coverage": [
+    "US format rejection (MM/DD/YYYY)",
+    "ISO format without separators rejection",
+    "Wrong separator rejection (slash instead of hyphen)",
+    "Partial date rejection",
+    "Natural language rejection",
+    "Type mismatch rejection (number)",
+    "Type mismatch rejection (object)",
+    "Error messages include helpful examples"
+  ]
+}

@@ -1,0 +1,159 @@
+{
+  "contract_id": "task-update-with-deadline",
+  "operation": "Update task deadline",
+  "mcp_tool": "todoist_tasks",
+  "action": "update",
+
+  "request": {
+    "schema": {
+      "type": "object",
+      "required": ["action", "task_id"],
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": ["update"],
+          "description": "Operation type"
+        },
+        "task_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Task ID to update"
+        },
+        "deadline": {
+          "type": ["string", "null"],
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "description": "Deadline date in YYYY-MM-DD format, or null to remove"
+        }
+      }
+    },
+    "examples": [
+      {
+        "description": "Add deadline to existing task",
+        "payload": {
+          "action": "update",
+          "task_id": "7890123456",
+          "deadline": "2025-11-30"
+        }
+      },
+      {
+        "description": "Remove deadline from task",
+        "payload": {
+          "action": "update",
+          "task_id": "7890123456",
+          "deadline": null
+        }
+      },
+      {
+        "description": "Update existing deadline",
+        "payload": {
+          "action": "update",
+          "task_id": "7890123456",
+          "deadline": "2025-12-15"
+        }
+      }
+    ]
+  },
+
+  "response": {
+    "success_schema": {
+      "type": "object",
+      "required": ["success", "data", "message", "metadata"],
+      "properties": {
+        "success": {
+          "type": "boolean",
+          "enum": [true]
+        },
+        "data": {
+          "type": "object",
+          "required": ["id"],
+          "properties": {
+            "id": { "type": "string" },
+            "deadline": {
+              "oneOf": [
+                { "type": "null" },
+                {
+                  "type": "object",
+                  "required": ["date"],
+                  "properties": {
+                    "date": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    },
+                    "lang": { "type": "string" }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "message": { "type": "string" },
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "warnings": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "reminders": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "examples": [
+      {
+        "description": "Success with recurring task warning",
+        "payload": {
+          "success": true,
+          "data": {
+            "id": "7890123456",
+            "deadline": {
+              "date": "2025-11-30",
+              "lang": "en"
+            }
+          },
+          "message": "Task updated successfully",
+          "metadata": {
+            "warnings": ["Deadline added to recurring task - deadline will not recur and will remain static"]
+          }
+        }
+      }
+    ]
+  },
+
+  "validation_rules": [
+    "deadline must match YYYY-MM-DD format or be null",
+    "deadline=null removes existing deadline",
+    "task_id is required for update operations",
+    "Invalid format returns INVALID_PARAMS error"
+  ],
+
+  "test_scenarios": [
+    {
+      "name": "Add deadline to task without deadline",
+      "given": "Task exists with no deadline",
+      "when": "Update task with deadline '2025-11-30'",
+      "then": "Task updated with deadline field populated"
+    },
+    {
+      "name": "Update existing deadline",
+      "given": "Task exists with deadline '2025-11-30'",
+      "when": "Update task with deadline '2025-12-15'",
+      "then": "Task updated with new deadline"
+    },
+    {
+      "name": "Remove deadline from task",
+      "given": "Task exists with deadline",
+      "when": "Update task with deadline=null",
+      "then": "Task updated, deadline field is null"
+    },
+    {
+      "name": "Add deadline to recurring task",
+      "given": "Recurring task exists",
+      "when": "Update task with deadline '2025-12-31'",
+      "then": "Task updated with warning about non-recurring deadline"
+    }
+  ]
+}

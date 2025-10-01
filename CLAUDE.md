@@ -157,3 +157,8 @@ The `todoist_labels` tool provides full CRUD operations for label management wit
 ## API Endpoint
 - **Current**: `/api/v1` (use this)
 - **Deprecated**: `/rest/v1` and `/rest/v2` (do not use)
+
+## More Instructions
+
+1. Always active project in Serena before starting to work with the MCP
+2. Whenever you learn important concepts, peculiarity about this project, important considerations about the Todoist API and as such, record them in Serena memories for future reference.
