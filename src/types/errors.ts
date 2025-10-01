@@ -19,6 +19,7 @@ export enum TodoistErrorCode {
   // Resource Errors
   RESOURCE_NOT_FOUND = 'RESOURCE_NOT_FOUND',
   NOT_FOUND = 'NOT_FOUND',
+  LABEL_NOT_FOUND = 'LABEL_NOT_FOUND',
   RESOURCE_ALREADY_EXISTS = 'RESOURCE_ALREADY_EXISTS',
   RESOURCE_DELETED = 'RESOURCE_DELETED',
 
@@ -286,6 +287,7 @@ function getMCPErrorCode(todoistErrorCode: TodoistErrorCode): MCPErrorCode {
       return MCPErrorCode.RATE_LIMITED;
 
     case TodoistErrorCode.RESOURCE_NOT_FOUND:
+    case TodoistErrorCode.LABEL_NOT_FOUND:
       return MCPErrorCode.RESOURCE_NOT_FOUND;
 
     case TodoistErrorCode.VALIDATION_ERROR:
@@ -320,6 +322,7 @@ export function createUserFriendlyMessage(
     [TodoistErrorCode.RESOURCE_NOT_FOUND]:
       'The requested resource was not found.',
     [TodoistErrorCode.NOT_FOUND]: 'The requested resource was not found.',
+    [TodoistErrorCode.LABEL_NOT_FOUND]: 'The requested label was not found.',
     [TodoistErrorCode.VALIDATION_ERROR]: 'The request contains invalid data.',
     [TodoistErrorCode.NETWORK_ERROR]:
       'Network connection failed. Please check your internet connection.',

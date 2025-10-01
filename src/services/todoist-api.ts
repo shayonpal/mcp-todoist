@@ -579,16 +579,26 @@ export class TodoistApiService {
   }
 
   // Label operations
-  async getLabels(): Promise<TodoistLabel[]> {
+  async getLabels(
+    cursor?: string,
+    limit?: number
+  ): Promise<{
+    results: TodoistLabel[];
+    next_cursor: string | null;
+  }> {
+    const params: Record<string, string> = {};
+    if (cursor) params.cursor = cursor;
+    if (limit) params.limit = limit.toString();
+
     const response = await this.executeRequest<{
       results: TodoistLabel[];
       next_cursor: string | null;
     }>('/labels', {
       method: 'GET',
+      params,
     });
 
-    // API v1 returns paginated response with { results: [...], next_cursor: ... }
-    return response.results || [];
+    return response;
   }
 
   async getLabel(labelId: string): Promise<TodoistLabel> {
@@ -618,6 +628,24 @@ export class TodoistApiService {
     return this.executeRequest<void>(`/labels/${labelId}`, {
       method: 'DELETE',
     });
+  }
+
+  async renameSharedLabel(name: string, newName: string): Promise<void> {
+    await this.sync([
+      {
+        type: 'shared_label_rename',
+        args: { name, new_name: newName },
+      },
+    ]);
+  }
+
+  async removeSharedLabel(name: string): Promise<void> {
+    await this.sync([
+      {
+        type: 'shared_label_remove',
+        args: { name },
+      },
+    ]);
   }
 
   // Sync operations (for batch processing)

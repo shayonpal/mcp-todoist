@@ -179,6 +179,37 @@ export class CacheService {
     this.labelsCache.delete(this.LABELS_KEY);
   }
 
+  /**
+   * Add or update a single label in the cache
+   * Used after create or update operations
+   */
+  upsertLabel(label: TodoistLabel): void {
+    const labels = this.getLabels() || [];
+    const existingIndex = labels.findIndex(l => l.id === label.id);
+
+    if (existingIndex >= 0) {
+      // Update existing label
+      labels[existingIndex] = label;
+    } else {
+      // Add new label
+      labels.push(label);
+    }
+
+    this.setLabels(labels);
+  }
+
+  /**
+   * Remove a single label from the cache
+   * Used after delete operations
+   */
+  removeLabel(labelId: string): void {
+    const labels = this.getLabels();
+    if (!labels) return;
+
+    const filtered = labels.filter(l => l.id !== labelId);
+    this.setLabels(filtered);
+  }
+
   // Sections cache operations (per project)
   getSections(projectId: string): TodoistSection[] | null {
     return this.sectionsCache.get(`project_${projectId}`);
