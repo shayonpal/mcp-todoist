@@ -32,9 +32,16 @@ export function handleToolError(
   if (error instanceof TodoistAPIError) {
     todoistError = error.toTodoistError();
   } else if (error instanceof z.ZodError) {
+    // Extract a more specific message from the first error
+    const firstError = error.errors[0];
+    let message = 'Invalid input parameters';
+    if (firstError && firstError.path.length > 0) {
+      const field = firstError.path.join('.');
+      message = `${field}: ${firstError.message}`;
+    }
     todoistError = {
       code: TodoistErrorCode.VALIDATION_ERROR,
-      message: 'Invalid input parameters',
+      message,
       details: { validationErrors: error.errors },
       retryable: false,
     };

@@ -96,7 +96,7 @@ export class TodoistLabelsTool {
     return {
       name: 'todoist_labels',
       description:
-        'Label management for Todoist - create, read, update, delete labels with full CRUD operations',
+        'label management for Todoist - create, read, update, delete labels with full CRUD operations',
       inputSchema: {
         type: 'object' as const,
         properties: {
@@ -240,13 +240,17 @@ export class TodoistLabelsTool {
       const operationTime = Date.now() - startTime;
       const rateLimitStatus = this.apiService.getRateLimitStatus();
 
+      // Use sync rate limiter stats for shared label operations
+      const useSync =
+        validatedInput.action === 'rename_shared' ||
+        validatedInput.action === 'remove_shared';
+      const rateLimit = useSync ? rateLimitStatus.sync : rateLimitStatus.rest;
+
       result.metadata = {
         ...result.metadata,
         operation_time: operationTime,
-        rate_limit_remaining: rateLimitStatus.rest.remaining,
-        rate_limit_reset: new Date(
-          rateLimitStatus.rest.resetTime
-        ).toISOString(),
+        rate_limit_remaining: rateLimit.remaining,
+        rate_limit_reset: new Date(rateLimit.resetTime).toISOString(),
       };
 
       return result;

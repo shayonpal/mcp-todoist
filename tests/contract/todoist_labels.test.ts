@@ -2,6 +2,12 @@ import { describe, test, expect, beforeEach } from '@jest/globals';
 import { TodoistLabelsTool } from '../../src/tools/todoist-labels.js';
 import { CacheService } from '../../src/services/cache.js';
 import { TodoistApiService } from '../../src/services/todoist-api.js';
+import { TodoistLabel } from '../../src/types/todoist.js';
+import {
+  TodoistAPIError,
+  TodoistErrorCode,
+  RateLimitError,
+} from '../../src/types/errors.js';
 import {
   createMockFn,
   toTodoistLabel,
@@ -216,8 +222,10 @@ describe('todoist_labels MCP Tool Contract', () => {
 
       expect(firstResult.success).toBe(true);
       expect(secondResult.success).toBe(true);
-      expect(firstResult.data?.id).toBe(secondResult.data?.id);
-      expect(firstResult.data?.id).toBe('2156154810');
+      expect((firstResult.data as TodoistLabel)?.id).toBe(
+        (secondResult.data as TodoistLabel)?.id
+      );
+      expect((firstResult.data as TodoistLabel)?.id).toBe('2156154810');
     });
 
     test('message indicates label already exists', async () => {
@@ -313,8 +321,14 @@ describe('todoist_labels MCP Tool Contract', () => {
    */
   describe('GET action - get_nonexistent_label', () => {
     test('invalid label ID returns LABEL_NOT_FOUND', async () => {
-      const error = new Error('Label not found');
-      (error as any).statusCode = 404;
+      const error = new TodoistAPIError(
+        TodoistErrorCode.LABEL_NOT_FOUND,
+        'Label with ID 9999999999 not found',
+        {},
+        false,
+        undefined,
+        404
+      );
       apiService.getLabel.mockRejectedValue(error);
 
       const result = await todoistLabelsTool.execute({
@@ -331,8 +345,14 @@ describe('todoist_labels MCP Tool Contract', () => {
     });
 
     test('error code and retryable=false', async () => {
-      const error = new Error('Not found');
-      (error as any).statusCode = 404;
+      const error = new TodoistAPIError(
+        TodoistErrorCode.LABEL_NOT_FOUND,
+        'Not found',
+        {},
+        false,
+        undefined,
+        404
+      );
       apiService.getLabel.mockRejectedValue(error);
 
       const result = await todoistLabelsTool.execute({
@@ -408,7 +428,7 @@ describe('todoist_labels MCP Tool Contract', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data?.name).toBe('Work');
+      expect((result.data as TodoistLabel)?.name).toBe('Work');
     });
   });
 
@@ -687,9 +707,11 @@ describe('todoist_labels MCP Tool Contract', () => {
    */
   describe('Error Handling - rate_limit_exceeded', () => {
     test('rate limit error response', async () => {
-      const error = new Error('Rate limit exceeded');
-      (error as any).statusCode = 429;
-      (error as any).retryAfter = 45;
+      const error = new RateLimitError(
+        'API rate limit exceeded. Please wait before retrying.',
+        45,
+        { limit: 1000, window: '15 minutes' }
+      );
       apiService.getLabels.mockRejectedValue(error);
 
       const result = await todoistLabelsTool.execute({
@@ -703,9 +725,11 @@ describe('todoist_labels MCP Tool Contract', () => {
     });
 
     test('retryable=true and retry_after field present', async () => {
-      const error = new Error('Rate limit exceeded');
-      (error as any).statusCode = 429;
-      (error as any).retryAfter = 45;
+      const error = new RateLimitError(
+        'API rate limit exceeded. Please wait before retrying.',
+        45,
+        { limit: 1000, window: '15 minutes' }
+      );
       apiService.getLabels.mockRejectedValue(error);
 
       const result = await todoistLabelsTool.execute({
