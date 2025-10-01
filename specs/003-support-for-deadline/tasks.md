@@ -74,7 +74,7 @@
 - [x] T039 Run all contract tests (verify 100% pass rate)
 - [x] T040 Run all integration tests (verify deadline workflows pass)
 - [x] T041 Run all unit tests (verify validation and helpers pass)
-- [ ] T042 Run manual quickstart scenarios from `quickstart.md`
+- [x] T042 Run manual quickstart scenarios from `quickstart.md`
 - [x] T043 Verify type coverage (no `any` types for deadline code)
 - [x] T044 Run linting and formatting checks
 - [x] T045 Verify backward compatibility (existing tests still pass)
