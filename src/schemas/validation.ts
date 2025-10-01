@@ -8,6 +8,27 @@ import { z } from 'zod';
 /**
  * Task-related validation schemas
  */
+/**
+ * T019: Deadline validation schema
+ * Validates date string in YYYY-MM-DD format (RFC 3339 date)
+ * Used for task completion deadlines (when work must be done by)
+ */
+export const DeadlineSchema = z
+  .string()
+  .regex(
+    /^\d{4}-\d{2}-\d{2}$/,
+    'Deadline must be in YYYY-MM-DD format (e.g., 2025-10-15)'
+  )
+  .describe('Task completion deadline in YYYY-MM-DD format');
+
+/**
+ * T020: Deadline parameter schema for optional deadline input
+ * Supports null to explicitly remove a deadline
+ */
+export const DeadlineParameterSchema = z
+  .union([DeadlineSchema, z.null(), z.undefined()])
+  .describe('Optional deadline (YYYY-MM-DD) or null to remove');
+
 export const CreateTaskSchema = z.object({
   content: z
     .string()
@@ -35,6 +56,7 @@ export const CreateTaskSchema = z.object({
     .datetime('Due datetime must be in ISO 8601 format')
     .optional(),
   assignee_id: z.string().min(1, 'Assignee ID must not be empty').optional(),
+  deadline: DeadlineParameterSchema, // T021: Add deadline parameter support
 });
 
 export const UpdateTaskSchema = CreateTaskSchema.partial().extend({

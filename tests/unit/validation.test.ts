@@ -17,10 +17,10 @@ const expectFailure = <T>(result: { success: boolean; error?: T }): T => {
 
 const expectSuccess = <T>(result: { success: boolean; data?: T }): T => {
   expect(result.success).toBe(true);
-  if (!result.success || result.data === undefined) {
+  if (!result.success) {
     throw new Error('Expected validation to succeed');
   }
-  return result.data;
+  return result.data as T;
 };
 
 describe('Zod Schema Validation Tests', () => {

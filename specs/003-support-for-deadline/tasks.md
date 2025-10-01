@@ -37,10 +37,10 @@
 - [x] T018 Extend `TodoistTask` interface with optional deadline field in `src/types/todoist.ts`
 
 ### Validation Schemas
-- [ ] T019 Create `DeadlineSchema` with regex validation in `src/schemas/validation.ts`
-- [ ] T020 Create `DeadlineParameterSchema` for optional deadline input in `src/schemas/validation.ts`
-- [ ] T021 Extend `CreateTaskSchema` with deadline parameter in `src/schemas/validation.ts`
-- [ ] T022 Extend `UpdateTaskSchema` with deadline parameter in `src/schemas/validation.ts`
+- [x] T019 Create `DeadlineSchema` with regex validation in `src/schemas/validation.ts`
+- [x] T020 Create `DeadlineParameterSchema` for optional deadline input in `src/schemas/validation.ts`
+- [x] T021 Extend `CreateTaskSchema` with deadline parameter in `src/schemas/validation.ts`
+- [x] T022 Extend `UpdateTaskSchema` with deadline parameter in `src/schemas/validation.ts`
 
 ### API Service
 - [ ] T023 Update `createTask()` to transform deadline parameter to API format in `src/services/todoist-api.ts`
