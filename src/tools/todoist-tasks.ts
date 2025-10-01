@@ -90,6 +90,8 @@ interface TodoistTasksOutput {
         retry_after?: number;
       };
     }>;
+    warnings?: string[]; // Non-blocking advisory messages (e.g., recurring task deadline)
+    reminders?: string[]; // Non-blocking informational messages (e.g., past deadline)
   };
   error?: {
     code: string;

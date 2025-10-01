@@ -4,6 +4,15 @@
  */
 
 /**
+ * Task completion deadline (when work must be done by)
+ * Distinct from due date (when work should start)
+ */
+export interface TodoistDeadline {
+  date: string; // YYYY-MM-DD format (RFC 3339)
+  lang?: string; // Language hint (output only, currently unused by API)
+}
+
+/**
  * Core work item with comprehensive attributes for task management
  */
 export interface TodoistTask {
@@ -27,6 +36,7 @@ export interface TodoistTask {
     timezone?: string; // Timezone for datetime
     is_recurring: boolean; // Whether task repeats
   };
+  deadline?: TodoistDeadline | null; // When task must be completed by
   url: string; // Web URL to task
   created_at: string; // ISO 8601 creation timestamp
   creator_id: string; // Task creator

@@ -33,8 +33,8 @@
 ## Phase 3.3: Core Implementation (ONLY after tests are failing)
 
 ### Type Definitions
-- [ ] T017 Add `TodoistDeadline` interface to `src/types/todoist.ts`
-- [ ] T018 Extend `TodoistTask` interface with optional deadline field in `src/types/todoist.ts`
+- [x] T017 Add `TodoistDeadline` interface to `src/types/todoist.ts`
+- [x] T018 Extend `TodoistTask` interface with optional deadline field in `src/types/todoist.ts`
 
 ### Validation Schemas
 - [ ] T019 Create `DeadlineSchema` with regex validation in `src/schemas/validation.ts`
