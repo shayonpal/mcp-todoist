@@ -128,13 +128,13 @@
 
 ## Phase 3.4: Integration
 
-- [ ] **T018** Register todoist_labels tool in `src/server.ts`
+- [x] **T018** Register todoist_labels tool in `src/server.ts`
   - Import TodoistLabelsTool
   - Instantiate in `initializeTools()`
   - Add to tools map: `this.tools.set('todoist_labels', labelsTool)`
   - Add tool definition: `this.toolDefinitions.push(TodoistLabelsTool.getToolDefinition())`
 
-- [ ] **T019** Integrate label cache invalidation in `src/services/cache.ts`
+- [x] **T019** Integrate label cache invalidation in `src/services/cache.ts`
   - On create: Add or update cached label
   - On update: Update cached label
   - On delete: Remove from cache
