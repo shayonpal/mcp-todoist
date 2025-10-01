@@ -411,4 +411,311 @@ describe('todoist_labels MCP Tool Contract', () => {
       expect(result.data?.name).toBe('Work');
     });
   });
+
+  /**
+   * T007: Contract test - delete_label
+   * Tests label deletion returns success
+   */
+  describe('DELETE action - delete_label', () => {
+    test('label deletion returns success', async () => {
+      apiService.deleteLabel.mockResolvedValue(undefined);
+
+      const result = await todoistLabelsTool.execute({
+        action: 'delete',
+        label_id: '2156154810',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.data).toBeNull();
+      expect(result.message).toContain('deleted');
+      expect(result.metadata).toBeDefined();
+      expect(result.metadata?.rate_limit_remaining).toBe(999);
+      expect(apiService.deleteLabel).toHaveBeenCalledWith('2156154810');
+    });
+
+    test('data is null and message confirms deletion', async () => {
+      apiService.deleteLabel.mockResolvedValue(undefined);
+
+      const result = await todoistLabelsTool.execute({
+        action: 'delete',
+        label_id: '2156154810',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.data).toBeNull();
+      expect(result.message).toMatch(/deleted|removed/i);
+    });
+  });
+
+  /**
+   * T008: Contract test - list_labels_default_pagination
+   * Tests listing labels without limit parameter
+   */
+  describe('LIST action - list_labels_default_pagination', () => {
+    test('listing labels without limit parameter', async () => {
+      const labels = [
+        {
+          id: '2156154810',
+          name: 'Work',
+          color: 'blue',
+          order: 1,
+          is_favorite: true,
+        },
+        {
+          id: '2156154811',
+          name: 'Personal',
+          color: 'red',
+          order: 2,
+          is_favorite: false,
+        },
+      ];
+
+      apiService.getLabels.mockResolvedValue({
+        results: labels,
+        next_cursor: 'cursor_abc123',
+      });
+
+      const result = await todoistLabelsTool.execute({
+        action: 'list',
+      });
+
+      expect(result.success).toBe(true);
+      expect(Array.isArray(result.data)).toBe(true);
+      expect(result.data).toHaveLength(2);
+      expect(result.message).toBe('Labels retrieved successfully');
+      expect(result.metadata).toBeDefined();
+      expect(result.metadata?.total_count).toBe(2);
+      expect(result.metadata?.next_cursor).toBe('cursor_abc123');
+      expect(result.metadata?.rate_limit_remaining).toBe(999);
+    });
+
+    test('metadata includes total_count and next_cursor', async () => {
+      const labels = [
+        {
+          id: '2156154810',
+          name: 'Work',
+          color: 'blue',
+          order: 1,
+          is_favorite: true,
+        },
+      ];
+
+      apiService.getLabels.mockResolvedValue({
+        results: labels,
+        next_cursor: 'cursor_xyz',
+      });
+
+      const result = await todoistLabelsTool.execute({
+        action: 'list',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.metadata).toHaveProperty('total_count');
+      expect(result.metadata).toHaveProperty('next_cursor');
+      expect(result.metadata?.total_count).toBe(1);
+      expect(result.metadata?.next_cursor).toBe('cursor_xyz');
+    });
+  });
+
+  /**
+   * T009: Contract test - list_labels_with_pagination
+   * Tests listing with limit=10 and cursor
+   */
+  describe('LIST action - list_labels_with_pagination', () => {
+    test('listing with limit=10 and cursor', async () => {
+      const labels = Array.from({ length: 10 }, (_, i) => ({
+        id: `215615${4810 + i}`,
+        name: `Label${i}`,
+        color: 'blue',
+        order: i + 1,
+        is_favorite: false,
+      }));
+
+      apiService.getLabels.mockResolvedValue({
+        results: labels,
+        next_cursor: 'cursor_page2',
+      });
+
+      const result = await todoistLabelsTool.execute({
+        action: 'list',
+        limit: 10,
+        cursor: 'cursor_page1',
+      });
+
+      expect(result.success).toBe(true);
+      expect(Array.isArray(result.data)).toBe(true);
+      expect(result.data).toHaveLength(10);
+      expect(result.metadata).toBeDefined();
+      expect(result.metadata?.total_count).toBe(10);
+      expect(result.metadata?.next_cursor).toBe('cursor_page2');
+      expect(apiService.getLabels).toHaveBeenCalledWith('cursor_page1', 10);
+    });
+
+    test('pagination metadata present', async () => {
+      const labels = Array.from({ length: 10 }, (_, i) => ({
+        id: `215615${4810 + i}`,
+        name: `Label${i}`,
+        color: 'blue',
+        order: i + 1,
+        is_favorite: false,
+      }));
+
+      apiService.getLabels.mockResolvedValue({
+        results: labels,
+        next_cursor: 'cursor_next',
+      });
+
+      const result = await todoistLabelsTool.execute({
+        action: 'list',
+        limit: 10,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.metadata).toHaveProperty('total_count');
+      expect(result.metadata).toHaveProperty('next_cursor');
+      expect(result.metadata?.next_cursor).toBe('cursor_next');
+    });
+  });
+
+  /**
+   * T010: Contract test - list_labels_invalid_limit
+   * Tests limit=250 returns VALIDATION_ERROR
+   */
+  describe('LIST action - list_labels_invalid_limit', () => {
+    test('limit=250 returns VALIDATION_ERROR', async () => {
+      const result = await todoistLabelsTool.execute({
+        action: 'list',
+        limit: 250,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBeDefined();
+      expect(result.error?.code).toBe('VALIDATION_ERROR');
+      expect(result.error?.message).toContain('limit');
+      expect(result.error?.message).toMatch(/200|maximum/i);
+    });
+
+    test('error details include field, value, constraint', async () => {
+      const result = await todoistLabelsTool.execute({
+        action: 'list',
+        limit: 250,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error?.code).toBe('VALIDATION_ERROR');
+      expect(result.error?.details).toBeDefined();
+      expect(result.error?.message).toContain('limit');
+    });
+  });
+
+  /**
+   * T011: Contract test - rename_shared_label
+   * Tests renaming shared label with name and new_name
+   */
+  describe('RENAME_SHARED action - rename_shared_label', () => {
+    test('renaming shared label with name and new_name', async () => {
+      apiService.renameSharedLabel.mockResolvedValue(undefined);
+
+      const result = await todoistLabelsTool.execute({
+        action: 'rename_shared',
+        name: 'TeamProject',
+        new_name: 'Q1-Project',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.data).toBeNull();
+      expect(result.message).toMatch(/renamed/i);
+      expect(result.metadata).toBeDefined();
+      expect(result.metadata?.rate_limit_remaining).toBe(99); // Sync API uses different rate limiter
+      expect(apiService.renameSharedLabel).toHaveBeenCalledWith(
+        'TeamProject',
+        'Q1-Project'
+      );
+    });
+
+    test('success message mentions "across all tasks"', async () => {
+      apiService.renameSharedLabel.mockResolvedValue(undefined);
+
+      const result = await todoistLabelsTool.execute({
+        action: 'rename_shared',
+        name: 'TeamProject',
+        new_name: 'Q1-Project',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.message).toMatch(/across all tasks|all tasks/i);
+    });
+  });
+
+  /**
+   * T012: Contract test - remove_shared_label
+   * Tests removing shared label by name
+   */
+  describe('REMOVE_SHARED action - remove_shared_label', () => {
+    test('removing shared label by name', async () => {
+      apiService.removeSharedLabel.mockResolvedValue(undefined);
+
+      const result = await todoistLabelsTool.execute({
+        action: 'remove_shared',
+        name: 'Deprecated',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.data).toBeNull();
+      expect(result.message).toMatch(/removed/i);
+      expect(result.metadata).toBeDefined();
+      expect(result.metadata?.rate_limit_remaining).toBe(99); // Sync API uses different rate limiter
+      expect(apiService.removeSharedLabel).toHaveBeenCalledWith('Deprecated');
+    });
+
+    test('success message confirms removal from all tasks', async () => {
+      apiService.removeSharedLabel.mockResolvedValue(undefined);
+
+      const result = await todoistLabelsTool.execute({
+        action: 'remove_shared',
+        name: 'Deprecated',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.message).toMatch(/from all tasks|all tasks/i);
+    });
+  });
+
+  /**
+   * T013: Contract test - rate_limit_exceeded
+   * Tests rate limit error response
+   */
+  describe('Error Handling - rate_limit_exceeded', () => {
+    test('rate limit error response', async () => {
+      const error = new Error('Rate limit exceeded');
+      (error as any).statusCode = 429;
+      (error as any).retryAfter = 45;
+      apiService.getLabels.mockRejectedValue(error);
+
+      const result = await todoistLabelsTool.execute({
+        action: 'list',
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBeDefined();
+      expect(result.error?.code).toBe('RATE_LIMIT_EXCEEDED');
+      expect(result.error?.retryable).toBe(true);
+    });
+
+    test('retryable=true and retry_after field present', async () => {
+      const error = new Error('Rate limit exceeded');
+      (error as any).statusCode = 429;
+      (error as any).retryAfter = 45;
+      apiService.getLabels.mockRejectedValue(error);
+
+      const result = await todoistLabelsTool.execute({
+        action: 'list',
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error?.retryable).toBe(true);
+      expect(result.error?.retry_after).toBeDefined();
+      expect(typeof result.error?.retry_after).toBe('number');
+    });
+  });
 });

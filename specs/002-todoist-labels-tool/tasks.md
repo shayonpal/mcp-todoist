@@ -60,35 +60,35 @@
   - Test updating color and is_favorite
   - Verify name remains unchanged
 
-- [ ] **T007 [P]** Contract test: delete_label in `tests/contract/todoist_labels.test.ts`
+- [x] **T007 [P]** Contract test: delete_label in `tests/contract/todoist_labels.test.ts`
   - Test label deletion returns success
   - Verify data is null, message confirms deletion
 
-- [ ] **T008 [P]** Contract test: list_labels_default_pagination in `tests/contract/todoist_labels.test.ts`
+- [x] **T008 [P]** Contract test: list_labels_default_pagination in `tests/contract/todoist_labels.test.ts`
   - Test listing labels without limit parameter
   - Verify metadata includes total_count and next_cursor
 
-- [ ] **T009 [P]** Contract test: list_labels_with_pagination in `tests/contract/todoist_labels.test.ts`
+- [x] **T009 [P]** Contract test: list_labels_with_pagination in `tests/contract/todoist_labels.test.ts`
   - Test listing with limit=10 and cursor
   - Verify pagination metadata present
 
-- [ ] **T010 [P]** Contract test: list_labels_invalid_limit in `tests/contract/todoist_labels.test.ts`
+- [x] **T010 [P]** Contract test: list_labels_invalid_limit in `tests/contract/todoist_labels.test.ts`
   - Test limit=250 returns VALIDATION_ERROR
   - Verify error details include field, value, constraint
 
-- [ ] **T011 [P]** Contract test: rename_shared_label in `tests/contract/todoist_labels.test.ts`
+- [x] **T011 [P]** Contract test: rename_shared_label in `tests/contract/todoist_labels.test.ts`
   - Test renaming shared label with name and new_name
   - Verify success message mentions "across all tasks"
 
-- [ ] **T012 [P]** Contract test: remove_shared_label in `tests/contract/todoist_labels.test.ts`
+- [x] **T012 [P]** Contract test: remove_shared_label in `tests/contract/todoist_labels.test.ts`
   - Test removing shared label by name
   - Verify success message confirms removal from all tasks
 
-- [ ] **T013 [P]** Contract test: rate_limit_exceeded in `tests/contract/todoist_labels.test.ts`
+- [x] **T013 [P]** Contract test: rate_limit_exceeded in `tests/contract/todoist_labels.test.ts`
   - Test rate limit error response
   - Verify retryable=true and retry_after field present
 
-- [ ] **T014 [P]** Unit test: label validation in `tests/unit/label-validation.test.ts`
+- [x] **T014 [P]** Unit test: label validation in `tests/unit/label-validation.test.ts`
   - Test action enum validation
   - Test name length validation (0, 128, 129 chars)
   - Test limit validation (0, 1, 200, 201)
