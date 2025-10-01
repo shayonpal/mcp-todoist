@@ -1,5 +1,18 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- Deadline support for tasks (`todoist_tasks` tool)
+  - Optional `deadline` parameter in YYYY-MM-DD format
+  - Distinct from `due_date` (deadline = when work must be done by, due_date = when work should start)
+  - Create tasks with deadlines, update to add/modify/remove deadlines
+  - Non-blocking warnings for recurring tasks (deadline stays static)
+  - Non-blocking reminders for past deadlines
+  - Full validation with helpful error messages
+  - Response metadata includes `warnings` and `reminders` arrays
+
 ## [1.1.0] - 2025-10-01
 
 ### Added

@@ -365,9 +365,20 @@ export class TodoistApiService {
   }
 
   async createTask(taskData: Partial<TodoistTask>): Promise<TodoistTask> {
+    // T023: Transform deadline parameter from string to API format
+    const apiPayload = { ...taskData };
+    if ('deadline' in taskData) {
+      if (typeof taskData.deadline === 'string') {
+        // Transform string to object format expected by API
+        apiPayload.deadline = { date: taskData.deadline };
+      }
+      // If null, keep as null (for removal)
+      // If already an object, keep as is
+    }
+
     return this.executeRequest<TodoistTask>('/tasks', {
       method: 'POST',
-      data: taskData,
+      data: apiPayload,
     });
   }
 
@@ -375,9 +386,20 @@ export class TodoistApiService {
     taskId: string,
     taskData: Partial<TodoistTask>
   ): Promise<TodoistTask> {
+    // T024: Transform deadline parameter to handle add/update/remove
+    const apiPayload = { ...taskData };
+    if ('deadline' in taskData) {
+      if (typeof taskData.deadline === 'string') {
+        // Transform string to object format expected by API
+        apiPayload.deadline = { date: taskData.deadline };
+      }
+      // If null, keep as null (explicit removal)
+      // If already an object, keep as is
+    }
+
     return this.executeRequest<TodoistTask>(`/tasks/${taskId}`, {
       method: 'POST',
-      data: taskData,
+      data: apiPayload,
     });
   }
 

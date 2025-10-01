@@ -43,41 +43,41 @@
 - [x] T022 Extend `UpdateTaskSchema` with deadline parameter in `src/schemas/validation.ts`
 
 ### API Service
-- [ ] T023 Update `createTask()` to transform deadline parameter to API format in `src/services/todoist-api.ts`
-- [ ] T024 Update `updateTask()` to handle deadline parameter (add/update/remove) in `src/services/todoist-api.ts`
-- [ ] T025 Add deadline field mapping in API response handlers in `src/services/todoist-api.ts`
+- [x] T023 Update `createTask()` to transform deadline parameter to API format in `src/services/todoist-api.ts`
+- [x] T024 Update `updateTask()` to handle deadline parameter (add/update/remove) in `src/services/todoist-api.ts`
+- [x] T025 Add deadline field mapping in API response handlers in `src/services/todoist-api.ts`
 
 ### Tool Handlers
-- [ ] T026 Update `TodoistTasksTool` to accept deadline parameter in `src/tools/todoist-tasks.ts`
-- [ ] T027 Add deadline validation in create action handler in `src/tools/todoist-tasks.ts`
-- [ ] T028 Add deadline validation in update action handler in `src/tools/todoist-tasks.ts`
-- [ ] T029 Implement recurring task warning logic in `src/tools/todoist-tasks.ts`
-- [ ] T030 Implement past date reminder logic in `src/tools/todoist-tasks.ts`
+- [x] T026 Update `TodoistTasksTool` to accept deadline parameter in `src/tools/todoist-tasks.ts`
+- [x] T027 Add deadline validation in create action handler in `src/tools/todoist-tasks.ts`
+- [x] T028 Add deadline validation in update action handler in `src/tools/todoist-tasks.ts`
+- [x] T029 Implement recurring task warning logic in `src/tools/todoist-tasks.ts`
+- [x] T030 Implement past date reminder logic in `src/tools/todoist-tasks.ts`
 
 ### Helper Utilities
-- [ ] T031 [P] Create `buildRecurringWarning()` helper in `src/utils/tool-helpers.ts`
-- [ ] T032 [P] Create `buildPastDeadlineReminder()` helper in `src/utils/tool-helpers.ts`
-- [ ] T033 [P] Update `ToolResponseMetadata` type with warnings/reminders arrays in `src/types/common.ts`
+- [x] T031 [P] Create `buildRecurringWarning()` helper in `src/utils/tool-helpers.ts`
+- [x] T032 [P] Create `buildPastDeadlineReminder()` helper in `src/utils/tool-helpers.ts`
+- [x] T033 [P] Update `ToolResponseMetadata` type with warnings/reminders arrays in `src/utils/tool-helpers.ts`
 
 ## Phase 3.4: Integration
-- [ ] T034 Update tool registration to reflect deadline parameter in MCP schema in `src/server.ts`
-- [ ] T035 Verify deadline field appears in tool description/documentation in `src/tools/todoist-tasks.ts`
+- [x] T034 Update tool registration to reflect deadline parameter in MCP schema in `src/tools/todoist-tasks.ts`
+- [x] T035 Verify deadline field appears in tool description/documentation in `src/tools/todoist-tasks.ts`
 
 ## Phase 3.5: Polish
 
 ### Documentation
-- [ ] T036 [P] Add deadline usage examples to CLAUDE.md
-- [ ] T037 [P] Update README with deadline feature section
-- [ ] T038 [P] Create CHANGELOG entry for deadline support
+- [x] T036 [P] Add deadline usage examples to CLAUDE.md
+- [x] T037 [P] Update README with deadline feature section
+- [x] T038 [P] Create CHANGELOG entry for deadline support
 
 ### Validation & Testing
-- [ ] T039 Run all contract tests (verify 100% pass rate)
-- [ ] T040 Run all integration tests (verify deadline workflows pass)
-- [ ] T041 Run all unit tests (verify validation and helpers pass)
+- [x] T039 Run all contract tests (verify 100% pass rate)
+- [x] T040 Run all integration tests (verify deadline workflows pass)
+- [x] T041 Run all unit tests (verify validation and helpers pass)
 - [ ] T042 Run manual quickstart scenarios from `quickstart.md`
-- [ ] T043 Verify type coverage (no `any` types for deadline code)
-- [ ] T044 Run linting and formatting checks
-- [ ] T045 Verify backward compatibility (existing tests still pass)
+- [x] T043 Verify type coverage (no `any` types for deadline code)
+- [x] T044 Run linting and formatting checks
+- [x] T045 Verify backward compatibility (existing tests still pass)
 
 ## Dependencies
 

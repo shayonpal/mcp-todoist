@@ -154,6 +154,40 @@ The `todoist_labels` tool provides full CRUD operations for label management wit
 - Features tracked in Todoist project "Todoist MCP" (ID: `6f2PCrR5xcwwRxJR`)
 - **Important**: Do NOT add labels when creating tasks in this project
 
+### Deadline Support
+Tasks support optional `deadline` field (when work must be completed by), distinct from `due_date` (when work should start).
+
+**Basic Usage**:
+```typescript
+// Create task with deadline
+{ action: "create", content: "Submit report", deadline: "2025-12-31" }
+
+// Update to add deadline
+{ action: "update", task_id: "123", deadline: "2025-10-15" }
+
+// Remove deadline
+{ action: "update", task_id: "123", deadline: null }
+```
+
+**Format**: YYYY-MM-DD (e.g., "2025-10-15")
+
+**Behavior**:
+- **Past dates allowed**: Triggers non-blocking reminder in metadata
+- **Recurring tasks**: Triggers non-blocking warning (deadline stays static, doesn't recur)
+- **Independent of due_date**: Can have both, either, or neither
+
+**Response with warnings/reminders**:
+```json
+{
+  "success": true,
+  "data": { "id": "123", "deadline": { "date": "2025-01-15" } },
+  "metadata": {
+    "reminders": ["Specified deadline (2025-01-15) is in the past"],
+    "warnings": ["Deadline added to recurring task - deadline will not recur"]
+  }
+}
+```
+
 ## API Endpoint
 - **Current**: `/api/v1` (use this)
 - **Deprecated**: `/rest/v1` and `/rest/v2` (do not use)
