@@ -4,31 +4,31 @@
 **Prerequisites**: research.md, data-model.md, quickstart.md
 
 ## Phase 3.1: Setup
-- [ ] T001 Review existing codebase patterns for deadline integration approach
-- [ ] T002 Validate TypeScript and Zod versions support required features
+- [x] T001 Review existing codebase patterns for deadline integration approach
+- [x] T002 Validate TypeScript and Zod versions support required features
 
 ## Phase 3.2: Tests First (TDD) ⚠️ MUST COMPLETE BEFORE 3.3
 **CRITICAL: These tests MUST be written and MUST FAIL before ANY implementation**
 
 ### Contract Tests
-- [ ] T003 [P] Contract test: Create task with deadline in `tests/contract/todoist_tasks.test.ts`
-- [ ] T004 [P] Contract test: Update task to add deadline in `tests/contract/todoist_tasks.test.ts`
-- [ ] T005 [P] Contract test: Update task to remove deadline (null) in `tests/contract/todoist_tasks.test.ts`
-- [ ] T006 [P] Contract test: Get task with deadline field in `tests/contract/todoist_tasks.test.ts`
-- [ ] T007 [P] Contract test: Create task with both due_date and deadline in `tests/contract/todoist_tasks.test.ts`
-- [ ] T008 [P] Contract test: Invalid deadline format rejection in `tests/contract/todoist_tasks.test.ts`
+- [x] T003 [P] Contract test: Create task with deadline in `tests/contract/todoist_tasks.test.ts`
+- [x] T004 [P] Contract test: Update task to add deadline in `tests/contract/todoist_tasks.test.ts`
+- [x] T005 [P] Contract test: Update task to remove deadline (null) in `tests/contract/todoist_tasks.test.ts`
+- [x] T006 [P] Contract test: Get task with deadline field in `tests/contract/todoist_tasks.test.ts`
+- [x] T007 [P] Contract test: Create task with both due_date and deadline in `tests/contract/todoist_tasks.test.ts`
+- [x] T008 [P] Contract test: Invalid deadline format rejection in `tests/contract/todoist_tasks.test.ts`
 
 ### Integration Tests
-- [ ] T009 [P] Integration test: Recurring task deadline warning in `tests/integration/deadline-workflows.test.ts`
-- [ ] T010 [P] Integration test: Past deadline reminder in `tests/integration/deadline-workflows.test.ts`
-- [ ] T011 [P] Integration test: Valid future deadline (no warnings) in `tests/integration/deadline-workflows.test.ts`
-- [ ] T012 [P] Integration test: Deadline with due date independence in `tests/integration/deadline-workflows.test.ts`
+- [x] T009 [P] Integration test: Recurring task deadline warning in `tests/integration/deadline-workflows.test.ts`
+- [x] T010 [P] Integration test: Past deadline reminder in `tests/integration/deadline-workflows.test.ts`
+- [x] T011 [P] Integration test: Valid future deadline (no warnings) in `tests/integration/deadline-workflows.test.ts`
+- [x] T012 [P] Integration test: Deadline with due date independence in `tests/integration/deadline-workflows.test.ts`
 
 ### Unit Tests
-- [ ] T013 [P] Unit test: Deadline format validation (YYYY-MM-DD regex) in `tests/unit/validation.test.ts`
-- [ ] T014 [P] Unit test: DeadlineSchema error messages in `tests/unit/validation.test.ts`
-- [ ] T015 [P] Unit test: Warning helper function for recurring tasks in `tests/unit/tool-helpers.test.ts`
-- [ ] T016 [P] Unit test: Reminder helper function for past dates in `tests/unit/tool-helpers.test.ts`
+- [x] T013 [P] Unit test: Deadline format validation (YYYY-MM-DD regex) in `tests/unit/validation.test.ts`
+- [x] T014 [P] Unit test: DeadlineSchema error messages in `tests/unit/validation.test.ts`
+- [x] T015 [P] Unit test: Warning helper function for recurring tasks in `tests/unit/tool-helpers.test.ts`
+- [x] T016 [P] Unit test: Reminder helper function for past dates in `tests/unit/tool-helpers.test.ts`
 
 ## Phase 3.3: Core Implementation (ONLY after tests are failing)
 

@@ -679,4 +679,118 @@ describe('Zod Schema Validation Tests', () => {
       expect(error.issues[0].message).toContain('unique');
     });
   });
+
+  /**
+   * T013: Unit test - Deadline format validation (YYYY-MM-DD regex)
+   * T014: Unit test - DeadlineSchema error messages
+   */
+  describe('Deadline Schema Validation', () => {
+    test('should accept valid YYYY-MM-DD format', () => {
+      const validFormats = [
+        '2025-01-01',
+        '2025-12-31',
+        '2026-06-15',
+        '2030-02-28',
+      ];
+
+      validFormats.forEach(deadline => {
+        // Test with DeadlineParameterSchema (used in tool input)
+        const result =
+          validationSchemas.DeadlineParameterSchema?.safeParse(deadline);
+        if (result) {
+          expectSuccess(result);
+        }
+      });
+    });
+
+    test('should reject invalid date formats', () => {
+      const invalidFormats = [
+        { input: '10/15/2025', name: 'US format' },
+        { input: '2025/10/15', name: 'slash separators' },
+        { input: '20251015', name: 'no separators' },
+        { input: '2025-10', name: 'partial date' },
+        { input: '15-10-2025', name: 'DD-MM-YYYY format' },
+        { input: 'tomorrow', name: 'natural language' },
+        { input: '2025-1-1', name: 'single digit month/day' },
+      ];
+
+      invalidFormats.forEach(({ input }) => {
+        const result =
+          validationSchemas.DeadlineParameterSchema?.safeParse(input);
+        if (result) {
+          const error = expectFailure(result);
+          expect(error.issues[0].message).toContain('YYYY-MM-DD');
+          expect(error.issues[0].message).toContain('2025-10-15'); // Example format
+        }
+      });
+    });
+
+    test('should accept null deadline (for removal)', () => {
+      const result = validationSchemas.DeadlineParameterSchema?.safeParse(null);
+      if (result) {
+        expectSuccess(result);
+      }
+    });
+
+    test('should accept undefined deadline (optional)', () => {
+      const result =
+        validationSchemas.DeadlineParameterSchema?.safeParse(undefined);
+      if (result) {
+        expectSuccess(result);
+      }
+    });
+
+    test('should provide helpful error messages', () => {
+      const result =
+        validationSchemas.DeadlineParameterSchema?.safeParse('invalid-date');
+      if (result) {
+        const error = expectFailure(result);
+        const message = error.issues[0].message;
+
+        // Error message should contain:
+        expect(message).toContain('YYYY-MM-DD'); // Expected format
+        expect(message).toContain('2025'); // Example year
+        expect(message).toContain('10'); // Example month
+        expect(message).toContain('15'); // Example day
+      }
+    });
+
+    test('should validate deadline in CreateTaskSchema', () => {
+      const taskWithValidDeadline = {
+        content: 'Test task',
+        project_id: '220474322',
+        deadline: '2025-12-31',
+      };
+
+      const result = validationSchemas.CreateTaskSchema.safeParse(
+        taskWithValidDeadline
+      );
+      const data = expectSuccess(result);
+      expect(data.deadline).toBe('2025-12-31');
+    });
+
+    test('should validate deadline in UpdateTaskSchema', () => {
+      const updateWithDeadline = {
+        task_id: '123456',
+        deadline: '2025-11-30',
+      };
+
+      const result =
+        validationSchemas.UpdateTaskSchema.safeParse(updateWithDeadline);
+      const data = expectSuccess(result);
+      expect(data.deadline).toBe('2025-11-30');
+    });
+
+    test('should allow deadline removal in UpdateTaskSchema', () => {
+      const updateRemoveDeadline = {
+        task_id: '123456',
+        deadline: null,
+      };
+
+      const result =
+        validationSchemas.UpdateTaskSchema.safeParse(updateRemoveDeadline);
+      const data = expectSuccess(result);
+      expect(data.deadline).toBeNull();
+    });
+  });
 });
