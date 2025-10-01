@@ -48,15 +48,15 @@
   - Verify idempotent behavior (same ID returned)
   - Verify message indicates label already exists
 
-- [ ] **T004 [P]** Contract test: get_label_by_id in `tests/contract/todoist_labels.test.ts`
+- [x] **T004 [P]** Contract test: get_label_by_id in `tests/contract/todoist_labels.test.ts`
   - Test retrieving label by valid ID
   - Verify all fields returned (id, name, color, order, is_favorite)
 
-- [ ] **T005 [P]** Contract test: get_nonexistent_label in `tests/contract/todoist_labels.test.ts`
+- [x] **T005 [P]** Contract test: get_nonexistent_label in `tests/contract/todoist_labels.test.ts`
   - Test invalid label ID returns LABEL_NOT_FOUND
   - Verify error code and retryable=false
 
-- [ ] **T006 [P]** Contract test: update_label in `tests/contract/todoist_labels.test.ts`
+- [x] **T006 [P]** Contract test: update_label in `tests/contract/todoist_labels.test.ts`
   - Test updating color and is_favorite
   - Verify name remains unchanged
 
