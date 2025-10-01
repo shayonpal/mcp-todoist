@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [1.2.0] - 2025-10-01
+
 ### Added
 
 - Deadline support for tasks (`todoist_tasks` tool)
@@ -12,6 +14,11 @@
   - Non-blocking reminders for past deadlines
   - Full validation with helpful error messages
   - Response metadata includes `warnings` and `reminders` arrays
+
+### Fixed
+
+- Deadline API field name mismatch (API expects `deadline_date` for input, returns `deadline` as output)
+- Test assertions updated to reflect API behavior (removed deadline returns `undefined`, not `null`)
 
 ## [1.1.0] - 2025-10-01
 
@@ -86,6 +93,7 @@
 - Project configuration (TypeScript, Jest, ESLint, Prettier)
 - README and project documentation
 
+[1.2.0]: https://github.com/shayonpal/mcp-todoist/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/shayonpal/mcp-todoist/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/shayonpal/mcp-todoist/compare/v0.1.0...v1.0.0
 [0.1.0]: https://github.com/shayonpal/mcp-todoist/releases/tag/v0.1.0

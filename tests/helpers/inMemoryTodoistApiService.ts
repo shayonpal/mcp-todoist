@@ -99,9 +99,18 @@ export class InMemoryTodoistApiService {
   async createTask(taskData: Partial<TodoistTask>): Promise<TodoistTask> {
     const id = this.nextId('task');
 
-    // Transform deadline parameter to match API format (string -> object)
+    // Transform deadline parameter to match API behavior
+    // API accepts: deadline_date (string) -> returns: deadline (object)
     let deadline = taskData.deadline;
-    if (typeof deadline === 'string') {
+    if ((taskData as any).deadline_date) {
+      const deadlineDate = (taskData as any).deadline_date;
+      if (deadlineDate === '') {
+        // Empty string means remove deadline
+        deadline = undefined;
+      } else {
+        deadline = { date: deadlineDate };
+      }
+    } else if (typeof deadline === 'string') {
       deadline = { date: deadline };
     }
 
@@ -158,13 +167,25 @@ export class InMemoryTodoistApiService {
     const existing = this.tasks.get(taskId);
     if (!existing) throw new Error('Task not found');
 
-    // Transform deadline parameter to match API format (string -> object)
+    // Transform deadline parameter to match API behavior
+    // API accepts: deadline_date (string) -> returns: deadline (object)
     const updates = { ...taskData };
-    if ('deadline' in updates) {
+    if ((taskData as any).deadline_date !== undefined) {
+      const deadlineDate = (taskData as any).deadline_date;
+      if (deadlineDate === '') {
+        // Empty string means remove deadline
+        updates.deadline = undefined;
+      } else {
+        updates.deadline = { date: deadlineDate } as any;
+      }
+      // Remove the deadline_date field from updates
+      delete (updates as any).deadline_date;
+    } else if ('deadline' in updates) {
       if (typeof updates.deadline === 'string') {
         updates.deadline = { date: updates.deadline } as any;
+      } else if (updates.deadline === null) {
+        updates.deadline = undefined;
       }
-      // If null, keep as null (for removal)
     }
 
     const updated = { ...existing, ...updates } as TodoistTask;

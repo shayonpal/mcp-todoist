@@ -153,7 +153,7 @@ describe('Deadline workflow integration', () => {
     });
 
     expect(updateResult.success).toBe(true);
-    expect((updateResult.data as any).deadline).toBeNull();
+    expect((updateResult.data as any).deadline).toBeUndefined();
 
     // Step 3: Verify due_date still exists
     const getResult = await tasksTool.execute({
@@ -164,7 +164,7 @@ describe('Deadline workflow integration', () => {
     expect(getResult.success).toBe(true);
     expect((getResult.data as any).due).toBeDefined();
     expect((getResult.data as any).due.date).toBe('2025-10-10');
-    expect((getResult.data as any).deadline).toBeNull();
+    expect((getResult.data as any).deadline).toBeUndefined();
   });
 
   /**
