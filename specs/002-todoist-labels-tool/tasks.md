@@ -98,7 +98,7 @@
 
 ## Phase 3.3: Core Implementation (ONLY after tests are failing)
 
-- [ ] **T015** Implement TodoistApiService label methods in `src/services/todoist-api.ts`
+- [x] **T015** Implement TodoistApiService label methods in `src/services/todoist-api.ts`
   - Add `getLabels(cursor?: string, limit?: number)` - GET /api/v1/labels
   - Add `getLabel(labelId: string)` - GET /api/v1/labels/{id}
   - Add `createLabel(params)` - POST /api/v1/labels
@@ -108,7 +108,7 @@
   - Add `removeSharedLabel(name)` - Sync API command
   - All methods use existing rate limiter (restRateLimiter for REST, syncRateLimiter for Sync)
 
-- [ ] **T016** Create TodoistLabelsTool in `src/tools/todoist-labels.ts`
+- [x] **T016** Create TodoistLabelsTool in `src/tools/todoist-labels.ts`
   - Implement `getToolDefinition()` returning MCP tool definition from contract
   - Implement `execute(params)` with action routing
   - Implement `handleCreate()` with duplicate name check
@@ -120,7 +120,7 @@
   - Implement `handleRemoveShared()` using Sync API
   - Use `handleToolError()` wrapper for error responses
 
-- [ ] **T017** Add error mapping in `src/utils/error-handler.ts`
+- [x] **T017** Add error mapping in `src/utils/error-handler.ts`
   - Map 404 → NotFoundError → "LABEL_NOT_FOUND"
   - Ensure existing rate limit and validation error mappings apply
 

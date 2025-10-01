@@ -175,6 +175,7 @@ export class ErrorHandler {
       case TodoistErrorCode.VALIDATION_ERROR:
         return ErrorSeverity.LOW;
       case TodoistErrorCode.RESOURCE_NOT_FOUND:
+      case TodoistErrorCode.LABEL_NOT_FOUND:
         return ErrorSeverity.LOW;
       case TodoistErrorCode.INVALID_TOKEN:
         return ErrorSeverity.CRITICAL;
@@ -199,6 +200,7 @@ export class ErrorHandler {
       case TodoistErrorCode.RATE_LIMIT_EXCEEDED:
         return ErrorCode.InternalError;
       case TodoistErrorCode.RESOURCE_NOT_FOUND:
+      case TodoistErrorCode.LABEL_NOT_FOUND:
         return ErrorCode.InvalidRequest;
       case TodoistErrorCode.VALIDATION_ERROR:
         return ErrorCode.InvalidParams;
