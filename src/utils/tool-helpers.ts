@@ -3,6 +3,18 @@ import { TodoistAPIError } from '../types/errors.js';
 import { TodoistErrorCode } from '../types/errors.js';
 
 /**
+ * T033: Response metadata with warnings and reminders support
+ */
+export interface ToolResponseMetadata {
+  operation_time?: number;
+  rate_limit_remaining?: number;
+  rate_limit_reset?: string;
+  warnings?: string[]; // Non-blocking advisory messages
+  reminders?: string[]; // Non-blocking informational messages
+  [key: string]: unknown; // Allow additional metadata fields
+}
+
+/**
  * Output interface for all Todoist tools
  */
 export interface ToolOutput {
@@ -16,7 +28,7 @@ export interface ToolOutput {
     http_status?: number;
   };
   message?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: ToolResponseMetadata;
 }
 
 /**
@@ -81,7 +93,7 @@ export function removeUndefinedProperties<T extends Record<string, unknown>>(
 export function createSuccessResponse(
   data?: unknown,
   message?: string,
-  metadata?: Record<string, unknown>
+  metadata?: ToolResponseMetadata
 ): ToolOutput {
   return {
     success: true,
@@ -89,4 +101,36 @@ export function createSuccessResponse(
     message,
     metadata,
   };
+}
+
+/**
+ * T031: Build warning message for recurring tasks with deadlines
+ * Recurring tasks have dynamic due dates, but deadlines remain static
+ */
+export function buildRecurringWarning(isRecurring: boolean): string | null {
+  if (!isRecurring) {
+    return null;
+  }
+  return 'Deadline added to recurring task - deadline will not recur and will remain static';
+}
+
+/**
+ * T032: Build reminder message for past deadlines
+ * Helps users notice when they've specified a deadline in the past
+ */
+export function buildPastDeadlineReminder(deadlineDate: string): string | null {
+  // Parse deadline date (YYYY-MM-DD format)
+  const deadline = new Date(deadlineDate + 'T00:00:00Z'); // Use UTC to avoid timezone issues
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Reset to start of day for fair comparison
+
+  // Convert today to UTC for comparison
+  const todayUTC = new Date(
+    Date.UTC(today.getFullYear(), today.getMonth(), today.getDate())
+  );
+
+  if (deadline < todayUTC) {
+    return `Specified deadline (${deadlineDate}) is in the past`;
+  }
+  return null;
 }

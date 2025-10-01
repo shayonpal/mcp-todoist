@@ -4,12 +4,13 @@ MCP server enabling programmatic Todoist task and project management through opt
 
 ## Features
 
-- **6 Core Tools**: Tasks, Projects, Sections, Comments, Filters, and Reminders management
+- **7 Core Tools**: Tasks, Projects, Sections, Comments, Filters, Reminders, and Labels management
 - **Todoist REST API v1**: Uses the official Todoist REST API v1 for all operations
 - **Batch Operations**: Support for up to 100 operations per request
 - **Rate Limiting**: Respects Todoist API limits with retry logic
 - **Type Safety**: Full TypeScript implementation with Zod validation
 - **Natural Language Due Dates**: Supports human-friendly date formats like "tomorrow", "every day", "every 4th"
+- **Deadline Support**: Task completion deadlines (distinct from due dates) with warnings and reminders
 - **Reminders**: Full CRUD support for task reminders
 - **Testing**: Comprehensive test suite with contract and integration tests
 

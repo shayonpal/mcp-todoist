@@ -98,6 +98,43 @@ export class InMemoryTodoistApiService {
 
   async createTask(taskData: Partial<TodoistTask>): Promise<TodoistTask> {
     const id = this.nextId('task');
+
+    // Transform deadline parameter to match API behavior
+    // API accepts: deadline_date (string) -> returns: deadline (object)
+    let deadline = taskData.deadline;
+    if ((taskData as any).deadline_date) {
+      const deadlineDate = (taskData as any).deadline_date;
+      if (deadlineDate === '') {
+        // Empty string means remove deadline
+        deadline = undefined;
+      } else {
+        deadline = { date: deadlineDate };
+      }
+    } else if (typeof deadline === 'string') {
+      deadline = { date: deadline };
+    }
+
+    // Parse due object from due_string, due_date, or due_datetime
+    let due = taskData.due;
+    if (!due && (taskData as any).due_string) {
+      // Create due object from due_string with is_recurring detection
+      const dueString = (taskData as any).due_string;
+      const isRecurring = /every|each|daily|weekly|monthly|yearly/i.test(
+        dueString
+      );
+      due = {
+        date: '2025-10-01', // Mock date
+        string: dueString,
+        is_recurring: isRecurring,
+      };
+    } else if (!due && (taskData as any).due_date) {
+      due = {
+        date: (taskData as any).due_date,
+        string: (taskData as any).due_date,
+        is_recurring: false,
+      };
+    }
+
     const task: TodoistTask = {
       id,
       content: taskData.content ?? 'Untitled Task',
@@ -112,7 +149,8 @@ export class InMemoryTodoistApiService {
       assigner_id: undefined,
       comment_count: 0,
       completed: false,
-      due: taskData.due,
+      due: due as any,
+      deadline: deadline as any,
       url: `https://todoist.com/showTask?id=${id}`,
       created_at: new Date().toISOString(),
       creator_id: 'user-1',
@@ -128,7 +166,29 @@ export class InMemoryTodoistApiService {
   ): Promise<TodoistTask> {
     const existing = this.tasks.get(taskId);
     if (!existing) throw new Error('Task not found');
-    const updated = { ...existing, ...taskData } as TodoistTask;
+
+    // Transform deadline parameter to match API behavior
+    // API accepts: deadline_date (string) -> returns: deadline (object)
+    const updates = { ...taskData };
+    if ((taskData as any).deadline_date !== undefined) {
+      const deadlineDate = (taskData as any).deadline_date;
+      if (deadlineDate === '') {
+        // Empty string means remove deadline
+        updates.deadline = undefined;
+      } else {
+        updates.deadline = { date: deadlineDate } as any;
+      }
+      // Remove the deadline_date field from updates
+      delete (updates as any).deadline_date;
+    } else if ('deadline' in updates) {
+      if (typeof updates.deadline === 'string') {
+        updates.deadline = { date: updates.deadline } as any;
+      } else if (updates.deadline === null) {
+        updates.deadline = undefined;
+      }
+    }
+
+    const updated = { ...existing, ...updates } as TodoistTask;
     this.tasks.set(taskId, updated);
     return this.clone(updated);
   }

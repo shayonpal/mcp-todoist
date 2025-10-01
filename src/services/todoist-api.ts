@@ -365,9 +365,33 @@ export class TodoistApiService {
   }
 
   async createTask(taskData: Partial<TodoistTask>): Promise<TodoistTask> {
+    // T023: Transform deadline parameter to API format
+    // API expects: deadline_date (string input) -> returns deadline (object output)
+    const apiPayload: Record<string, unknown> = { ...taskData };
+
+    if ('deadline' in taskData) {
+      // Remove the deadline field from payload
+      delete apiPayload.deadline;
+
+      if (typeof taskData.deadline === 'string') {
+        // Transform string to API parameter: deadline_date
+        apiPayload.deadline_date = taskData.deadline;
+      } else if (
+        taskData.deadline &&
+        typeof taskData.deadline === 'object' &&
+        'date' in taskData.deadline
+      ) {
+        // Transform object {date: "..."} to API parameter: deadline_date
+        apiPayload.deadline_date = taskData.deadline.date;
+      } else if (taskData.deadline === null) {
+        // Explicit removal: send empty string
+        apiPayload.deadline_date = '';
+      }
+    }
+
     return this.executeRequest<TodoistTask>('/tasks', {
       method: 'POST',
-      data: taskData,
+      data: apiPayload,
     });
   }
 
@@ -375,9 +399,33 @@ export class TodoistApiService {
     taskId: string,
     taskData: Partial<TodoistTask>
   ): Promise<TodoistTask> {
+    // T024: Transform deadline parameter to API format
+    // API expects: deadline_date (string input) -> returns deadline (object output)
+    const apiPayload: Record<string, unknown> = { ...taskData };
+
+    if ('deadline' in taskData) {
+      // Remove the deadline field from payload
+      delete apiPayload.deadline;
+
+      if (typeof taskData.deadline === 'string') {
+        // Transform string to API parameter: deadline_date
+        apiPayload.deadline_date = taskData.deadline;
+      } else if (
+        taskData.deadline &&
+        typeof taskData.deadline === 'object' &&
+        'date' in taskData.deadline
+      ) {
+        // Transform object {date: "..."} to API parameter: deadline_date
+        apiPayload.deadline_date = taskData.deadline.date;
+      } else if (taskData.deadline === null) {
+        // Explicit removal: send empty string
+        apiPayload.deadline_date = '';
+      }
+    }
+
     return this.executeRequest<TodoistTask>(`/tasks/${taskId}`, {
       method: 'POST',
-      data: taskData,
+      data: apiPayload,
     });
   }
 

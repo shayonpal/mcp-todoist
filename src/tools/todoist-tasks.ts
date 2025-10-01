@@ -5,6 +5,7 @@ import { CacheService } from '../services/cache.js';
 import {
   BatchOperationSchema,
   BatchCommandSchema,
+  DeadlineParameterSchema,
 } from '../schemas/validation.js';
 import {
   TodoistTask,
@@ -15,6 +16,8 @@ import { ValidationError } from '../types/errors.js';
 import {
   handleToolError,
   removeUndefinedProperties,
+  buildRecurringWarning,
+  buildPastDeadlineReminder,
 } from '../utils/tool-helpers.js';
 
 /**
@@ -46,6 +49,7 @@ const TodoistTasksInputSchema = z.object({
   due_date: z.string().optional(),
   due_datetime: z.string().optional(),
   assignee_id: z.string().optional(),
+  deadline: DeadlineParameterSchema, // T026: Deadline parameter with validation
   // List/Query fields
   label_id: z.string().optional(),
   query: z.string().optional(),
@@ -90,6 +94,8 @@ interface TodoistTasksOutput {
         retry_after?: number;
       };
     }>;
+    warnings?: string[]; // Non-blocking advisory messages (e.g., recurring task deadline)
+    reminders?: string[]; // Non-blocking informational messages (e.g., past deadline)
   };
   error?: {
     code: string;
@@ -186,6 +192,11 @@ export class TodoistTasksTool {
             description: 'Due datetime (ISO 8601)',
           },
           assignee_id: { type: 'string', description: 'Assignee user ID' },
+          deadline: {
+            type: 'string',
+            description:
+              'Task completion deadline in YYYY-MM-DD format (e.g., 2025-10-15). When work must be done by, distinct from due_date (when work should start). Use null to remove deadline. Past dates allowed (triggers reminder). Recurring tasks trigger warning (deadline stays static).',
+          },
           label_id: {
             type: 'string',
             description: 'Filter by label ID (for list)',
@@ -325,6 +336,7 @@ export class TodoistTasksTool {
   private async handleCreate(
     input: TodoistTasksInput
   ): Promise<TodoistTasksOutput> {
+    // T026, T027: Include deadline parameter in task data
     const taskData = {
       content: input.content,
       description: input.description,
@@ -337,6 +349,7 @@ export class TodoistTasksTool {
       due_date: input.due_date,
       due_datetime: input.due_datetime,
       assignee_id: input.assignee_id,
+      deadline: input.deadline, // T026: Add deadline parameter support
     };
 
     // Remove undefined properties
@@ -345,10 +358,30 @@ export class TodoistTasksTool {
     const task = await this.apiService.createTask(cleanedData);
     const enrichedTask = await this.enrichTaskWithMetadata(task);
 
+    // T029, T030: Build warnings and reminders
+    const warnings: string[] = [];
+    const reminders: string[] = [];
+
+    // Check if task is recurring and has a deadline
+    if (input.deadline && enrichedTask.due?.is_recurring) {
+      const warning = buildRecurringWarning(true);
+      if (warning) warnings.push(warning);
+    }
+
+    // Check if deadline is in the past
+    if (input.deadline && typeof input.deadline === 'string') {
+      const reminder = buildPastDeadlineReminder(input.deadline);
+      if (reminder) reminders.push(reminder);
+    }
+
     return {
       success: true,
       data: enrichedTask,
       message: 'Task created successfully',
+      metadata: {
+        ...(warnings.length > 0 && { warnings }),
+        ...(reminders.length > 0 && { reminders }),
+      },
     };
   }
 
@@ -377,6 +410,7 @@ export class TodoistTasksTool {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { task_id, ...updateData } = input;
 
+    // T028: Include deadline in update data
     // Separate move fields from update fields
     const moveFields: {
       project_id?: string;
@@ -416,6 +450,22 @@ export class TodoistTasksTool {
     const task = await this.apiService.getTask(task_id!);
     const enrichedTask = await this.enrichTaskWithMetadata(task);
 
+    // T029, T030: Build warnings and reminders for deadline updates
+    const warnings: string[] = [];
+    const reminders: string[] = [];
+
+    // Check if deadline was updated and task is recurring
+    if (input.deadline && enrichedTask.due?.is_recurring) {
+      const warning = buildRecurringWarning(true);
+      if (warning) warnings.push(warning);
+    }
+
+    // Check if deadline is in the past
+    if (input.deadline && typeof input.deadline === 'string') {
+      const reminder = buildPastDeadlineReminder(input.deadline);
+      if (reminder) reminders.push(reminder);
+    }
+
     const operations = [];
     if (hasMoveFields) operations.push('moved');
     if (hasUpdateFields) operations.push('updated');
@@ -424,6 +474,10 @@ export class TodoistTasksTool {
       success: true,
       data: enrichedTask,
       message: `Task ${operations.join(' and ')} successfully`,
+      metadata: {
+        ...(warnings.length > 0 && { warnings }),
+        ...(reminders.length > 0 && { reminders }),
+      },
     };
   }
 

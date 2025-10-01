@@ -1,0 +1,154 @@
+{
+  "contract_id": "task-create-with-deadline",
+  "operation": "Create task with deadline",
+  "mcp_tool": "todoist_tasks",
+  "action": "create",
+
+  "request": {
+    "schema": {
+      "type": "object",
+      "required": ["action", "content"],
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": ["create"],
+          "description": "Operation type"
+        },
+        "content": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Task title"
+        },
+        "deadline": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "description": "Deadline date in YYYY-MM-DD format (e.g., 2025-10-15)"
+        },
+        "project_id": {
+          "type": "string",
+          "description": "Optional project ID"
+        },
+        "due_date": {
+          "type": "string",
+          "description": "Optional due date (independent of deadline)"
+        }
+      }
+    },
+    "examples": [
+      {
+        "description": "Task with deadline only",
+        "payload": {
+          "action": "create",
+          "content": "Submit quarterly report",
+          "deadline": "2025-12-31"
+        }
+      },
+      {
+        "description": "Task with both due date and deadline",
+        "payload": {
+          "action": "create",
+          "content": "Review PR",
+          "due_date": "2025-10-10",
+          "deadline": "2025-10-15"
+        }
+      }
+    ]
+  },
+
+  "response": {
+    "success_schema": {
+      "type": "object",
+      "required": ["success", "data", "message", "metadata"],
+      "properties": {
+        "success": {
+          "type": "boolean",
+          "enum": [true]
+        },
+        "data": {
+          "type": "object",
+          "required": ["id", "content"],
+          "properties": {
+            "id": { "type": "string" },
+            "content": { "type": "string" },
+            "deadline": {
+              "type": "object",
+              "required": ["date"],
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "lang": {
+                  "type": "string",
+                  "description": "Language hint (output only)"
+                }
+              }
+            }
+          }
+        },
+        "message": { "type": "string" },
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "warnings": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "reminders": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "examples": [
+      {
+        "description": "Success with past deadline reminder",
+        "payload": {
+          "success": true,
+          "data": {
+            "id": "7890123456",
+            "content": "Submit quarterly report",
+            "deadline": {
+              "date": "2025-12-31",
+              "lang": "en"
+            }
+          },
+          "message": "Task created successfully",
+          "metadata": {
+            "reminders": []
+          }
+        }
+      }
+    ]
+  },
+
+  "validation_rules": [
+    "deadline must match YYYY-MM-DD format",
+    "deadline is optional (can be omitted)",
+    "deadline can coexist with due_date",
+    "Invalid format returns INVALID_PARAMS error"
+  ],
+
+  "test_scenarios": [
+    {
+      "name": "Create task with valid deadline",
+      "given": "Valid task content and deadline",
+      "when": "Create task with deadline '2025-12-31'",
+      "then": "Task created with deadline field populated"
+    },
+    {
+      "name": "Create task without deadline",
+      "given": "Valid task content, no deadline",
+      "when": "Create task without deadline parameter",
+      "then": "Task created, deadline field is null"
+    },
+    {
+      "name": "Create task with invalid deadline format",
+      "given": "Task content and invalid deadline '12/31/2025'",
+      "when": "Create task",
+      "then": "Validation error with format example"
+    }
+  ]
+}

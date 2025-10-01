@@ -231,4 +231,173 @@ describe('todoist_tasks MCP Tool Contract', () => {
       );
     });
   });
+
+  describe('DEADLINE support', () => {
+    describe('CREATE with deadline', () => {
+      test('creates task with valid deadline', async () => {
+        const params = {
+          action: 'create' as const,
+          content: 'Submit quarterly report',
+          deadline: '2025-12-31',
+          project_id: '220474322',
+        };
+
+        const result = await todoistTasksTool.execute(params);
+
+        expect(result.success).toBe(true);
+        expect(result.data).toBeDefined();
+        expect(apiService.createTask).toHaveBeenCalledWith(
+          expect.objectContaining({
+            content: 'Submit quarterly report',
+            deadline: '2025-12-31',
+          })
+        );
+      });
+
+      test('creates task with both due_date and deadline', async () => {
+        const params = {
+          action: 'create' as const,
+          content: 'Review PR',
+          due_date: '2025-10-10',
+          deadline: '2025-10-15',
+          project_id: '220474322',
+        };
+
+        const result = await todoistTasksTool.execute(params);
+
+        expect(result.success).toBe(true);
+        expect(apiService.createTask).toHaveBeenCalledWith(
+          expect.objectContaining({
+            content: 'Review PR',
+            due_date: '2025-10-10',
+            deadline: '2025-10-15',
+          })
+        );
+      });
+    });
+
+    describe('UPDATE with deadline', () => {
+      test('adds deadline to existing task', async () => {
+        const params = {
+          action: 'update' as const,
+          task_id: '2995104339',
+          deadline: '2025-11-30',
+        };
+
+        const result = await todoistTasksTool.execute(params);
+
+        expect(result.success).toBe(true);
+        expect(apiService.updateTask).toHaveBeenCalledWith(
+          '2995104339',
+          expect.objectContaining({ deadline: '2025-11-30' })
+        );
+      });
+
+      test('removes deadline with null value', async () => {
+        const params = {
+          action: 'update' as const,
+          task_id: '2995104339',
+          deadline: null,
+        };
+
+        const result = await todoistTasksTool.execute(params);
+
+        expect(result.success).toBe(true);
+        expect(apiService.updateTask).toHaveBeenCalledWith(
+          '2995104339',
+          expect.objectContaining({ deadline: null })
+        );
+      });
+    });
+
+    describe('GET with deadline', () => {
+      test('retrieves task with deadline field', async () => {
+        const result = await todoistTasksTool.execute({
+          action: 'get',
+          task_id: '2995104339',
+        });
+
+        expect(result.success).toBe(true);
+        expect(result.data).toBeDefined();
+        expect(apiService.getTask).toHaveBeenCalledWith('2995104339');
+      });
+    });
+
+    describe('VALIDATION errors', () => {
+      test('rejects invalid deadline format - US format', async () => {
+        const params = {
+          action: 'create' as const,
+          content: 'Test task',
+          deadline: '10/15/2025',
+          project_id: '220474322',
+        };
+
+        const result = await todoistTasksTool.execute(params);
+
+        expect(result.success).toBe(false);
+        expect(result.error?.code).toBe('VALIDATION_ERROR');
+        expect(result.error?.message).toContain('YYYY-MM-DD');
+      });
+
+      test('rejects invalid deadline format - no separators', async () => {
+        const params = {
+          action: 'create' as const,
+          content: 'Test task',
+          deadline: '20251015',
+          project_id: '220474322',
+        };
+
+        const result = await todoistTasksTool.execute(params);
+
+        expect(result.success).toBe(false);
+        expect(result.error?.code).toBe('VALIDATION_ERROR');
+        expect(result.error?.message).toContain('YYYY-MM-DD');
+      });
+
+      test('rejects invalid deadline format - wrong separators', async () => {
+        const params = {
+          action: 'create' as const,
+          content: 'Test task',
+          deadline: '2025/10/15',
+          project_id: '220474322',
+        };
+
+        const result = await todoistTasksTool.execute(params);
+
+        expect(result.success).toBe(false);
+        expect(result.error?.code).toBe('VALIDATION_ERROR');
+        expect(result.error?.message).toContain('YYYY-MM-DD');
+      });
+
+      test('rejects invalid deadline format - partial date', async () => {
+        const params = {
+          action: 'create' as const,
+          content: 'Test task',
+          deadline: '2025-10',
+          project_id: '220474322',
+        };
+
+        const result = await todoistTasksTool.execute(params);
+
+        expect(result.success).toBe(false);
+        expect(result.error?.code).toBe('VALIDATION_ERROR');
+        expect(result.error?.message).toContain('YYYY-MM-DD');
+      });
+
+      test('rejects natural language deadline', async () => {
+        const params = {
+          action: 'create' as const,
+          content: 'Test task',
+          deadline: 'tomorrow',
+          project_id: '220474322',
+        };
+
+        const result = await todoistTasksTool.execute(params);
+
+        expect(result.success).toBe(false);
+        expect(result.error?.code).toBe('VALIDATION_ERROR');
+        expect(result.error?.message).toContain('YYYY-MM-DD');
+      });
+    });
+  });
 });
