@@ -102,6 +102,7 @@ export class TodoistMCPServer {
         TodoistCommentsTool.getToolDefinition(),
         TodoistFiltersTool.getToolDefinition(),
         TodoistRemindersTool.getToolDefinition(),
+        TodoistLabelsTool.getToolDefinition(),
       ];
 
       logger.info('Returning tool definitions', {

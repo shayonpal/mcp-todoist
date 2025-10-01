@@ -461,3 +461,65 @@ export const withRemindersMocks = (
 export const createRemindersApiMock = (
   overrides: Partial<RemindersApiMock> = {}
 ): RemindersApiMock => withRemindersMocks(overrides);
+
+type LabelsMockKeys =
+  | 'getRateLimitStatus'
+  | 'getLabels'
+  | 'getLabel'
+  | 'createLabel'
+  | 'updateLabel'
+  | 'deleteLabel'
+  | 'renameSharedLabel'
+  | 'removeSharedLabel';
+
+export type LabelsApiMock = MockedSubset<LabelsMockKeys>;
+
+const buildLabelsMocks = (): LabelsApiMock => {
+  const workLabel = toTodoistLabel(mockLabels.label1);
+  const personalLabel = toTodoistLabel(mockLabels.label2);
+
+  const getLabels = createMockFn<TodoistApiService['getLabels']>();
+  getLabels.mockResolvedValue({
+    results: [workLabel, personalLabel],
+    next_cursor: null,
+  });
+
+  const getLabel = createMockFn<TodoistApiService['getLabel']>();
+  getLabel.mockResolvedValue(workLabel);
+
+  const createLabel = createMockFn<TodoistApiService['createLabel']>();
+  createLabel.mockResolvedValue(workLabel);
+
+  const updateLabel = createMockFn<TodoistApiService['updateLabel']>();
+  updateLabel.mockResolvedValue({ ...workLabel, color: 'red' });
+
+  const deleteLabel = createMockFn<TodoistApiService['deleteLabel']>();
+  deleteLabel.mockResolvedValue(undefined);
+
+  const renameSharedLabel =
+    createMockFn<TodoistApiService['renameSharedLabel']>();
+  renameSharedLabel.mockResolvedValue(undefined);
+
+  const removeSharedLabel =
+    createMockFn<TodoistApiService['removeSharedLabel']>();
+  removeSharedLabel.mockResolvedValue(undefined);
+
+  return {
+    ...createRateLimitMock(),
+    getLabels,
+    getLabel,
+    createLabel,
+    updateLabel,
+    deleteLabel,
+    renameSharedLabel,
+    removeSharedLabel,
+  };
+};
+
+export const withLabelsMocks = (
+  overrides: Partial<LabelsApiMock> = {}
+): LabelsApiMock => merge(buildLabelsMocks(), overrides);
+
+export const createLabelsApiMock = (
+  overrides: Partial<LabelsApiMock> = {}
+): LabelsApiMock => withLabelsMocks(overrides);

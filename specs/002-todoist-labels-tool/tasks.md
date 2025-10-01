@@ -169,27 +169,27 @@
 
 ## Phase 3.6: Polish
 
-- [ ] **T024** Update helper mocks in `tests/helpers/inMemoryTodoistApiService.ts`
+- [x] **T024** Update helper mocks in `tests/helpers/inMemoryTodoistApiService.ts`
   - Add in-memory label storage
   - Implement mock label CRUD methods
   - Support duplicate name detection
 
-- [ ] **T025** Update helper mocks in `tests/helpers/mockTodoistApiService.ts`
+- [x] **T025** Update helper mocks in `tests/helpers/mockTodoistApiService.ts`
   - Add Jest mock factory for label methods
   - Support all label actions
 
-- [ ] **T026** Run manual validation from `specs/002-todoist-labels-tool/quickstart.md`
+- [x] **T026** Run manual validation from `specs/002-todoist-labels-tool/quickstart.md`
   - Execute all 9 acceptance scenarios
   - Execute all 3 edge case scenarios
   - Verify against real Todoist API
   - Document any deviations
 
-- [ ] **T027 [P]** Update CLAUDE.md with label tool documentation
+- [x] **T027 [P]** Update CLAUDE.md with label tool documentation
   - Add todoist_labels to tool list
   - Document action parameter options
   - Add example usage
 
-- [ ] **T028** Verify test coverage ≥80% for label code
+- [x] **T028** Verify test coverage ≥80% for label code
   - Run `npm run test:coverage -- --testPathPattern=label`
   - Ensure coverage meets threshold
 

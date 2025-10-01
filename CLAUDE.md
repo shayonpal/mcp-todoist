@@ -30,7 +30,7 @@ MCP server for Todoist task and project management. Uses **Todoist REST API v1**
 
 **Server (`src/server.ts`)**
 - `TodoistMCPServer` class implements MCP protocol
-- `initializeTools()` registers 6 MCP tools
+- `initializeTools()` registers 7 MCP tools
 - `setupHandlers()` configures request handlers (list tools, call tool, health check)
 - `run()` starts stdio transport for MCP communication
 - Error mapping from Todoist API errors to MCP error codes
@@ -40,10 +40,10 @@ MCP server for Todoist task and project management. Uses **Todoist REST API v1**
 - Dual rate limiters: REST endpoints (300 req/min) and Sync API (50 req/min)
 - Token bucket algorithm for rate limiting with automatic retry on 429
 - Axios interceptors for request/response logging and error handling
-- Methods organized by resource: tasks, projects, sections, comments, filters, reminders
+- Methods organized by resource: tasks, projects, sections, comments, filters, reminders, labels
 
 **Tools (`src/tools/`)**
-- Each tool file implements one MCP tool (tasks, projects, sections, comments, filters, reminders)
+- Each tool file implements one MCP tool (tasks, projects, sections, comments, filters, reminders, labels)
 - Input validation with Zod schemas
 - Action-based dispatching (create, get, update, delete, list, etc.)
 - Uses `handleToolError` wrapper for consistent error responses
@@ -101,6 +101,49 @@ MCP server for Todoist task and project management. Uses **Todoist REST API v1**
 - Supports Todoist's natural language: "tomorrow at 10:00", "every day", "every 4th"
 - Handled via `due_string` field in task creation/update
 - Can also use `due_date` (YYYY-MM-DD) or `due_datetime` (ISO 8601)
+
+### Label Management (todoist_labels)
+The `todoist_labels` tool provides full CRUD operations for label management with support for both personal and shared labels.
+
+**Actions**:
+- `create` - Create new personal label (idempotent - returns existing if duplicate name)
+- `get` - Retrieve label by ID
+- `update` - Update label properties (color, is_favorite, order)
+- `delete` - Delete label (automatically removed from all tasks)
+- `list` - List all labels with cursor-based pagination (limit 1-200, default 50)
+- `rename_shared` - Rename shared label across all tasks (Sync API)
+- `remove_shared` - Remove shared label from all tasks (Sync API)
+
+**Parameters**:
+- `action` (required) - One of the actions above
+- `label_id` (required for: get, update, delete) - Target label ID
+- `name` (required for: create, rename_shared) - Label name (max 128 chars)
+- `new_name` (required for: rename_shared) - New label name
+- `color` (optional for: create, update) - Predefined Todoist color ID
+- `order` (optional for: create, update) - Display order
+- `is_favorite` (optional for: create, update) - Favorite flag
+- `cursor` (optional for: list) - Pagination cursor
+- `limit` (optional for: list) - Page size (1-200, default 50)
+
+**Example Usage**:
+```typescript
+// Create label
+{ "action": "create", "name": "Work", "color": "blue", "is_favorite": true }
+
+// Update label
+{ "action": "update", "label_id": "2156154810", "color": "red" }
+
+// List with pagination
+{ "action": "list", "limit": 50 }
+
+// Rename shared label
+{ "action": "rename_shared", "name": "OldName", "new_name": "NewName" }
+```
+
+**Key Features**:
+- Duplicate name handling: Creating a label with existing name returns the existing label (idempotent)
+- Cache integration: Label cache automatically invalidated on create/update/delete
+- Error codes: `LABEL_NOT_FOUND`, `VALIDATION_ERROR`, `RATE_LIMIT_EXCEEDED`
 
 ## Configuration
 

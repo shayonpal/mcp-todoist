@@ -329,10 +329,20 @@ export class InMemoryTodoistApiService {
   }
 
   async createLabel(labelData: Partial<TodoistLabel>): Promise<TodoistLabel> {
+    // Check for duplicate name (idempotent behavior)
+    const labelName = labelData.name ?? 'Untitled Label';
+    const existingLabel = Array.from(this.labels.values()).find(
+      l => l.name === labelName
+    );
+
+    if (existingLabel) {
+      return this.clone(existingLabel);
+    }
+
     const id = this.nextId('label');
     const label: TodoistLabel = {
       id,
-      name: labelData.name ?? 'Untitled Label',
+      name: labelName,
       color: labelData.color ?? 'charcoal',
       order: labelData.order ?? 1,
       is_favorite: labelData.is_favorite ?? false,
