@@ -308,7 +308,12 @@ export class TodoistLabelsTool {
   private async handleGet(
     input: TodoistLabelsInput
   ): Promise<TodoistLabelsOutput> {
-    const label = await this.apiService.getLabel(input.label_id!);
+    const labelId = input.label_id;
+    if (!labelId) {
+      throw new ValidationError('label_id is required for get action');
+    }
+
+    const label = await this.apiService.getLabel(labelId);
 
     return {
       success: true,
@@ -333,10 +338,12 @@ export class TodoistLabelsTool {
     // Remove undefined properties
     const cleanedData = removeUndefinedProperties(labelData);
 
-    const label = await this.apiService.updateLabel(
-      input.label_id!,
-      cleanedData
-    );
+    const labelId = input.label_id;
+    if (!labelId) {
+      throw new ValidationError('label_id is required for update action');
+    }
+
+    const label = await this.apiService.updateLabel(labelId, cleanedData);
 
     // Invalidate labels cache to refresh on next request
     this.cacheService.invalidateLabels();
@@ -354,7 +361,12 @@ export class TodoistLabelsTool {
   private async handleDelete(
     input: TodoistLabelsInput
   ): Promise<TodoistLabelsOutput> {
-    await this.apiService.deleteLabel(input.label_id!);
+    const labelId = input.label_id;
+    if (!labelId) {
+      throw new ValidationError('label_id is required for delete action');
+    }
+
+    await this.apiService.deleteLabel(labelId);
 
     // Invalidate labels cache to refresh on next request
     this.cacheService.invalidateLabels();
@@ -392,7 +404,17 @@ export class TodoistLabelsTool {
   private async handleRenameShared(
     input: TodoistLabelsInput
   ): Promise<TodoistLabelsOutput> {
-    await this.apiService.renameSharedLabel(input.name!, input.new_name!);
+    const { name, new_name } = input;
+    if (!name) {
+      throw new ValidationError('name is required for rename_shared action');
+    }
+    if (!new_name) {
+      throw new ValidationError(
+        'new_name is required for rename_shared action'
+      );
+    }
+
+    await this.apiService.renameSharedLabel(name, new_name);
 
     // Invalidate labels cache since multiple labels may be affected
     this.cacheService.invalidateLabels();
@@ -410,7 +432,12 @@ export class TodoistLabelsTool {
   private async handleRemoveShared(
     input: TodoistLabelsInput
   ): Promise<TodoistLabelsOutput> {
-    await this.apiService.removeSharedLabel(input.name!);
+    const { name } = input;
+    if (!name) {
+      throw new ValidationError('name is required for remove_shared action');
+    }
+
+    await this.apiService.removeSharedLabel(name);
 
     // Invalidate labels cache since multiple labels may be affected
     this.cacheService.invalidateLabels();

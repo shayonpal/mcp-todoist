@@ -154,7 +154,7 @@ export class TodoistFiltersTool {
       case 'query_filter':
       case 'update_filter':
       case 'delete_filter':
-        if (!input.filter_id!)
+        if (!input.filter_id)
           throw new ValidationError(
             `filter_id is required for ${input.action} action`
           );
@@ -253,7 +253,12 @@ export class TodoistFiltersTool {
   private async handleGetFilter(
     input: TodoistFiltersInput
   ): Promise<TodoistFiltersOutput> {
-    const filter = await this.apiService.getFilter(input.filter_id!);
+    const filterId = input.filter_id;
+    if (!filterId) {
+      throw new ValidationError('filter_id is required for get_filter action');
+    }
+
+    const filter = await this.apiService.getFilter(filterId);
 
     return {
       success: true,
@@ -269,7 +274,14 @@ export class TodoistFiltersTool {
     input: TodoistFiltersInput
   ): Promise<TodoistFiltersOutput> {
     // First get the filter to get its query
-    const filter = await this.apiService.getFilter(input.filter_id!);
+    const filterId = input.filter_id;
+    if (!filterId) {
+      throw new ValidationError(
+        'filter_id is required for query_filter action'
+      );
+    }
+
+    const filter = await this.apiService.getFilter(filterId);
 
     // Then query tasks using the filter's query
     const response = await this.apiService.getTasks({
@@ -331,12 +343,18 @@ export class TodoistFiltersTool {
   ): Promise<TodoistFiltersOutput> {
     const { filter_id, ...updateData } = input;
 
+    if (!filter_id) {
+      throw new ValidationError(
+        'filter_id is required for update_filter action'
+      );
+    }
+
     // Remove undefined properties
     const cleanedData = Object.fromEntries(
       Object.entries(updateData).filter(([_, value]) => value !== undefined)
     );
 
-    const filter = await this.apiService.updateFilter(filter_id!, cleanedData);
+    const filter = await this.apiService.updateFilter(filter_id, cleanedData);
 
     return {
       success: true,
@@ -351,7 +369,14 @@ export class TodoistFiltersTool {
   private async handleDeleteFilter(
     input: TodoistFiltersInput
   ): Promise<TodoistFiltersOutput> {
-    await this.apiService.deleteFilter(input.filter_id!);
+    const filterId = input.filter_id;
+    if (!filterId) {
+      throw new ValidationError(
+        'filter_id is required for delete_filter action'
+      );
+    }
+
+    await this.apiService.deleteFilter(filterId);
 
     return {
       success: true,

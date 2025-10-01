@@ -9,7 +9,7 @@
 import { TodoistApiService } from '../../src/services/todoist-api.js';
 import { TodoistLabelsTool } from '../../src/tools/todoist-labels.js';
 import * as dotenv from 'dotenv';
-import { TodoistLabel } from '../../src/types/todoist.js';
+import { TodoistLabel, APIConfiguration } from '../../src/types/todoist.js';
 
 // Load environment variables
 dotenv.config();
@@ -23,27 +23,76 @@ interface ValidationResult {
 
 const results: ValidationResult[] = [];
 const createdLabelIds: string[] = [];
+let labelsTool: TodoistLabelsTool | null = null;
+
+function writeLine(message = ''): void {
+  process.stdout.write(`${message}\n`);
+}
+
+function writeErrorLine(message = ''): void {
+  process.stderr.write(`${message}\n`);
+}
+
+function writeDetails(details: unknown): void {
+  const json = JSON.stringify(details, null, 2);
+  if (!json) {
+    return;
+  }
+
+  const indentedJson = json
+    .split('\n')
+    .map(line => `     ${line}`)
+    .join('\n');
+  writeLine('   Details:');
+  writeLine(indentedJson);
+}
+
+function writeSectionHeader(header: string): void {
+  writeLine();
+  writeLine(header);
+}
 
 function logResult(result: ValidationResult) {
   results.push(result);
   const status = result.passed ? '✅' : '❌';
-  console.log(`${status} ${result.scenario}`);
+  writeLine(`${status} ${result.scenario}`);
   if (result.message) {
-    console.log(`   ${result.message}`);
+    writeLine(`   ${result.message}`);
   }
   if (!result.passed && result.details) {
-    console.log(`   Details:`, JSON.stringify(result.details, null, 2));
+    writeDetails(result.details);
   }
 }
 
-async function callTool(params: any) {
-  const apiService = new TodoistApiService(process.env.TODOIST_API_TOKEN!);
-  const tool = new TodoistLabelsTool(apiService);
+function getLabelsTool(): TodoistLabelsTool {
+  if (labelsTool) {
+    return labelsTool;
+  }
+
+  const token = process.env.TODOIST_API_TOKEN;
+  if (!token) {
+    throw new Error('TODOIST_API_TOKEN not found in environment');
+  }
+
+  const apiConfig: APIConfiguration = {
+    token,
+    base_url: 'https://api.todoist.com/api/v1',
+    timeout: 10000,
+    retry_attempts: 3,
+  };
+
+  const apiService = new TodoistApiService(apiConfig);
+  labelsTool = new TodoistLabelsTool(apiConfig, { apiService });
+  return labelsTool;
+}
+
+async function callTool(params: unknown) {
+  const tool = getLabelsTool();
   return await tool.execute(params);
 }
 
 async function scenario1_CreatePersonalLabel() {
-  console.log('\n📋 Scenario 1: Create Personal Label');
+  writeSectionHeader('📋 Scenario 1: Create Personal Label');
   try {
     const response = await callTool({
       action: 'create',
@@ -80,7 +129,7 @@ async function scenario1_CreatePersonalLabel() {
 }
 
 async function scenario2_UpdateLabelProperties() {
-  console.log('\n📋 Scenario 2: Update Label Properties');
+  writeSectionHeader('📋 Scenario 2: Update Label Properties');
   try {
     // Step 1: Create label
     const createResponse = await callTool({
@@ -128,7 +177,7 @@ async function scenario2_UpdateLabelProperties() {
 }
 
 async function scenario3_ListAllLabels() {
-  console.log('\n📋 Scenario 3: List All Labels');
+  writeSectionHeader('📋 Scenario 3: List All Labels');
   try {
     const response = await callTool({
       action: 'list',
@@ -163,7 +212,7 @@ async function scenario3_ListAllLabels() {
 }
 
 async function scenario4_DeletePersonalLabel() {
-  console.log('\n📋 Scenario 4: Delete Personal Label');
+  writeSectionHeader('📋 Scenario 4: Delete Personal Label');
   try {
     // Step 1: Create test label
     const createResponse = await callTool({
@@ -214,7 +263,7 @@ async function scenario4_DeletePersonalLabel() {
 }
 
 async function scenario5_GetLabelById() {
-  console.log('\n📋 Scenario 5: Get Label by ID');
+  writeSectionHeader('📋 Scenario 5: Get Label by ID');
   try {
     if (createdLabelIds.length === 0) {
       throw new Error('No labels available for get test');
@@ -253,7 +302,9 @@ async function scenario5_GetLabelById() {
 }
 
 async function scenario6_PaginationWithLargeCollections() {
-  console.log('\n📋 Scenario 6: Pagination (simplified - testing mechanism)');
+  writeSectionHeader(
+    '📋 Scenario 6: Pagination (simplified - testing mechanism)'
+  );
   try {
     // Test pagination mechanism without creating 150 labels
     const firstPage = await callTool({
@@ -287,7 +338,7 @@ async function scenario6_PaginationWithLargeCollections() {
 }
 
 async function scenario7_RenameSharedLabel() {
-  console.log('\n📋 Scenario 7: Rename Shared Label');
+  writeSectionHeader('📋 Scenario 7: Rename Shared Label');
   try {
     const response = await callTool({
       action: 'rename_shared',
@@ -328,7 +379,7 @@ async function scenario7_RenameSharedLabel() {
 }
 
 async function scenario8_RemoveSharedLabel() {
-  console.log('\n📋 Scenario 8: Remove Shared Label');
+  writeSectionHeader('📋 Scenario 8: Remove Shared Label');
   try {
     const response = await callTool({
       action: 'remove_shared',
@@ -359,7 +410,7 @@ async function scenario8_RemoveSharedLabel() {
 }
 
 async function edgeCase1_DuplicateLabelName() {
-  console.log('\n📋 Edge Case 1: Duplicate Label Name (Idempotent)');
+  writeSectionHeader('📋 Edge Case 1: Duplicate Label Name (Idempotent)');
   try {
     // First create
     const firstCreate = await callTool({
@@ -402,7 +453,7 @@ async function edgeCase1_DuplicateLabelName() {
 }
 
 async function edgeCase2_NonExistentLabel() {
-  console.log('\n📋 Edge Case 2: Operations on Non-Existent Label');
+  writeSectionHeader('📋 Edge Case 2: Operations on Non-Existent Label');
   try {
     const response = await callTool({
       action: 'get',
@@ -431,7 +482,7 @@ async function edgeCase2_NonExistentLabel() {
 }
 
 async function edgeCase3_InvalidPaginationLimit() {
-  console.log('\n📋 Edge Case 3: Invalid Pagination Limit');
+  writeSectionHeader('📋 Edge Case 3: Invalid Pagination Limit');
   try {
     const response = await callTool({
       action: 'list',
@@ -460,7 +511,7 @@ async function edgeCase3_InvalidPaginationLimit() {
 }
 
 async function cleanup() {
-  console.log('\n🧹 Cleanup: Deleting test labels...');
+  writeSectionHeader('🧹 Cleanup: Deleting test labels...');
   let deletedCount = 0;
 
   for (const labelId of createdLabelIds) {
@@ -471,19 +522,21 @@ async function cleanup() {
       });
       deletedCount++;
     } catch (error) {
-      console.log(`   ⚠️  Failed to delete label ${labelId}`);
+      writeLine(`   ⚠️  Failed to delete label ${labelId}`);
     }
   }
 
-  console.log(`   Deleted ${deletedCount}/${createdLabelIds.length} labels`);
+  writeLine(`   Deleted ${deletedCount}/${createdLabelIds.length} labels`);
 }
 
 async function main() {
-  console.log('🚀 Starting Manual Validation for todoist_labels tool\n');
-  console.log('================================================\n');
+  writeLine('🚀 Starting Manual Validation for todoist_labels tool');
+  writeLine('');
+  writeLine('================================================');
+  writeLine('');
 
   if (!process.env.TODOIST_API_TOKEN) {
-    console.error('❌ TODOIST_API_TOKEN not found in environment');
+    writeErrorLine('❌ TODOIST_API_TOKEN not found in environment');
     process.exit(1);
   }
 
@@ -507,26 +560,30 @@ async function main() {
     await cleanup();
 
     // Summary
-    console.log('\n================================================');
-    console.log('📊 Validation Summary\n');
+    writeLine('');
+    writeLine('================================================');
+    writeLine('📊 Validation Summary');
+    writeLine('');
     const passed = results.filter(r => r.passed).length;
     const total = results.length;
     const percentage = ((passed / total) * 100).toFixed(1);
 
-    console.log(`Total: ${passed}/${total} scenarios passed (${percentage}%)`);
-    console.log('\nFailed scenarios:');
+    writeLine(`Total: ${passed}/${total} scenarios passed (${percentage}%)`);
+    writeLine('');
+    writeLine('Failed scenarios:');
     const failed = results.filter(r => !r.passed);
     if (failed.length === 0) {
-      console.log('   ✅ All scenarios passed!');
+      writeLine('   ✅ All scenarios passed!');
     } else {
       failed.forEach(r => {
-        console.log(`   ❌ ${r.scenario}: ${r.message}`);
+        writeLine(`   ❌ ${r.scenario}: ${r.message}`);
       });
     }
 
     process.exit(failed.length === 0 ? 0 : 1);
   } catch (error: any) {
-    console.error('\n❌ Fatal error:', error.message);
+    writeErrorLine('');
+    writeErrorLine(`❌ Fatal error: ${error.message}`);
     process.exit(1);
   }
 }
