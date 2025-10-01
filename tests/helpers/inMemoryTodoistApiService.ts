@@ -3,8 +3,10 @@ import {
   TodoistProject,
   TodoistSection,
   TodoistReminder,
+  TodoistLabel,
 } from '../../src/types/todoist.js';
 import { TodoistApiService } from '../../src/services/todoist-api.js';
+import { NotFoundError } from '../../src/types/errors.js';
 import {
   mockTasks,
   mockProjects,
@@ -28,6 +30,7 @@ export class InMemoryTodoistApiService {
   private projects = new Map<string, TodoistProject>();
   private sections = new Map<string, TodoistSection>();
   private reminders = new Map<string, TodoistReminder>();
+  private labels = new Map<string, TodoistLabel>();
   private idCounter = 1000;
 
   constructor() {
@@ -298,6 +301,97 @@ export class InMemoryTodoistApiService {
     this.reminders.delete(reminderId);
   }
 
+  // Label operations
+  async getLabels(
+    cursor?: string,
+    limit?: number
+  ): Promise<{ results: TodoistLabel[]; next_cursor: string | null }> {
+    const labels = Array.from(this.labels.values());
+    const pageSize = limit || 50;
+
+    // Simple pagination: cursor is the starting index
+    const startIndex = cursor ? parseInt(cursor, 10) : 0;
+    const endIndex = startIndex + pageSize;
+    const page = labels.slice(startIndex, endIndex);
+    const nextCursor = endIndex < labels.length ? endIndex.toString() : null;
+
+    return { results: this.clone(page), next_cursor: nextCursor };
+  }
+
+  async getLabel(labelId: string): Promise<TodoistLabel> {
+    const label = this.labels.get(labelId);
+    if (!label) {
+      throw new NotFoundError(`Label with ID ${labelId} not found`, {
+        label_id: labelId,
+      });
+    }
+    return this.clone(label);
+  }
+
+  async createLabel(labelData: Partial<TodoistLabel>): Promise<TodoistLabel> {
+    const id = this.nextId('label');
+    const label: TodoistLabel = {
+      id,
+      name: labelData.name ?? 'Untitled Label',
+      color: labelData.color ?? 'charcoal',
+      order: labelData.order ?? 1,
+      is_favorite: labelData.is_favorite ?? false,
+    };
+    this.labels.set(id, label);
+    return this.clone(label);
+  }
+
+  async updateLabel(
+    labelId: string,
+    labelData: Partial<TodoistLabel>
+  ): Promise<TodoistLabel> {
+    const existing = this.labels.get(labelId);
+    if (!existing) throw new Error('Label not found');
+    const updated = { ...existing, ...labelData } as TodoistLabel;
+    this.labels.set(labelId, updated);
+    return this.clone(updated);
+  }
+
+  async deleteLabel(labelId: string): Promise<void> {
+    const label = this.labels.get(labelId);
+    if (!label) {
+      throw new NotFoundError(`Label with ID ${labelId} not found`, {
+        label_id: labelId,
+      });
+    }
+
+    // Remove label from all tasks
+    const labelName = label.name;
+    this.tasks.forEach((task, taskId) => {
+      if (task.labels?.includes(labelName)) {
+        task.labels = task.labels.filter(l => l !== labelName);
+        this.tasks.set(taskId, task);
+      }
+    });
+
+    this.labels.delete(labelId);
+  }
+
+  async renameSharedLabel(name: string, newName: string): Promise<void> {
+    // Update all tasks with the old label name to use the new name
+    this.tasks.forEach((task, taskId) => {
+      if (task.labels?.includes(name)) {
+        task.labels = task.labels.map(l => (l === name ? newName : l));
+        this.tasks.set(taskId, task);
+      }
+    });
+  }
+
+  async removeSharedLabel(name: string): Promise<void> {
+    // Remove label from all tasks
+    this.tasks.forEach((task, taskId) => {
+      if (task.labels?.includes(name)) {
+        task.labels = task.labels.filter(l => l !== name);
+        this.tasks.set(taskId, task);
+      }
+    });
+  }
+
   async sync(commands: SyncCommand[]) {
     const temp_id_mapping: Record<string, string> = {};
     const sync_status: Record<string, string> = {};
@@ -327,6 +421,19 @@ export class InMemoryTodoistApiService {
         }
         case 'reminder_delete': {
           await this.deleteReminder(command.args.id);
+          sync_status[command.uuid] = 'ok';
+          break;
+        }
+        case 'shared_label_rename': {
+          await this.renameSharedLabel(
+            command.args.name,
+            command.args.new_name
+          );
+          sync_status[command.uuid] = 'ok';
+          break;
+        }
+        case 'shared_label_remove': {
+          await this.removeSharedLabel(command.args.name);
           sync_status[command.uuid] = 'ok';
           break;
         }

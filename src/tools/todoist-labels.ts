@@ -432,6 +432,11 @@ export class TodoistLabelsTool {
     const toolError = handleToolError(error, operationTime);
     const rateLimitStatus = this.apiService.getRateLimitStatus();
 
+    // Remap RESOURCE_NOT_FOUND to LABEL_NOT_FOUND for label-specific context
+    if (toolError.error?.code === 'RESOURCE_NOT_FOUND') {
+      toolError.error.code = 'LABEL_NOT_FOUND';
+    }
+
     return {
       ...toolError,
       metadata: {

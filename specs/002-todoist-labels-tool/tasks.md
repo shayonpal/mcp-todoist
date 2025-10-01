@@ -145,20 +145,20 @@
 
 ## Phase 3.5: Integration Tests
 
-- [ ] **T020 [P]** Integration test: label lifecycle in `tests/integration/label-workflows.test.ts`
+- [x] **T020 [P]** Integration test: label lifecycle in `tests/integration/label-workflows.test.ts`
   - Create label → Update color → Delete label
   - Verify each step succeeds
 
-- [ ] **T021 [P]** Integration test: label and task relationship in `tests/integration/label-workflows.test.ts`
+- [x] **T021 [P]** Integration test: label and task relationship in `tests/integration/label-workflows.test.ts`
   - Create label → Assign to task → Delete label
-  - Verify label removed from task.label_names
+  - Verify label removed from task.labels
 
-- [ ] **T022 [P]** Integration test: pagination workflow in `tests/integration/label-workflows.test.ts`
+- [x] **T022 [P]** Integration test: pagination workflow in `tests/integration/label-workflows.test.ts`
   - Create 150 test labels
   - Page through with limit=50
   - Verify cursor handling and next_cursor=null at end
 
-- [ ] **T023 [P]** Integration test: shared label operations in `tests/integration/label-workflows.test.ts`
+- [x] **T023 [P]** Integration test: shared label operations in `tests/integration/label-workflows.test.ts`
   - Create shared label on tasks
   - Rename shared label
   - Verify name changed across tasks
