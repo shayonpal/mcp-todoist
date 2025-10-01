@@ -206,6 +206,43 @@ export const DeleteLabelSchema = z.object({
 });
 
 /**
+ * Label Tool MCP validation schema
+ * Supports all label actions: create, get, update, delete, list, rename_shared, remove_shared
+ */
+export const LabelToolInputSchema = z.object({
+  action: z.enum([
+    'create',
+    'get',
+    'update',
+    'delete',
+    'list',
+    'rename_shared',
+    'remove_shared',
+  ]),
+  label_id: z.string().optional(),
+  name: z
+    .string()
+    .min(1, 'Label name is required')
+    .max(128, 'Label name must be 128 characters or less')
+    .optional(),
+  new_name: z
+    .string()
+    .min(1, 'New name is required')
+    .max(128, 'New name must be 128 characters or less')
+    .optional(),
+  color: z.string().optional(),
+  order: z.number().int().optional(),
+  is_favorite: z.boolean().optional(),
+  cursor: z.string().optional(),
+  limit: z
+    .number()
+    .int()
+    .min(1, 'Limit must be at least 1')
+    .max(200, 'Limit must be between 1 and 200')
+    .optional(),
+});
+
+/**
  * Reminder-related validation schemas
  */
 // Due date schema for reminders (must include time)
@@ -373,6 +410,7 @@ export type CreateFilterInput = z.infer<typeof CreateFilterSchema>;
 export type UpdateFilterInput = z.infer<typeof UpdateFilterSchema>;
 export type CreateLabelInput = z.infer<typeof CreateLabelSchema>;
 export type UpdateLabelInput = z.infer<typeof UpdateLabelSchema>;
+export type LabelToolInput = z.infer<typeof LabelToolInputSchema>;
 export type CreateReminderInput = z.infer<typeof CreateReminderSchema>;
 export type UpdateReminderInput = z.infer<typeof UpdateReminderSchema>;
 export type BatchCommandInput = z.infer<typeof BatchCommandSchema>;

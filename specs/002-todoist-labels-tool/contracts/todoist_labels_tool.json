@@ -1,0 +1,358 @@
+{
+  "tool": "todoist_labels",
+  "description": "Label management for Todoist - create, read, update, delete labels with full CRUD operations",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "action": {
+        "type": "string",
+        "enum": ["create", "get", "update", "delete", "list", "rename_shared", "remove_shared"],
+        "description": "Action to perform on labels"
+      },
+      "label_id": {
+        "type": "string",
+        "description": "Label ID (required for get, update, delete)"
+      },
+      "name": {
+        "type": "string",
+        "maxLength": 128,
+        "description": "Label name (required for create, rename_shared)"
+      },
+      "new_name": {
+        "type": "string",
+        "maxLength": 128,
+        "description": "New label name (required for rename_shared)"
+      },
+      "color": {
+        "type": "string",
+        "description": "Predefined color ID"
+      },
+      "order": {
+        "type": "number",
+        "description": "Display order"
+      },
+      "is_favorite": {
+        "type": "boolean",
+        "description": "Mark as favorite"
+      },
+      "cursor": {
+        "type": "string",
+        "description": "Pagination cursor (for list action)"
+      },
+      "limit": {
+        "type": "number",
+        "minimum": 1,
+        "maximum": 200,
+        "default": 50,
+        "description": "Page size (for list action, default 50, max 200)"
+      }
+    },
+    "required": ["action"]
+  },
+  "contracts": [
+    {
+      "name": "create_personal_label",
+      "description": "Creates a new personal label or returns existing if name already exists",
+      "request": {
+        "action": "create",
+        "name": "Work",
+        "color": "blue",
+        "is_favorite": true
+      },
+      "response": {
+        "success": true,
+        "data": {
+          "id": "2156154810",
+          "name": "Work",
+          "color": "blue",
+          "order": 1,
+          "is_favorite": true
+        },
+        "message": "Label created successfully",
+        "metadata": {
+          "operation_time": 250,
+          "rate_limit_remaining": 999,
+          "rate_limit_reset": "2025-10-01T12:15:00Z"
+        }
+      }
+    },
+    {
+      "name": "create_duplicate_label_idempotent",
+      "description": "Creating label with existing name returns existing label",
+      "request": {
+        "action": "create",
+        "name": "Work"
+      },
+      "response": {
+        "success": true,
+        "data": {
+          "id": "2156154810",
+          "name": "Work",
+          "color": "blue",
+          "order": 1,
+          "is_favorite": true
+        },
+        "message": "Label already exists",
+        "metadata": {
+          "operation_time": 150,
+          "rate_limit_remaining": 999,
+          "rate_limit_reset": "2025-10-01T12:15:00Z"
+        }
+      }
+    },
+    {
+      "name": "get_label_by_id",
+      "description": "Retrieves a specific label by ID",
+      "request": {
+        "action": "get",
+        "label_id": "2156154810"
+      },
+      "response": {
+        "success": true,
+        "data": {
+          "id": "2156154810",
+          "name": "Work",
+          "color": "blue",
+          "order": 1,
+          "is_favorite": true
+        },
+        "message": "Label retrieved successfully",
+        "metadata": {
+          "operation_time": 180,
+          "rate_limit_remaining": 998,
+          "rate_limit_reset": "2025-10-01T12:15:00Z"
+        }
+      }
+    },
+    {
+      "name": "get_nonexistent_label",
+      "description": "Returns LABEL_NOT_FOUND error for invalid label ID",
+      "request": {
+        "action": "get",
+        "label_id": "9999999999"
+      },
+      "response": {
+        "success": false,
+        "error": {
+          "code": "LABEL_NOT_FOUND",
+          "message": "Label with ID 9999999999 not found",
+          "details": {},
+          "retryable": false
+        }
+      }
+    },
+    {
+      "name": "update_label",
+      "description": "Updates label properties",
+      "request": {
+        "action": "update",
+        "label_id": "2156154810",
+        "color": "red",
+        "is_favorite": false
+      },
+      "response": {
+        "success": true,
+        "data": {
+          "id": "2156154810",
+          "name": "Work",
+          "color": "red",
+          "order": 1,
+          "is_favorite": false
+        },
+        "message": "Label updated successfully",
+        "metadata": {
+          "operation_time": 220,
+          "rate_limit_remaining": 997,
+          "rate_limit_reset": "2025-10-01T12:15:00Z"
+        }
+      }
+    },
+    {
+      "name": "delete_label",
+      "description": "Deletes a label and removes it from all tasks",
+      "request": {
+        "action": "delete",
+        "label_id": "2156154810"
+      },
+      "response": {
+        "success": true,
+        "data": null,
+        "message": "Label deleted successfully",
+        "metadata": {
+          "operation_time": 300,
+          "rate_limit_remaining": 996,
+          "rate_limit_reset": "2025-10-01T12:15:00Z"
+        }
+      }
+    },
+    {
+      "name": "list_labels_default_pagination",
+      "description": "Lists all labels with default page size",
+      "request": {
+        "action": "list"
+      },
+      "response": {
+        "success": true,
+        "data": [
+          {
+            "id": "2156154810",
+            "name": "Work",
+            "color": "blue",
+            "order": 1,
+            "is_favorite": true
+          },
+          {
+            "id": "2156154820",
+            "name": "Personal",
+            "color": "green",
+            "order": 2,
+            "is_favorite": false
+          }
+        ],
+        "message": "Labels retrieved successfully",
+        "metadata": {
+          "total_count": 2,
+          "next_cursor": null,
+          "operation_time": 200,
+          "rate_limit_remaining": 995,
+          "rate_limit_reset": "2025-10-01T12:15:00Z"
+        }
+      }
+    },
+    {
+      "name": "list_labels_with_pagination",
+      "description": "Lists labels with custom page size and cursor",
+      "request": {
+        "action": "list",
+        "limit": 10,
+        "cursor": "abc123def456"
+      },
+      "response": {
+        "success": true,
+        "data": [
+          {
+            "id": "2156154830",
+            "name": "Project A",
+            "color": "yellow",
+            "order": 11,
+            "is_favorite": false
+          }
+        ],
+        "message": "Labels retrieved successfully",
+        "metadata": {
+          "total_count": 1,
+          "next_cursor": "xyz789ghi012",
+          "operation_time": 210,
+          "rate_limit_remaining": 994,
+          "rate_limit_reset": "2025-10-01T12:15:00Z"
+        }
+      }
+    },
+    {
+      "name": "list_labels_invalid_limit",
+      "description": "Returns validation error for invalid page size",
+      "request": {
+        "action": "list",
+        "limit": 250
+      },
+      "response": {
+        "success": false,
+        "error": {
+          "code": "VALIDATION_ERROR",
+          "message": "limit must be between 1 and 200",
+          "details": {
+            "field": "limit",
+            "value": 250,
+            "constraint": "max 200"
+          },
+          "retryable": false
+        }
+      }
+    },
+    {
+      "name": "rename_shared_label",
+      "description": "Renames a shared label across all tasks (all users/projects)",
+      "request": {
+        "action": "rename_shared",
+        "name": "TeamProject",
+        "new_name": "Q1-Project"
+      },
+      "response": {
+        "success": true,
+        "data": null,
+        "message": "Shared label renamed successfully across all tasks",
+        "metadata": {
+          "operation_time": 450,
+          "rate_limit_remaining": 993,
+          "rate_limit_reset": "2025-10-01T12:15:00Z"
+        }
+      }
+    },
+    {
+      "name": "remove_shared_label",
+      "description": "Removes a shared label from all tasks (all users/projects)",
+      "request": {
+        "action": "remove_shared",
+        "name": "Deprecated"
+      },
+      "response": {
+        "success": true,
+        "data": null,
+        "message": "Shared label removed successfully from all tasks",
+        "metadata": {
+          "operation_time": 500,
+          "rate_limit_remaining": 992,
+          "rate_limit_reset": "2025-10-01T12:15:00Z"
+        }
+      }
+    },
+    {
+      "name": "rate_limit_exceeded",
+      "description": "Returns rate limit error with retry-after information",
+      "request": {
+        "action": "list"
+      },
+      "response": {
+        "success": false,
+        "error": {
+          "code": "RATE_LIMIT_EXCEEDED",
+          "message": "API rate limit exceeded. Please wait before retrying.",
+          "details": {
+            "limit": 1000,
+            "window": "15 minutes",
+            "retry_after": 45
+          },
+          "retryable": true,
+          "retry_after": 45
+        }
+      }
+    }
+  ],
+  "errorCodes": {
+    "LABEL_NOT_FOUND": {
+      "httpStatus": 404,
+      "description": "Label ID does not exist",
+      "retryable": false
+    },
+    "VALIDATION_ERROR": {
+      "httpStatus": 400,
+      "description": "Invalid input parameters",
+      "retryable": false
+    },
+    "RATE_LIMIT_EXCEEDED": {
+      "httpStatus": 429,
+      "description": "API rate limit exceeded",
+      "retryable": true
+    },
+    "AUTHENTICATION_ERROR": {
+      "httpStatus": 401,
+      "description": "Invalid or missing API token",
+      "retryable": false
+    },
+    "SERVICE_UNAVAILABLE": {
+      "httpStatus": 503,
+      "description": "Todoist API temporarily unavailable",
+      "retryable": true
+    }
+  }
+}

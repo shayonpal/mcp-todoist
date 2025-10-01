@@ -31,7 +31,7 @@ type CommentShape = (typeof mockComments)[keyof typeof mockComments];
 type FilterShape = (typeof mockFilters)[keyof typeof mockFilters];
 type LabelShape = (typeof mockLabels)[keyof typeof mockLabels];
 
-const createMockFn = <Fn extends (...args: any[]) => any>(
+export const createMockFn = <Fn extends (...args: any[]) => any>(
   implementation?: (...args: Parameters<Fn>) => ReturnType<Fn>
 ): jest.MockedFunction<Fn> =>
   jest.fn(implementation) as unknown as jest.MockedFunction<Fn>;
