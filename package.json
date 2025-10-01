@@ -31,6 +31,14 @@
   ],
   "author": "Shayon Pal",
   "license": "GPL-3.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shayonpal/mcp-todoist.git"
+  },
+  "homepage": "https://shayonpal.com",
+  "bugs": {
+    "url": "https://github.com/shayonpal/mcp-todoist/issues"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.18.2",
     "axios": "^1.6.2",

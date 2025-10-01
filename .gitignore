@@ -58,3 +58,6 @@ pids/
 .specify/
 .serena/
 data/
+
+# Private project documentation
+CLAUDE.local.md
