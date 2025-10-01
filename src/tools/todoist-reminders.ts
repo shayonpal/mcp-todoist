@@ -262,7 +262,7 @@ export class TodoistRemindersTool {
   private validateActionRequirements(input: TodoistRemindersInput): void {
     switch (input.action) {
       case 'create':
-        if (!input.item_id!)
+        if (!input.item_id)
           throw new ValidationError('item_id is required for create action');
         if (!input.type)
           throw new ValidationError('type is required for create action');
@@ -301,13 +301,13 @@ export class TodoistRemindersTool {
         break;
       case 'get':
       case 'delete':
-        if (!input.reminder_id!)
+        if (!input.reminder_id)
           throw new ValidationError(
             `reminder_id is required for ${input.action} action`
           );
         break;
       case 'update':
-        if (!input.reminder_id!)
+        if (!input.reminder_id)
           throw new ValidationError(
             'reminder_id is required for update action'
           );
@@ -387,11 +387,16 @@ export class TodoistRemindersTool {
     if (params.type === 'relative') {
       reminderData.minute_offset = params.minute_offset;
     } else if (params.type === 'absolute') {
+      const due = params.due;
+      if (!due) {
+        throw new ValidationError('due is required for absolute reminders');
+      }
+
       // Ensure defaults for required fields
       reminderData.due = {
-        ...params.due!,
-        is_recurring: params.due!.is_recurring ?? false,
-        lang: params.due!.lang ?? 'en',
+        ...due,
+        is_recurring: due.is_recurring ?? false,
+        lang: due.lang ?? 'en',
       };
     } else if (params.type === 'location') {
       reminderData.name = params.name;
@@ -423,8 +428,13 @@ export class TodoistRemindersTool {
   private async handleGet(
     params: TodoistRemindersInput
   ): Promise<TodoistRemindersOutput> {
+    const reminderId = params.reminder_id;
+    if (!reminderId) {
+      throw new ValidationError('reminder_id is required for get action');
+    }
+
     const reminders = await this.apiService.getReminders();
-    const reminder = reminders.find(r => r.id === params.reminder_id);
+    const reminder = reminders.find(r => r.id === reminderId);
 
     if (!reminder) {
       throw new TodoistAPIError(
@@ -473,8 +483,13 @@ export class TodoistRemindersTool {
     if (params.loc_trigger) updateData.loc_trigger = params.loc_trigger;
     if (params.radius !== undefined) updateData.radius = params.radius;
 
+    const reminderId = params.reminder_id;
+    if (!reminderId) {
+      throw new ValidationError('reminder_id is required for update action');
+    }
+
     const reminder = await this.apiService.updateReminder(
-      params.reminder_id!,
+      reminderId,
       updateData
     );
 
@@ -494,7 +509,12 @@ export class TodoistRemindersTool {
   private async handleDelete(
     params: TodoistRemindersInput
   ): Promise<TodoistRemindersOutput> {
-    await this.apiService.deleteReminder(params.reminder_id!);
+    const reminderId = params.reminder_id;
+    if (!reminderId) {
+      throw new ValidationError('reminder_id is required for delete action');
+    }
+
+    await this.apiService.deleteReminder(reminderId);
 
     return {
       success: true,

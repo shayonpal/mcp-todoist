@@ -130,30 +130,30 @@ export class TodoistSectionsTool {
       case 'create':
         if (!input.name)
           throw new ValidationError('name is required for create action');
-        if (!input.project_id!)
+        if (!input.project_id)
           throw new ValidationError('project_id is required for create action');
         break;
       case 'get':
       case 'delete':
-        if (!input.section_id!)
+        if (!input.section_id)
           throw new ValidationError(
             `section_id is required for ${input.action} action`
           );
         break;
       case 'update':
-        if (!input.section_id!)
+        if (!input.section_id)
           throw new ValidationError('section_id is required for update action');
         break;
       case 'list':
-        if (!input.project_id!)
+        if (!input.project_id)
           throw new ValidationError('project_id is required for list action');
         break;
       case 'reorder':
-        if (!input.project_id!)
+        if (!input.project_id)
           throw new ValidationError(
             'project_id is required for reorder action'
           );
-        if (!input.section_orders! || input.section_orders!.length === 0)
+        if (!input.section_orders || input.section_orders.length === 0)
           throw new ValidationError(
             'section_orders is required for reorder action'
           );
@@ -227,9 +227,14 @@ export class TodoistSectionsTool {
   private async handleCreate(
     input: TodoistSectionsInput
   ): Promise<TodoistSectionsOutput> {
+    const projectId = input.project_id;
+    if (!projectId) {
+      throw new ValidationError('project_id is required for create action');
+    }
+
     const sectionData = {
       name: input.name,
-      project_id: input.project_id,
+      project_id: projectId,
       order: input.order,
     };
 
@@ -241,7 +246,7 @@ export class TodoistSectionsTool {
     const section = await this.apiService.createSection(cleanedData);
 
     // Invalidate sections cache for this project
-    this.cacheService.invalidateSections(input.project_id!);
+    this.cacheService.invalidateSections(projectId);
 
     return {
       success: true,
@@ -256,7 +261,12 @@ export class TodoistSectionsTool {
   private async handleGet(
     input: TodoistSectionsInput
   ): Promise<TodoistSectionsOutput> {
-    const section = await this.apiService.getSection(input.section_id!);
+    const sectionId = input.section_id;
+    if (!sectionId) {
+      throw new ValidationError('section_id is required for get action');
+    }
+
+    const section = await this.apiService.getSection(sectionId);
 
     // Try to get project name for metadata
     let projectName: string | undefined;
@@ -286,13 +296,17 @@ export class TodoistSectionsTool {
   ): Promise<TodoistSectionsOutput> {
     const { section_id, ...updateData } = input;
 
+    if (!section_id) {
+      throw new ValidationError('section_id is required for update action');
+    }
+
     // Remove undefined properties
     const cleanedData = Object.fromEntries(
       Object.entries(updateData).filter(([_, value]) => value !== undefined)
     );
 
     const section = await this.apiService.updateSection(
-      section_id!,
+      section_id,
       cleanedData
     );
 
@@ -314,14 +328,19 @@ export class TodoistSectionsTool {
   ): Promise<TodoistSectionsOutput> {
     // Get section first to know which project cache to invalidate
     let projectId: string | undefined;
+    const sectionId = input.section_id;
+    if (!sectionId) {
+      throw new ValidationError('section_id is required for delete action');
+    }
+
     try {
-      const section = await this.apiService.getSection(input.section_id!);
+      const section = await this.apiService.getSection(sectionId);
       projectId = section.project_id;
     } catch (error) {
       // Ignore errors - we'll proceed with deletion
     }
 
-    await this.apiService.deleteSection(input.section_id!);
+    await this.apiService.deleteSection(sectionId);
 
     // Invalidate sections cache for this project if we know the project ID
     if (projectId) {
@@ -340,13 +359,18 @@ export class TodoistSectionsTool {
   private async handleList(
     input: TodoistSectionsInput
   ): Promise<TodoistSectionsOutput> {
-    const sections = await this.apiService.getSections(input.project_id!);
+    const projectId = input.project_id;
+    if (!projectId) {
+      throw new ValidationError('project_id is required for list action');
+    }
+
+    const sections = await this.apiService.getSections(projectId);
 
     // Try to get project name for metadata
     let projectName: string | undefined;
     try {
       const projects = await this.cacheService.getProjects();
-      const project = projects?.find(p => p.id === input.project_id!);
+      const project = projects?.find(p => p.id === projectId);
       projectName = project?.name;
     } catch (error) {
       // Ignore errors in getting project name
@@ -369,15 +393,25 @@ export class TodoistSectionsTool {
   private async handleReorder(
     input: TodoistSectionsInput
   ): Promise<TodoistSectionsOutput> {
+    const projectId = input.project_id;
+    if (!projectId) {
+      throw new ValidationError('project_id is required for reorder action');
+    }
+
+    const sectionOrders = input.section_orders;
+    if (!sectionOrders || sectionOrders.length === 0) {
+      throw new ValidationError(
+        'section_orders is required for reorder action'
+      );
+    }
+
     // Validate that all section IDs exist and belong to the specified project
     try {
-      const existingSections = await this.apiService.getSections(
-        input.project_id
-      );
+      const existingSections = await this.apiService.getSections(projectId);
       const existingSectionIds = new Set(existingSections.map(s => s.id));
 
-      const invalidSectionIds = input
-        .section_orders!.map(so => so.id)
+      const invalidSectionIds = sectionOrders
+        .map(so => so.id)
         .filter(id => !existingSectionIds.has(id));
 
       if (invalidSectionIds.length > 0) {
@@ -393,20 +427,20 @@ export class TodoistSectionsTool {
     }
 
     // Execute reorder operations sequentially to avoid conflicts
-    for (const sectionOrder of input.section_orders!) {
+    for (const sectionOrder of sectionOrders) {
       await this.apiService.updateSection(sectionOrder.id, {
         order: sectionOrder.order,
       });
     }
 
     // Invalidate sections cache for this project
-    this.cacheService.invalidateSections(input.project_id!);
+    this.cacheService.invalidateSections(projectId);
 
     return {
       success: true,
       message: 'Sections reordered successfully',
       metadata: {
-        total_count: input.section_orders!.length,
+        total_count: sectionOrders.length,
       },
     };
   }

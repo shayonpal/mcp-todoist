@@ -243,13 +243,13 @@ export class TodoistTasksTool {
       case 'delete':
       case 'complete':
       case 'uncomplete':
-        if (!input.task_id!)
+        if (!input.task_id)
           throw new ValidationError(
             `task_id is required for ${input.action} action`
           );
         break;
       case 'update':
-        if (!input.task_id!)
+        if (!input.task_id)
           throw new ValidationError('task_id is required for update action');
         break;
       case 'batch':
@@ -391,7 +391,12 @@ export class TodoistTasksTool {
   private async handleGet(
     input: TodoistTasksInput
   ): Promise<TodoistTasksOutput> {
-    const task = await this.apiService.getTask(input.task_id!);
+    const taskId = input.task_id;
+    if (!taskId) {
+      throw new ValidationError('task_id is required for get action');
+    }
+
+    const task = await this.apiService.getTask(taskId);
     const enrichedTask = await this.enrichTaskWithMetadata(task);
 
     return {
@@ -409,6 +414,10 @@ export class TodoistTasksTool {
   ): Promise<TodoistTasksOutput> {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { task_id, ...updateData } = input;
+
+    if (!task_id) {
+      throw new ValidationError('task_id is required for update action');
+    }
 
     // T028: Include deadline in update data
     // Separate move fields from update fields
@@ -438,16 +447,16 @@ export class TodoistTasksTool {
 
     // Perform move operation if needed
     if (hasMoveFields) {
-      await this.apiService.moveTask(task_id!, moveFields);
+      await this.apiService.moveTask(task_id, moveFields);
     }
 
     // Perform update operation if needed
     if (hasUpdateFields) {
-      await this.apiService.updateTask(task_id!, otherFields);
+      await this.apiService.updateTask(task_id, otherFields);
     }
 
     // Fetch the final task state
-    const task = await this.apiService.getTask(task_id!);
+    const task = await this.apiService.getTask(task_id);
     const enrichedTask = await this.enrichTaskWithMetadata(task);
 
     // T029, T030: Build warnings and reminders for deadline updates
@@ -487,7 +496,12 @@ export class TodoistTasksTool {
   private async handleDelete(
     input: TodoistTasksInput
   ): Promise<TodoistTasksOutput> {
-    await this.apiService.deleteTask(input.task_id!);
+    const taskId = input.task_id;
+    if (!taskId) {
+      throw new ValidationError('task_id is required for delete action');
+    }
+
+    await this.apiService.deleteTask(taskId);
 
     return {
       success: true,
@@ -546,7 +560,12 @@ export class TodoistTasksTool {
   private async handleComplete(
     input: TodoistTasksInput
   ): Promise<TodoistTasksOutput> {
-    await this.apiService.completeTask(input.task_id!);
+    const taskId = input.task_id;
+    if (!taskId) {
+      throw new ValidationError('task_id is required for complete action');
+    }
+
+    await this.apiService.completeTask(taskId);
 
     return {
       success: true,
@@ -560,7 +579,12 @@ export class TodoistTasksTool {
   private async handleUncomplete(
     input: TodoistTasksInput
   ): Promise<TodoistTasksOutput> {
-    await this.apiService.reopenTask(input.task_id!);
+    const taskId = input.task_id;
+    if (!taskId) {
+      throw new ValidationError('task_id is required for uncomplete action');
+    }
+
+    await this.apiService.reopenTask(taskId);
 
     return {
       success: true,
@@ -574,10 +598,14 @@ export class TodoistTasksTool {
   private async handleBatch(
     input: TodoistTasksInput
   ): Promise<TodoistTasksOutput> {
-    BatchOperationSchema.parse({ batch_commands: input.batch_commands });
+    const batchCommands = input.batch_commands;
+    if (!batchCommands || batchCommands.length === 0) {
+      throw new ValidationError('batch_commands is required for batch action');
+    }
 
-    // Convert input commands to proper BatchCommand format
-    const commands = input.batch_commands!.map(cmd => ({
+    BatchOperationSchema.parse({ batch_commands: batchCommands });
+
+    const commands = batchCommands.map(cmd => ({
       ...cmd,
       uuid: cmd.uuid || `${Date.now()}-${Math.random()}`,
     }));

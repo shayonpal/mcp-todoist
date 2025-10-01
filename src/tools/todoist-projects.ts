@@ -149,13 +149,13 @@ export class TodoistProjectsTool {
       case 'delete':
       case 'archive':
       case 'unarchive':
-        if (!input.project_id!)
+        if (!input.project_id)
           throw new ValidationError(
             `project_id is required for ${input.action} action`
           );
         break;
       case 'update':
-        if (!input.project_id!)
+        if (!input.project_id)
           throw new ValidationError('project_id is required for update action');
         break;
       case 'list':
@@ -262,7 +262,12 @@ export class TodoistProjectsTool {
   private async handleGet(
     input: TodoistProjectsInput
   ): Promise<TodoistProjectsOutput> {
-    const project = await this.apiService.getProject(input.project_id!);
+    const projectId = input.project_id;
+    if (!projectId) {
+      throw new ValidationError('project_id is required for get action');
+    }
+
+    const project = await this.apiService.getProject(projectId);
 
     return {
       success: true,
@@ -279,11 +284,15 @@ export class TodoistProjectsTool {
   ): Promise<TodoistProjectsOutput> {
     const { project_id, ...updateData } = input;
 
+    if (!project_id) {
+      throw new ValidationError('project_id is required for update action');
+    }
+
     // Remove undefined properties
     const cleanedData = removeUndefinedProperties(updateData);
 
     const project = await this.apiService.updateProject(
-      project_id!,
+      project_id,
       cleanedData
     );
 
@@ -303,7 +312,12 @@ export class TodoistProjectsTool {
   private async handleDelete(
     input: TodoistProjectsInput
   ): Promise<TodoistProjectsOutput> {
-    await this.apiService.deleteProject(input.project_id!);
+    const projectId = input.project_id;
+    if (!projectId) {
+      throw new ValidationError('project_id is required for delete action');
+    }
+
+    await this.apiService.deleteProject(projectId);
 
     // Invalidate projects cache since we deleted a project
     this.cacheService.invalidateProjects();
@@ -349,7 +363,12 @@ export class TodoistProjectsTool {
   private async handleArchive(
     input: TodoistProjectsInput
   ): Promise<TodoistProjectsOutput> {
-    await this.apiService.archiveProject(input.project_id!);
+    const projectId = input.project_id;
+    if (!projectId) {
+      throw new ValidationError('project_id is required for archive action');
+    }
+
+    await this.apiService.archiveProject(projectId);
 
     // Invalidate projects cache since we archived a project
     this.cacheService.invalidateProjects();
@@ -366,7 +385,12 @@ export class TodoistProjectsTool {
   private async handleUnarchive(
     input: TodoistProjectsInput
   ): Promise<TodoistProjectsOutput> {
-    await this.apiService.unarchiveProject(input.project_id!);
+    const projectId = input.project_id;
+    if (!projectId) {
+      throw new ValidationError('project_id is required for unarchive action');
+    }
+
+    await this.apiService.unarchiveProject(projectId);
 
     // Invalidate projects cache since we unarchived a project
     this.cacheService.invalidateProjects();

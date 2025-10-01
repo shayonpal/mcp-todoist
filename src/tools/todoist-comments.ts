@@ -148,32 +148,32 @@ export class TodoistCommentsTool {
         if (!input.content)
           throw new ValidationError('content is required for create action');
         // Either task_id or project_id must be provided
-        if (!input.task_id && !input.project_id!)
+        if (!input.task_id && !input.project_id)
           throw new ValidationError(
             'Either task_id or project_id is required for create action'
           );
         break;
       case 'get':
       case 'delete':
-        if (!input.comment_id!)
+        if (!input.comment_id)
           throw new ValidationError(
             `comment_id is required for ${input.action} action`
           );
         break;
       case 'update':
-        if (!input.comment_id!)
+        if (!input.comment_id)
           throw new ValidationError('comment_id is required for update action');
         if (!input.content)
           throw new ValidationError('content is required for update action');
         break;
       case 'list_by_task':
-        if (!input.task_id!)
+        if (!input.task_id)
           throw new ValidationError(
             'task_id is required for list_by_task action'
           );
         break;
       case 'list_by_project':
-        if (!input.project_id!)
+        if (!input.project_id)
           throw new ValidationError(
             'project_id is required for list_by_project action'
           );
@@ -246,7 +246,7 @@ export class TodoistCommentsTool {
     input: TodoistCommentsInput
   ): Promise<TodoistCommentsOutput> {
     // Validate that either task_id or project_id is provided
-    if (!input.task_id && !input.project_id!) {
+    if (!input.task_id && !input.project_id) {
       throw new ValidationError(
         'Either task_id or project_id must be provided'
       );
@@ -283,7 +283,12 @@ export class TodoistCommentsTool {
   private async handleGet(
     input: TodoistCommentsInput
   ): Promise<TodoistCommentsOutput> {
-    const comment = await this.apiService.getComment(input.comment_id!);
+    const commentId = input.comment_id;
+    if (!commentId) {
+      throw new ValidationError('comment_id is required for get action');
+    }
+
+    const comment = await this.apiService.getComment(commentId);
 
     return {
       success: true,
@@ -304,7 +309,11 @@ export class TodoistCommentsTool {
   ): Promise<TodoistCommentsOutput> {
     const { comment_id, content } = input;
 
-    const comment = await this.apiService.updateComment(comment_id!, {
+    if (!comment_id) {
+      throw new ValidationError('comment_id is required for update action');
+    }
+
+    const comment = await this.apiService.updateComment(comment_id, {
       content,
     });
 
@@ -325,7 +334,12 @@ export class TodoistCommentsTool {
   private async handleDelete(
     input: TodoistCommentsInput
   ): Promise<TodoistCommentsOutput> {
-    await this.apiService.deleteComment(input.comment_id!);
+    const commentId = input.comment_id;
+    if (!commentId) {
+      throw new ValidationError('comment_id is required for delete action');
+    }
+
+    await this.apiService.deleteComment(commentId);
 
     return {
       success: true,
@@ -342,9 +356,21 @@ export class TodoistCommentsTool {
     let comments: TodoistComment[];
 
     if (input.action === 'list_by_task') {
-      comments = await this.apiService.getTaskComments(input.task_id!);
+      const taskId = input.task_id;
+      if (!taskId) {
+        throw new ValidationError(
+          'task_id is required for list_by_task action'
+        );
+      }
+      comments = await this.apiService.getTaskComments(taskId);
     } else if (input.action === 'list_by_project') {
-      comments = await this.apiService.getProjectComments(input.project_id!);
+      const projectId = input.project_id;
+      if (!projectId) {
+        throw new ValidationError(
+          'project_id is required for list_by_project action'
+        );
+      }
+      comments = await this.apiService.getProjectComments(projectId);
     } else {
       throw new ValidationError('Invalid list action specified');
     }
