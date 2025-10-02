@@ -45,10 +45,13 @@ MCP server enabling programmatic Todoist task and project management through an 
 - **Node.js** 18 or higher
 - **Todoist account** ([Sign up free](https://todoist.com))
 - **Todoist API token** ([Get yours here](https://todoist.com/help/articles/find-your-api-token))
-- **MCP client** such as:
+- Any of the popular **MCP clients**, such as:
   - [Claude Desktop](https://claude.ai/download)
+  - [Claude Code CLI](https://github.com/anthropics/claude-code)
+  - [Codex CLI](https://github.com/openai/codex)
+  - [Cursor IDE or CLI](https://cursor.com/)
   - [Raycast MCP Extension](https://www.raycast.com/)
-  - Any MCP-compatible client
+  - Any other MCP-compatible client
 
 ## Installation
 
