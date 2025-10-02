@@ -54,66 +54,66 @@
 
 ### Contract Tests (MCP Tool)
 
-- [ ] **T003** [P] Contract test: Bulk update 5 tasks with due_string in `tests/contract/bulk-tasks.test.ts`
+- [x] **T003** [P] Contract test: Bulk update 5 tasks with due_string in `tests/contract/bulk-tasks.test.ts`
   - Test: Call todoist_bulk_tasks with action="update", 5 task_ids, due_string="tomorrow"
   - Expect: 5 successful results in response.data.results
   - Use in-memory mock API service
   - Assert: response structure matches BulkTasksResponse schema
 
-- [ ] **T004** [P] Contract test: Bulk complete 10 tasks in `tests/contract/bulk-tasks.test.ts`
+- [x] **T004** [P] Contract test: Bulk complete 10 tasks in `tests/contract/bulk-tasks.test.ts`
   - Test: Call todoist_bulk_tasks with action="complete", 10 task_ids
   - Expect: 10 successful results
   - Verify: No field updates sent to API
   - Assert: All results have success=true
 
-- [ ] **T005** [P] Contract test: Reject >50 tasks (51 task IDs) in `tests/contract/bulk-tasks.test.ts`
+- [x] **T005** [P] Contract test: Reject >50 tasks (51 task IDs) in `tests/contract/bulk-tasks.test.ts`
   - Test: Call with 51 unique task_ids
   - Expect: INVALID_PARAMS error before API call
   - Assert: Error message includes "Maximum 50 tasks allowed, received 51"
 
-- [ ] **T006** [P] Contract test: Deduplicate task IDs [1,2,1,3] → 3 unique in `tests/contract/bulk-tasks.test.ts`
+- [x] **T006** [P] Contract test: Deduplicate task IDs [1,2,1,3] → 3 unique in `tests/contract/bulk-tasks.test.ts`
   - Test: Call with task_ids containing duplicates
   - Expect: 3 unique results (not 4)
   - Assert: metadata.deduplication_applied = true
   - Assert: metadata.original_count = 4, deduplicated_count = 3
 
-- [ ] **T007** [P] Contract test: Partial failure (3 valid, 2 invalid IDs) in `tests/contract/bulk-tasks.test.ts`
+- [x] **T007** [P] Contract test: Partial failure (3 valid, 2 invalid IDs) in `tests/contract/bulk-tasks.test.ts`
   - Test: Call with mix of valid and invalid task_ids
   - Expect: 3 successful, 2 failed in results array
   - Assert: summary.successful = 3, summary.failed = 2
   - Assert: Failed results have error messages
 
-- [ ] **T008** [P] Contract test: Reject content field update in `tests/contract/bulk-tasks.test.ts`
+- [x] **T008** [P] Contract test: Reject content field update in `tests/contract/bulk-tasks.test.ts`
   - Test: Call with action="update", include "content" field
   - Expect: INVALID_PARAMS error before API call
   - Assert: Error message includes "Cannot modify content, description, or comments"
 
-- [ ] **T009** [P] Contract test: Reject mixed actions (not supported) in `tests/contract/bulk-tasks.test.ts`
+- [x] **T009** [P] Contract test: Reject mixed actions (not supported) in `tests/contract/bulk-tasks.test.ts`
   - Test: Attempt to mix update and complete actions
   - Expect: INVALID_PARAMS error
   - Assert: Only single action type allowed per request
 
 ### Integration Tests (End-to-End Scenarios)
 
-- [ ] **T010** [P] Integration test: Bulk reschedule 15 tasks to tomorrow in `tests/integration/bulk-operations.test.ts`
+- [x] **T010** [P] Integration test: Bulk reschedule 15 tasks to tomorrow in `tests/integration/bulk-operations.test.ts`
   - Scenario: Get 15 task IDs, bulk update with due_string="tomorrow"
   - Verify: All 15 tasks show tomorrow's due date
   - Assert: Execution time < 2 seconds
   - Use real TodoistApiService (or comprehensive mock)
 
-- [ ] **T011** [P] Integration test: Bulk move 7 tasks to different project in `tests/integration/bulk-operations.test.ts`
+- [x] **T011** [P] Integration test: Bulk move 7 tasks to different project in `tests/integration/bulk-operations.test.ts`
   - Scenario: Move tasks from Project A to Project B
   - Verify: All 7 tasks now in target project
   - Assert: Source project no longer contains tasks
   - Check: Section and parent_id preserved or updated correctly
 
-- [ ] **T012** [P] Integration test: Bulk complete 20 tasks with 3 failures in `tests/integration/bulk-operations.test.ts`
+- [x] **T012** [P] Integration test: Bulk complete 20 tasks with 3 failures in `tests/integration/bulk-operations.test.ts`
   - Scenario: Complete 17 valid + 3 invalid task IDs
   - Verify: 17 marked as done, 3 show errors
   - Assert: Partial execution completed (not rolled back)
   - Check: Error messages actionable (e.g., "Task not found")
 
-- [ ] **T013** [P] Integration test: Rate limit handling (mock 429 response) in `tests/integration/bulk-operations.test.ts`
+- [x] **T013** [P] Integration test: Rate limit handling (mock 429 response) in `tests/integration/bulk-operations.test.ts`
   - Scenario: Trigger rate limit during bulk operation
   - Mock: 429 response with Retry-After header
   - Verify: System waits and retries
