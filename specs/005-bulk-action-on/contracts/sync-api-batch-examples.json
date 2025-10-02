@@ -1,0 +1,368 @@
+{
+  "description": "Todoist Sync API v9 batch operation examples for bulk task operations",
+  "endpoint": "POST https://api.todoist.com/sync/v9/sync",
+  "rate_limit": "50 requests per minute",
+  "examples": [
+    {
+      "name": "Bulk update - 3 tasks with different fields",
+      "request": {
+        "commands": [
+          {
+            "type": "item_update",
+            "uuid": "cmd-1-task-7654321",
+            "args": {
+              "id": "7654321",
+              "due": {
+                "string": "tomorrow"
+              },
+              "priority": 2
+            }
+          },
+          {
+            "type": "item_update",
+            "uuid": "cmd-2-task-7654322",
+            "args": {
+              "id": "7654322",
+              "due": {
+                "string": "tomorrow"
+              },
+              "priority": 2
+            }
+          },
+          {
+            "type": "item_update",
+            "uuid": "cmd-3-task-7654323",
+            "args": {
+              "id": "7654323",
+              "due": {
+                "string": "tomorrow"
+              },
+              "priority": 2
+            }
+          }
+        ]
+      },
+      "response": {
+        "sync_status": {
+          "cmd-1-task-7654321": "ok",
+          "cmd-2-task-7654322": "ok",
+          "cmd-3-task-7654323": "ok"
+        },
+        "temp_id_mapping": {},
+        "full_sync": false
+      },
+      "outcome": "All 3 tasks updated successfully"
+    },
+    {
+      "name": "Bulk complete - 5 tasks",
+      "request": {
+        "commands": [
+          {
+            "type": "item_complete",
+            "uuid": "cmd-1-task-7654321",
+            "args": {
+              "id": "7654321"
+            }
+          },
+          {
+            "type": "item_complete",
+            "uuid": "cmd-2-task-7654322",
+            "args": {
+              "id": "7654322"
+            }
+          },
+          {
+            "type": "item_complete",
+            "uuid": "cmd-3-task-7654323",
+            "args": {
+              "id": "7654323"
+            }
+          },
+          {
+            "type": "item_complete",
+            "uuid": "cmd-4-task-7654324",
+            "args": {
+              "id": "7654324"
+            }
+          },
+          {
+            "type": "item_complete",
+            "uuid": "cmd-5-task-7654325",
+            "args": {
+              "id": "7654325"
+            }
+          }
+        ]
+      },
+      "response": {
+        "sync_status": {
+          "cmd-1-task-7654321": "ok",
+          "cmd-2-task-7654322": "ok",
+          "cmd-3-task-7654323": "ok",
+          "cmd-4-task-7654324": "ok",
+          "cmd-5-task-7654325": "ok"
+        },
+        "temp_id_mapping": {},
+        "full_sync": false
+      },
+      "outcome": "All 5 tasks marked as complete"
+    },
+    {
+      "name": "Partial failure - 2 successful, 1 invalid task ID",
+      "request": {
+        "commands": [
+          {
+            "type": "item_update",
+            "uuid": "cmd-1-task-7654321",
+            "args": {
+              "id": "7654321",
+              "priority": 3
+            }
+          },
+          {
+            "type": "item_update",
+            "uuid": "cmd-2-task-9999999",
+            "args": {
+              "id": "9999999",
+              "priority": 3
+            }
+          },
+          {
+            "type": "item_update",
+            "uuid": "cmd-3-task-7654323",
+            "args": {
+              "id": "7654323",
+              "priority": 3
+            }
+          }
+        ]
+      },
+      "response": {
+        "sync_status": {
+          "cmd-1-task-7654321": "ok",
+          "cmd-2-task-9999999": {
+            "error": "TASK_NOT_FOUND",
+            "error_message": "Task not found",
+            "error_code": 404
+          },
+          "cmd-3-task-7654323": "ok"
+        },
+        "temp_id_mapping": {},
+        "full_sync": false
+      },
+      "outcome": "Partial execution: 2 successful, 1 failed (task not found)"
+    },
+    {
+      "name": "Bulk move - change project for 7 tasks",
+      "request": {
+        "commands": [
+          {
+            "type": "item_move",
+            "uuid": "cmd-1-task-7654321",
+            "args": {
+              "id": "7654321",
+              "project_id": "2203306141"
+            }
+          },
+          {
+            "type": "item_move",
+            "uuid": "cmd-2-task-7654322",
+            "args": {
+              "id": "7654322",
+              "project_id": "2203306141"
+            }
+          },
+          {
+            "type": "item_move",
+            "uuid": "cmd-3-task-7654323",
+            "args": {
+              "id": "7654323",
+              "project_id": "2203306141"
+            }
+          },
+          {
+            "type": "item_move",
+            "uuid": "cmd-4-task-7654324",
+            "args": {
+              "id": "7654324",
+              "project_id": "2203306141"
+            }
+          },
+          {
+            "type": "item_move",
+            "uuid": "cmd-5-task-7654325",
+            "args": {
+              "id": "7654325",
+              "project_id": "2203306141"
+            }
+          },
+          {
+            "type": "item_move",
+            "uuid": "cmd-6-task-7654326",
+            "args": {
+              "id": "7654326",
+              "project_id": "2203306141"
+            }
+          },
+          {
+            "type": "item_move",
+            "uuid": "cmd-7-task-7654327",
+            "args": {
+              "id": "7654327",
+              "project_id": "2203306141"
+            }
+          }
+        ]
+      },
+      "response": {
+        "sync_status": {
+          "cmd-1-task-7654321": "ok",
+          "cmd-2-task-7654322": "ok",
+          "cmd-3-task-7654323": "ok",
+          "cmd-4-task-7654324": "ok",
+          "cmd-5-task-7654325": "ok",
+          "cmd-6-task-7654326": "ok",
+          "cmd-7-task-7654327": "ok"
+        },
+        "temp_id_mapping": {},
+        "full_sync": false
+      },
+      "outcome": "All 7 tasks moved to project 2203306141"
+    },
+    {
+      "name": "Invalid field value error",
+      "request": {
+        "commands": [
+          {
+            "type": "item_update",
+            "uuid": "cmd-1-task-7654321",
+            "args": {
+              "id": "7654321",
+              "priority": 99
+            }
+          }
+        ]
+      },
+      "response": {
+        "sync_status": {
+          "cmd-1-task-7654321": {
+            "error": "INVALID_ARGUMENT",
+            "error_message": "Invalid priority value: must be between 1-4",
+            "error_code": 400
+          }
+        },
+        "temp_id_mapping": {},
+        "full_sync": false
+      },
+      "outcome": "Failed: Invalid priority value"
+    },
+    {
+      "name": "Rate limit exceeded",
+      "request": {
+        "commands": [
+          {
+            "type": "item_update",
+            "uuid": "cmd-1-task-7654321",
+            "args": {
+              "id": "7654321",
+              "priority": 2
+            }
+          }
+        ]
+      },
+      "response_http_code": 429,
+      "response_headers": {
+        "Retry-After": "30"
+      },
+      "response": {
+        "error": "Rate limit exceeded. Retry after 30 seconds."
+      },
+      "outcome": "Rate limit hit - client should retry after 30 seconds"
+    },
+    {
+      "name": "Complex update - multiple fields for 15 tasks",
+      "request": {
+        "commands": [
+          {
+            "type": "item_update",
+            "uuid": "cmd-1-task-7654321",
+            "args": {
+              "id": "7654321",
+              "due": { "string": "next Monday" },
+              "priority": 2,
+              "labels": ["urgent", "work"],
+              "assignee_id": 12345
+            }
+          }
+        ],
+        "_comment": "Showing only 1 of 15 commands for brevity - actual request would have 15 similar commands"
+      },
+      "response": {
+        "sync_status": {
+          "cmd-1-task-7654321": "ok"
+        },
+        "_comment": "Showing only 1 of 15 results for brevity"
+      },
+      "outcome": "All 15 tasks updated with multiple fields"
+    }
+  ],
+  "error_codes": {
+    "TASK_NOT_FOUND": {
+      "http_code": 404,
+      "description": "Task ID does not exist or user lacks access",
+      "handling": "Mark task as failed in results, continue with other tasks"
+    },
+    "INVALID_ARGUMENT": {
+      "http_code": 400,
+      "description": "Invalid field value (e.g., priority out of range, invalid date format)",
+      "handling": "Mark task as failed in results, continue with other tasks"
+    },
+    "FORBIDDEN": {
+      "http_code": 403,
+      "description": "User lacks permission to modify this task",
+      "handling": "Mark task as failed in results, continue with other tasks"
+    },
+    "INTERNAL_ERROR": {
+      "http_code": 500,
+      "description": "Todoist service error",
+      "handling": "Retry with exponential backoff (up to 3 attempts)"
+    },
+    "RATE_LIMIT_EXCEEDED": {
+      "http_code": 429,
+      "description": "Exceeded 50 requests/minute limit",
+      "handling": "Wait for Retry-After duration and retry"
+    }
+  },
+  "best_practices": [
+    "Use UUIDs to track command status - format: 'cmd-{index}-task-{task_id}'",
+    "Batch up to 100 commands per request (our limit: 50)",
+    "Handle partial failures gracefully - check sync_status for each command",
+    "Respect rate limits - 50 req/min for Sync API",
+    "Use exponential backoff for retries on 500-level errors",
+    "Parse Retry-After header for 429 responses",
+    "Don't mix command types unnecessarily - group similar operations",
+    "Set temp_id_mapping only when creating new items (not needed for updates/completes)"
+  ],
+  "field_mapping": {
+    "update_fields": {
+      "content": "Task title (NOT supported in bulk)",
+      "description": "Task description (NOT supported in bulk)",
+      "project_id": "Supported",
+      "section_id": "Supported",
+      "parent_id": "Supported",
+      "order": "Supported",
+      "labels": "Supported (array of label names)",
+      "priority": "Supported (1-4)",
+      "assignee_id": "Supported (user ID)",
+      "due": "Supported (object with 'string', 'date', or 'datetime' field)",
+      "duration": "Supported (object with 'amount' and 'unit' fields)",
+      "deadline": "Supported (object with 'date' field)"
+    },
+    "due_object_formats": {
+      "natural_language": { "due": { "string": "tomorrow" } },
+      "specific_date": { "due": { "date": "2025-12-31" } },
+      "datetime": { "due": { "datetime": "2025-12-31T15:00:00Z" } },
+      "with_language": { "due": { "string": "mañana", "lang": "es" } }
+    }
+  }
+}

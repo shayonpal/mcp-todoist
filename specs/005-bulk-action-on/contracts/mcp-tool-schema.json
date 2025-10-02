@@ -1,0 +1,239 @@
+{
+  "name": "todoist_bulk_tasks",
+  "description": "Perform bulk operations on up to 50 Todoist tasks. Supports update, complete, uncomplete, and move operations. Automatically deduplicates task IDs. Uses partial execution mode (continues on individual task failures). Returns individual results for each task with success/failure status.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "action": {
+        "type": "string",
+        "enum": ["update", "complete", "uncomplete", "move"],
+        "description": "Operation type to perform on all selected tasks. All tasks receive the same action."
+      },
+      "task_ids": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "description": "Array of Todoist task IDs (1-50 items). Duplicate IDs are automatically removed before processing. Count validation happens after deduplication.",
+        "minItems": 1,
+        "maxItems": 50
+      },
+      "project_id": {
+        "type": "string",
+        "description": "Project ID for move/update operations. Changes the project assignment for all tasks."
+      },
+      "section_id": {
+        "type": "string",
+        "description": "Section ID for move/update operations. Changes the section assignment for all tasks."
+      },
+      "parent_id": {
+        "type": "string",
+        "description": "Parent task ID for move/update operations. Makes all tasks subtasks of the specified parent."
+      },
+      "order": {
+        "type": "number",
+        "description": "Task order for update operations. Sets the display order for all tasks."
+      },
+      "labels": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "description": "Label names for update operations. Replaces existing labels on all tasks. Use label names, not IDs."
+      },
+      "priority": {
+        "type": "number",
+        "minimum": 1,
+        "maximum": 4,
+        "description": "Priority level for update operations (1=normal, 2=high, 3=higher, 4=highest). Sets the same priority for all tasks."
+      },
+      "assignee_id": {
+        "type": "number",
+        "description": "User ID for update operations. Assigns all tasks to the specified user."
+      },
+      "due_string": {
+        "type": "string",
+        "description": "Natural language due date for update operations (e.g., 'tomorrow', 'next Monday', 'every day'). Applies the same due date to all tasks."
+      },
+      "due_date": {
+        "type": "string",
+        "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+        "description": "Due date in YYYY-MM-DD format for update operations. Sets the same due date for all tasks."
+      },
+      "due_datetime": {
+        "type": "string",
+        "format": "date-time",
+        "description": "Due datetime in ISO 8601 format for update operations. Sets the same due datetime for all tasks."
+      },
+      "due_lang": {
+        "type": "string",
+        "description": "Language code for parsing due_string (e.g., 'en', 'es', 'fr'). Defaults to user's Todoist language setting."
+      },
+      "duration": {
+        "type": "number",
+        "description": "Task duration value for update operations. Must be used with duration_unit."
+      },
+      "duration_unit": {
+        "type": "string",
+        "enum": ["minute", "day"],
+        "description": "Duration unit for update operations. Must be used with duration."
+      },
+      "deadline_date": {
+        "type": "string",
+        "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+        "description": "Deadline date in YYYY-MM-DD format for update operations. Distinct from due_date (when work must be done vs when it should start)."
+      }
+    },
+    "required": ["action", "task_ids"],
+    "additionalProperties": false
+  },
+  "examples": [
+    {
+      "name": "Bulk update due dates",
+      "input": {
+        "action": "update",
+        "task_ids": ["7654321", "7654322", "7654323", "7654324", "7654325"],
+        "due_string": "tomorrow"
+      },
+      "description": "Update due date for 5 tasks to tomorrow using natural language"
+    },
+    {
+      "name": "Bulk complete tasks",
+      "input": {
+        "action": "complete",
+        "task_ids": ["7654321", "7654322", "7654323", "7654324", "7654325", "7654326", "7654327", "7654328", "7654329", "7654330"]
+      },
+      "description": "Mark 10 tasks as completed"
+    },
+    {
+      "name": "Bulk move to different project",
+      "input": {
+        "action": "move",
+        "task_ids": ["7654321", "7654322", "7654323", "7654324", "7654325", "7654326", "7654327"],
+        "project_id": "2203306141"
+      },
+      "description": "Move 7 tasks to a different project"
+    },
+    {
+      "name": "Bulk update multiple fields",
+      "input": {
+        "action": "update",
+        "task_ids": ["7654321", "7654322", "7654323", "7654324", "7654325", "7654326", "7654327", "7654328"],
+        "priority": 2,
+        "labels": ["urgent", "work"],
+        "deadline_date": "2025-12-31"
+      },
+      "description": "Update priority, labels, and deadline for 8 tasks"
+    },
+    {
+      "name": "Deduplication example",
+      "input": {
+        "action": "update",
+        "task_ids": ["7654321", "7654322", "7654321", "7654323"],
+        "due_string": "next week"
+      },
+      "description": "Task IDs contain duplicate '7654321' - system will process 3 unique tasks"
+    }
+  ],
+  "errors": [
+    {
+      "code": "INVALID_PARAMS",
+      "message": "Maximum 50 tasks allowed, received 75",
+      "scenario": "More than 50 unique task IDs after deduplication"
+    },
+    {
+      "code": "INVALID_PARAMS",
+      "message": "Cannot modify content, description, or comments in bulk operations",
+      "scenario": "Request includes disallowed fields"
+    },
+    {
+      "code": "INVALID_PARAMS",
+      "message": "At least one task ID required",
+      "scenario": "Empty task_ids array"
+    },
+    {
+      "code": "INVALID_PARAMS",
+      "message": "Priority must be between 1-4",
+      "scenario": "Invalid priority value"
+    },
+    {
+      "code": "INTERNAL_ERROR",
+      "message": "Todoist API error: [details]",
+      "scenario": "Todoist service errors or network failures"
+    }
+  ],
+  "responseSchema": {
+    "type": "object",
+    "properties": {
+      "success": {
+        "type": "boolean",
+        "description": "Overall operation status. True even if some individual tasks failed (partial execution)."
+      },
+      "data": {
+        "type": "object",
+        "properties": {
+          "total_tasks": {
+            "type": "number",
+            "description": "Number of unique tasks processed (after deduplication)"
+          },
+          "successful": {
+            "type": "number",
+            "description": "Count of tasks that completed successfully"
+          },
+          "failed": {
+            "type": "number",
+            "description": "Count of tasks that failed"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "task_id": {
+                  "type": "string",
+                  "description": "Todoist task ID"
+                },
+                "success": {
+                  "type": "boolean",
+                  "description": "Whether operation succeeded for this task"
+                },
+                "error": {
+                  "type": ["string", "null"],
+                  "description": "Error message if failed, null if successful"
+                },
+                "resource_uri": {
+                  "type": "string",
+                  "description": "MCP resource URI for this task"
+                }
+              },
+              "required": ["task_id", "success", "error", "resource_uri"]
+            }
+          }
+        },
+        "required": ["total_tasks", "successful", "failed", "results"]
+      },
+      "metadata": {
+        "type": "object",
+        "properties": {
+          "deduplication_applied": {
+            "type": "boolean",
+            "description": "Whether duplicate task IDs were removed"
+          },
+          "original_count": {
+            "type": "number",
+            "description": "Number of task IDs before deduplication"
+          },
+          "deduplicated_count": {
+            "type": "number",
+            "description": "Number of task IDs after deduplication"
+          },
+          "execution_time_ms": {
+            "type": "number",
+            "description": "Total execution time in milliseconds"
+          }
+        }
+      }
+    },
+    "required": ["success", "data"]
+  }
+}

@@ -491,3 +491,65 @@ export const CompletedTasksInputSchema = z
   });
 
 export type CompletedTasksInput = z.infer<typeof CompletedTasksInputSchema>;
+
+/**
+ * Bulk operations validation schema
+ * T001: Schema for bulk task operations (update, complete, uncomplete, move)
+ */
+export const bulkActionEnum = z.enum([
+  'update',
+  'complete',
+  'uncomplete',
+  'move',
+]);
+
+export const bulkOperationInputSchema = z
+  .object({
+    action: bulkActionEnum,
+    task_ids: z
+      .array(z.string())
+      .min(1, 'At least one task ID required')
+      .max(50, 'Maximum 50 tasks allowed'),
+
+    // Optional field updates (for update/move actions)
+    project_id: z.string().optional(),
+    section_id: z.string().optional(),
+    parent_id: z.string().optional(),
+    order: z.number().optional(),
+    labels: z.array(z.string()).optional(),
+    priority: z.number().min(1).max(4).optional(),
+    assignee_id: z.number().optional(),
+    due_string: z.string().optional(),
+    due_date: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Due date must be in YYYY-MM-DD format')
+      .optional(),
+    due_datetime: z
+      .string()
+      .datetime('Due datetime must be in ISO 8601 format')
+      .optional(),
+    due_lang: z.string().optional(),
+    duration: z.number().optional(),
+    duration_unit: z.enum(['minute', 'day']).optional(),
+    deadline_date: z
+      .string()
+      .regex(
+        /^\d{4}-\d{2}-\d{2}$/,
+        'Deadline date must be in YYYY-MM-DD format'
+      )
+      .optional(),
+  })
+  .strict()
+  .refine(
+    data => {
+      // Ensure no disallowed fields
+      const disallowed = ['content', 'description', 'comments'];
+      return !disallowed.some(field => field in data);
+    },
+    {
+      message:
+        'Cannot modify content, description, or comments in bulk operations',
+    }
+  );
+
+export type BulkOperationInput = z.infer<typeof bulkOperationInputSchema>;
