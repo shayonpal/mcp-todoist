@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+### Added
+
+- Bulk task operations (`todoist_bulk_tasks` tool)
+  - Batch update, complete, uncomplete, move, and delete operations on up to 50 tasks
+  - Sync API integration for efficient batch processing
+  - Automatic task ID deduplication
+  - Hybrid API approach: REST API for deadline updates, Sync API for other operations
+  - Per-task result tracking with success/failure status
+  - Comprehensive error mapping from Sync API responses
+  - Reduces API calls by up to 50x for bulk operations
+  - Dual rate limiters: REST API (300 req/min), Sync API (50 req/min)
+  - Partial failure support with detailed error messages
+
 ## [1.3.0] - 2025-10-02
 
 ### Added
