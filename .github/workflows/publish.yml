@@ -26,6 +26,9 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+          scope: '@shayonpal'
+          always-auth: true
 
       - name: Enable latest npm
         run: |
