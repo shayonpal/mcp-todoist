@@ -20,8 +20,9 @@ MCP server enabling programmatic Todoist task and project management through an 
 
 ## Features
 
-- **7 Core Tools**: Comprehensive task and project management
+- **8 Core Tools**: Comprehensive task and project management
   - Tasks (CRUD + complete/uncomplete)
+  - Bulk Tasks (batch operations on up to 50 tasks)
   - Projects (CRUD + archive/unarchive)
   - Sections (organize tasks within projects)
   - Comments (with file attachment support)
@@ -288,6 +289,65 @@ Set reminders for tasks with three types: relative (X minutes before due), absol
 Manage personal and shared labels with create, get, update, delete, list, rename, and remove actions. Includes caching for optimal performance.
 
 **Key parameters**: `action`, `label_id`, `name`, `color`, `is_favorite`, `order`
+
+### todoist_bulk_tasks
+Perform bulk operations on up to 50 tasks simultaneously. Supports update, complete, uncomplete, and move operations with automatic deduplication and partial execution mode.
+
+**Key parameters**: `action`, `task_ids` (1-50 items), `project_id`, `section_id`, `labels`, `priority`, `due_string`, `deadline_date`
+
+**Supported Actions**:
+- `update` - Modify task fields (due date, priority, labels, etc.)
+- `complete` - Mark multiple tasks as done
+- `uncomplete` - Reopen completed tasks
+- `move` - Change project/section/parent for multiple tasks
+
+**Usage Examples**:
+
+```json
+// Bulk update due dates for 5 tasks
+{
+  "action": "update",
+  "task_ids": ["7654321", "7654322", "7654323", "7654324", "7654325"],
+  "due_string": "tomorrow"
+}
+
+// Bulk complete 10 tasks
+{
+  "action": "complete",
+  "task_ids": ["7654321", "7654322", "7654323", "7654324", "7654325",
+               "7654326", "7654327", "7654328", "7654329", "7654330"]
+}
+
+// Bulk move 7 tasks to different project
+{
+  "action": "move",
+  "task_ids": ["7654321", "7654322", "7654323", "7654324", "7654325",
+               "7654326", "7654327"],
+  "project_id": "2203306141"
+}
+
+// Bulk update multiple fields for 8 tasks
+{
+  "action": "update",
+  "task_ids": ["7654321", "7654322", "7654323", "7654324",
+               "7654325", "7654326", "7654327", "7654328"],
+  "priority": 2,
+  "labels": ["urgent", "work"],
+  "deadline_date": "2025-12-31"
+}
+```
+
+**Limitations**:
+- Maximum 50 unique tasks per operation (after deduplication)
+- Cannot modify `content` (task title), `description`, or `comments` in bulk
+- All tasks receive the same field updates
+- Performance: <2 seconds for 50-task operations
+
+**Response Structure**:
+- Individual results for each task (success/failure)
+- Summary counts (total, successful, failed)
+- Automatic deduplication metadata
+- Execution time tracking
 
 ## Rate Limiting
 

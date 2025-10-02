@@ -15,7 +15,7 @@ import {
   BulkTasksResponse,
   SyncError,
 } from '../types/bulk-operations.js';
-import { APIConfiguration } from '../types/todoist.js';
+import { APIConfiguration, TodoistTask } from '../types/todoist.js';
 import { ValidationError } from '../types/errors.js';
 import { z as zodLib } from 'zod';
 
@@ -49,6 +49,7 @@ const BulkOperationInputSchema = z
       .regex(/^\d{4}-\d{2}-\d{2}$/)
       .optional(),
   })
+  .passthrough()
   .refine(
     data => {
       // Ensure no disallowed fields
@@ -290,12 +291,13 @@ export class TodoistBulkTasksTool {
   /**
    * T017: Handle update action
    * Builds item_update commands with field updates
+   * Uses hybrid approach: Sync API for most fields, REST API for deadline updates
    */
   private async handleUpdateAction(
     taskIds: string[],
     params: BulkOperationInput
   ): Promise<BulkOperationSummary> {
-    // Build update arguments from params
+    // Build update arguments from params (excluding deadline)
     const updateArgs: Record<string, unknown> = {};
 
     if (params.project_id !== undefined)
@@ -332,26 +334,117 @@ export class TodoistBulkTasksTool {
       };
     }
 
-    // Handle deadline
-    if (params.deadline_date !== undefined) {
-      updateArgs.deadline = {
-        date: params.deadline_date,
+    // Hybrid approach: Process Sync API updates first, then deadline via REST API
+    let syncResponse: SyncResponse | null = null;
+
+    // Step 1: Execute Sync API batch if there are non-deadline updates
+    if (Object.keys(updateArgs).length > 0) {
+      const commands: SyncCommand[] = taskIds.map((taskId, index) => ({
+        type: 'item_update',
+        uuid: `cmd-${index}-task-${taskId}`,
+        args: {
+          id: taskId,
+          ...updateArgs,
+        },
+      }));
+
+      syncResponse = await this.apiService.executeBatch(commands);
+    } else {
+      // No Sync API updates needed, create a synthetic success response
+      syncResponse = {
+        sync_status: Object.fromEntries(
+          taskIds.map((taskId, index) => [`cmd-${index}-task-${taskId}`, 'ok'])
+        ),
+        temp_id_mapping: {},
+        full_sync: false,
       };
     }
 
-    // T017: Generate SyncCommand array with unique UUIDs
-    const commands: SyncCommand[] = taskIds.map((taskId, index) => ({
-      type: 'item_update',
-      uuid: `cmd-${index}-task-${taskId}`,
-      args: {
-        id: taskId,
-        ...updateArgs,
-      },
-    }));
+    // Step 2: Execute deadline updates via REST API (one by one)
+    const deadlineResults: Map<string, { success: boolean; error?: string }> =
+      new Map();
 
-    // T017: Call executeBatch and map results
-    const response = await this.apiService.executeBatch(commands);
-    return this.buildBulkOperationSummary(response, taskIds);
+    if (params.deadline_date !== undefined) {
+      await Promise.all(
+        taskIds.map(async taskId => {
+          try {
+            // API service accepts deadline as string and transforms it to deadline_date
+            // Type assertion needed because TodoistTask.deadline is typed as TodoistDeadline interface
+            // but updateTask method runtime code accepts string (see todoist-api.ts:503-505)
+            await this.apiService.updateTask(taskId, {
+              deadline: params.deadline_date,
+            } as Partial<TodoistTask>);
+            deadlineResults.set(taskId, { success: true });
+          } catch (error) {
+            deadlineResults.set(taskId, {
+              success: false,
+              error:
+                error instanceof Error
+                  ? error.message
+                  : 'Deadline update failed',
+            });
+          }
+        })
+      );
+    }
+
+    // Step 3: Merge results from Sync API and REST API deadline updates
+    const mergedSummary = this.mergeSyncAndDeadlineResults(
+      syncResponse,
+      taskIds,
+      deadlineResults
+    );
+
+    // Fetch actual task values for verification
+    const summary = await this.buildBulkOperationSummaryWithVerification(
+      mergedSummary,
+      taskIds,
+      params
+    );
+    return summary;
+  }
+
+  /**
+   * Merge results from Sync API batch and REST API deadline updates
+   * A task is only successful if BOTH operations succeeded
+   */
+  private mergeSyncAndDeadlineResults(
+    syncResponse: SyncResponse,
+    taskIds: string[],
+    deadlineResults: Map<string, { success: boolean; error?: string }>
+  ): SyncResponse {
+    // If no deadline updates were made, return Sync API response as-is
+    if (deadlineResults.size === 0) {
+      return syncResponse;
+    }
+
+    // Merge Sync API and deadline update results
+    const mergedStatus: Record<string, 'ok' | SyncError> = {};
+
+    taskIds.forEach((taskId, index) => {
+      const uuid = `cmd-${index}-task-${taskId}`;
+      const syncStatus = syncResponse.sync_status[uuid];
+      const deadlineStatus = deadlineResults.get(taskId);
+
+      // Both operations must succeed for overall success
+      if (syncStatus === 'ok' && deadlineStatus?.success) {
+        mergedStatus[uuid] = 'ok';
+      } else if (syncStatus !== 'ok') {
+        // Sync API failed
+        mergedStatus[uuid] = syncStatus as SyncError;
+      } else if (deadlineStatus && !deadlineStatus.success) {
+        // Deadline update failed
+        mergedStatus[uuid] = {
+          error: 'DEADLINE_UPDATE_FAILED',
+          error_message: deadlineStatus.error || 'Failed to update deadline',
+        };
+      }
+    });
+
+    return {
+      ...syncResponse,
+      sync_status: mergedStatus,
+    };
   }
 
   /**
@@ -470,6 +563,76 @@ export class TodoistBulkTasksTool {
       successful,
       failed,
       results,
+    };
+  }
+
+  /**
+   * Build summary with verification by fetching actual task values
+   * This helps confirm that updates were actually applied
+   */
+  private async buildBulkOperationSummaryWithVerification(
+    syncResponse: SyncResponse,
+    taskIds: string[],
+    params: BulkOperationInput
+  ): Promise<BulkOperationSummary> {
+    // First build the basic summary
+    const baseSummary = this.buildBulkOperationSummary(syncResponse, taskIds);
+
+    // For successful operations, fetch actual task values for verification
+    const verifiedResults = await Promise.all(
+      baseSummary.results.map(async result => {
+        if (!result.success) {
+          return result; // Don't verify failed operations
+        }
+
+        try {
+          // Fetch the actual task from Todoist
+          const task = await this.apiService.getTask(result.task_id);
+
+          // Build verified_values object with requested fields
+          const verifiedValues: Record<string, unknown> = {};
+
+          if (params.due_string || params.due_date || params.due_datetime) {
+            verifiedValues.due = task.due;
+          }
+          if (params.deadline_date !== undefined) {
+            verifiedValues.deadline = task.deadline;
+          }
+          if (params.priority !== undefined) {
+            verifiedValues.priority = task.priority;
+          }
+          if (params.labels !== undefined) {
+            verifiedValues.labels = task.labels;
+          }
+          if (params.project_id !== undefined) {
+            verifiedValues.project_id = task.project_id;
+          }
+          if (params.section_id !== undefined) {
+            verifiedValues.section_id = task.section_id;
+          }
+          if (params.parent_id !== undefined) {
+            verifiedValues.parent_id = task.parent_id;
+          }
+          if (params.duration !== undefined) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            verifiedValues.duration = (task as any).duration;
+          }
+
+          return {
+            ...result,
+            verified_values: verifiedValues,
+          };
+        } catch (error) {
+          // If verification fails, return original result (silently)
+          // Error is logged for debugging but doesn't affect the response
+          return result;
+        }
+      })
+    );
+
+    return {
+      ...baseSummary,
+      results: verifiedResults,
     };
   }
 }

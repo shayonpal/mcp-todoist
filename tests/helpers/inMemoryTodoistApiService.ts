@@ -215,6 +215,70 @@ export class InMemoryTodoistApiService {
     }
   }
 
+  async executeBatch(commands: any[]): Promise<any> {
+    const sync_status: Record<string, 'ok' | any> = {};
+
+    for (const command of commands) {
+      try {
+        // Check if task exists first for all task operations
+        if (
+          [
+            'item_update',
+            'item_complete',
+            'item_uncomplete',
+            'item_move',
+          ].includes(command.type)
+        ) {
+          const taskExists = this.tasks.has(command.args.id);
+          if (!taskExists) {
+            sync_status[command.uuid] = {
+              error: 'TASK_NOT_FOUND',
+              error_message: `Task ${command.args.id} not found`,
+            };
+            continue;
+          }
+        }
+
+        switch (command.type) {
+          case 'item_update':
+            await this.updateTask(command.args.id, command.args);
+            sync_status[command.uuid] = 'ok';
+            break;
+          case 'item_complete':
+            await this.completeTask(command.args.id);
+            sync_status[command.uuid] = 'ok';
+            break;
+          case 'item_uncomplete':
+            await this.reopenTask(command.args.id);
+            sync_status[command.uuid] = 'ok';
+            break;
+          case 'item_move':
+            // Move is essentially an update
+            await this.updateTask(command.args.id, command.args);
+            sync_status[command.uuid] = 'ok';
+            break;
+          default:
+            sync_status[command.uuid] = {
+              error: 'UNKNOWN_COMMAND',
+              error_message: `Unknown command type: ${command.type}`,
+            };
+        }
+      } catch (error) {
+        sync_status[command.uuid] = {
+          error: 'COMMAND_FAILED',
+          error_message:
+            error instanceof Error ? error.message : 'Unknown error',
+        };
+      }
+    }
+
+    return {
+      sync_status,
+      temp_id_mapping: {},
+      full_sync: false,
+    };
+  }
+
   // Project operations
   async getProjects(): Promise<TodoistProject[]> {
     return this.clone(Array.from(this.projects.values()));

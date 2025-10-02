@@ -1,18 +1,26 @@
 import { describe, test, expect, beforeEach, jest } from '@jest/globals';
 import { TodoistBulkTasksTool } from '../../src/tools/bulk-tasks.js';
 import { TodoistApiService } from '../../src/services/todoist-api.js';
-import { BulkTasksResponse } from '../../src/types/bulk-operations.js';
+import {
+  BulkTasksResponse,
+  SyncCommand,
+  SyncResponse,
+} from '../../src/types/bulk-operations.js';
 
 // Type guard for BulkTasksResponse
 function isBulkTasksResponse(
-  response: BulkTasksResponse | { success: false; error: { code: string; message: string } }
+  response:
+    | BulkTasksResponse
+    | { success: false; error: { code: string; message: string } }
 ): response is BulkTasksResponse {
   return response.success === true;
 }
 
 // Type guard for error response
 function isErrorResponse(
-  response: BulkTasksResponse | { success: false; error: { code: string; message: string } }
+  response:
+    | BulkTasksResponse
+    | { success: false; error: { code: string; message: string } }
 ): response is { success: false; error: { code: string; message: string } } {
   return response.success === false;
 }
@@ -39,18 +47,16 @@ describe('todoist_bulk_tasks MCP Tool Contract', () => {
     });
 
     // Mock executeBatch for successful operations
-    apiService.executeBatch = jest.fn(async commands => {
+    apiService.executeBatch = jest.fn(async (commands: SyncCommand[]) => {
+      const syncStatus: Record<string, 'ok'> = {};
+      commands.forEach(cmd => {
+        syncStatus[cmd.uuid] = 'ok';
+      });
       return {
-        sync_status: commands.reduce(
-          (acc, cmd) => ({
-            ...acc,
-            [cmd.uuid]: 'ok',
-          }),
-          {}
-        ),
+        sync_status: syncStatus,
         temp_id_mapping: {},
         full_sync: false,
-      };
+      } as SyncResponse;
     });
   });
 
@@ -95,7 +101,8 @@ describe('todoist_bulk_tasks MCP Tool Contract', () => {
 
       // Verify executeBatch was called with correct commands
       expect(apiService.executeBatch).toHaveBeenCalledTimes(1);
-      const commands = (apiService.executeBatch as jest.Mock).mock.calls[0][0];
+      const commands = (apiService.executeBatch as jest.Mock).mock
+        .calls[0][0] as Array<{ type: string; args: Record<string, unknown> }>;
       expect(commands).toHaveLength(5);
       expect(commands[0].type).toBe('item_update');
       expect(commands[0].args).toHaveProperty('id');
@@ -165,9 +172,10 @@ describe('todoist_bulk_tasks MCP Tool Contract', () => {
 
       await bulkTasksTool.execute(params);
 
-      const commands = (apiService.executeBatch as jest.Mock).mock.calls[0][0];
+      const commands = (apiService.executeBatch as jest.Mock).mock
+        .calls[0][0] as Array<{ type: string; args: Record<string, unknown> }>;
       expect(commands).toHaveLength(10);
-      commands.forEach((cmd: any) => {
+      commands.forEach(cmd => {
         expect(cmd.type).toBe('item_complete');
         expect(cmd.args).toHaveProperty('id');
         // Should only have id, no other fields
@@ -216,6 +224,7 @@ describe('todoist_bulk_tasks MCP Tool Contract', () => {
         throw new Error('Expected BulkTasksResponse');
       }
       expect(result.data.total_tasks).toBe(50);
+    });
   });
 
   // T006: Deduplicate task IDs [1,2,1,3] → 3 unique
@@ -275,26 +284,29 @@ describe('todoist_bulk_tasks MCP Tool Contract', () => {
   describe('T007: Partial failure', () => {
     test('should handle 3 successful, 2 failed tasks', async () => {
       // Mock executeBatch to return partial success
-      apiService.executeBatch = jest.fn(async commands => {
+      apiService.executeBatch = jest.fn(async (commands: SyncCommand[]) => {
+        const syncStatus: Record<
+          string,
+          'ok' | { error: string; error_message: string; error_code: number }
+        > = {};
+        syncStatus[commands[0].uuid] = 'ok';
+        syncStatus[commands[1].uuid] = {
+          error: 'TASK_NOT_FOUND',
+          error_message: 'Task not found',
+          error_code: 404,
+        };
+        syncStatus[commands[2].uuid] = 'ok';
+        syncStatus[commands[3].uuid] = {
+          error: 'TASK_NOT_FOUND',
+          error_message: 'Task not found',
+          error_code: 404,
+        };
+        syncStatus[commands[4].uuid] = 'ok';
         return {
-          sync_status: {
-            [commands[0].uuid]: 'ok',
-            [commands[1].uuid]: {
-              error: 'TASK_NOT_FOUND',
-              error_message: 'Task not found',
-              error_code: 404,
-            },
-            [commands[2].uuid]: 'ok',
-            [commands[3].uuid]: {
-              error: 'TASK_NOT_FOUND',
-              error_message: 'Task not found',
-              error_code: 404,
-            },
-            [commands[4].uuid]: 'ok',
-          },
+          sync_status: syncStatus,
           temp_id_mapping: {},
           full_sync: false,
-        };
+        } as SyncResponse;
       });
 
       const params = {
@@ -306,6 +318,9 @@ describe('todoist_bulk_tasks MCP Tool Contract', () => {
       const result = await bulkTasksTool.execute(params);
 
       expect(result.success).toBe(true); // Overall operation succeeds
+      if (!isBulkTasksResponse(result)) {
+        throw new Error('Expected BulkTasksResponse');
+      }
       expect(result.data.total_tasks).toBe(5);
       expect(result.data.successful).toBe(3);
       expect(result.data.failed).toBe(2);
@@ -418,11 +433,15 @@ describe('todoist_bulk_tasks MCP Tool Contract', () => {
 
       const result = await bulkTasksTool.execute(params);
 
+      if (!isBulkTasksResponse(result)) {
+        throw new Error('Expected BulkTasksResponse');
+      }
       expect(result.success).toBe(true);
 
       // Verify all commands have same type
-      const commands = (apiService.executeBatch as jest.Mock).mock.calls[0][0];
-      const commandTypes = new Set(commands.map((cmd: any) => cmd.type));
+      const commands = (apiService.executeBatch as jest.Mock).mock
+        .calls[0][0] as Array<{ type: string }>;
+      const commandTypes = new Set(commands.map(cmd => cmd.type));
       expect(commandTypes.size).toBe(1);
     });
 
@@ -453,7 +472,7 @@ describe('todoist_bulk_tasks MCP Tool Contract', () => {
         const result = await bulkTasksTool.execute(params);
 
         // Should at least pass validation (might fail for other reasons)
-        if (result.error) {
+        if (isErrorResponse(result)) {
           expect(result.error.code).not.toBe('INVALID_PARAMS');
         }
       }

@@ -199,28 +199,28 @@
 
 ## Phase 3.5: Polish & Validation
 
-- [ ] **T021** [P] Add unit tests for deduplication logic in `tests/unit/bulk-validation.test.ts`
+- [x] **T021** [P] Add unit tests for deduplication logic in `tests/unit/bulk-validation.test.ts`
   - Test: Deduplicate([1,2,1,3]) → [1,2,3]
   - Test: Deduplicate([1]) → [1] (single item)
   - Test: Deduplicate([]) → reject (empty array)
   - Test: 50 unique after dedup → pass
   - Test: 51 unique after dedup → reject
 
-- [ ] **T022** [P] Add unit tests for field validation in `tests/unit/bulk-validation.test.ts`
+- [x] **T022** [P] Add unit tests for field validation in `tests/unit/bulk-validation.test.ts`
   - Test: Reject content field
   - Test: Reject description field
   - Test: Reject comments field
   - Test: Allow all supported fields (project_id, section_id, labels, priority, due_string, etc.)
   - Test: Priority range (1-4 valid, 0 and 5 invalid)
 
-- [ ] **T023** [P] Update README.md with bulk operations section
+- [x] **T023** [P] Update README.md with bulk operations section
   - Add: Tool name `todoist_bulk_tasks`
   - Add: Supported actions (update, complete, uncomplete, move)
   - Add: Usage examples from contracts/mcp-tool-schema.json
   - Add: Limitations (max 50 tasks, no content/description/comments)
   - Add: Performance note (<2s for 50 tasks)
 
-- [ ] **T024** Execute quickstart.md validation scenarios
+- [x] **T024** Execute quickstart.md validation scenarios
   - Run: All 8 test scenarios from quickstart.md
   - Test 1: Bulk update due dates (5 tasks)
   - Test 2: Bulk complete (10 tasks)

@@ -15,6 +15,16 @@ export interface OperationResult {
   error: string | null;
   /** MCP resource URI for this task (format: "todoist://task/{id}") */
   resource_uri: string;
+  /** Current task values after update (for verification) */
+  verified_values?: {
+    due?: unknown;
+    deadline?: unknown;
+    priority?: number;
+    labels?: string[];
+    project_id?: string;
+    section_id?: string;
+    [key: string]: unknown;
+  };
 }
 
 /**
