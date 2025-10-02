@@ -25,7 +25,7 @@ import { z as zodLib } from 'zod';
  */
 const BulkOperationInputSchema = z
   .object({
-    action: z.enum(['update', 'complete', 'uncomplete', 'move']),
+    action: z.enum(['update', 'complete', 'uncomplete', 'move', 'delete']),
     task_ids: z.array(z.string()).min(1, 'At least one task ID required'),
     // Optional update fields
     project_id: z.string().optional(),
@@ -99,13 +99,13 @@ export class TodoistBulkTasksTool {
     return {
       name: 'todoist_bulk_tasks',
       description:
-        'Perform bulk operations on up to 50 Todoist tasks. Supports update, complete, uncomplete, and move operations. Automatically deduplicates task IDs. Uses partial execution mode (continues on individual task failures). Returns individual results for each task with success/failure status.',
+        'Perform bulk operations on up to 50 Todoist tasks. Supports update, complete, uncomplete, move, and delete operations. Automatically deduplicates task IDs. Uses partial execution mode (continues on individual task failures). Returns individual results for each task with success/failure status.',
       inputSchema: {
         type: 'object',
         properties: {
           action: {
             type: 'string',
-            enum: ['update', 'complete', 'uncomplete', 'move'],
+            enum: ['update', 'complete', 'uncomplete', 'move', 'delete'],
             description: 'Operation type to perform on all selected tasks',
           },
           task_ids: {
@@ -232,6 +232,9 @@ export class TodoistBulkTasksTool {
           break;
         case 'move':
           summary = await this.handleMoveAction(uniqueTaskIds, validated);
+          break;
+        case 'delete':
+          summary = await this.handleDeleteAction(uniqueTaskIds);
           break;
         default:
           throw new ValidationError(
@@ -491,34 +494,104 @@ export class TodoistBulkTasksTool {
 
   /**
    * T017: Handle move action
-   * Builds item_move commands with project/section/parent
+   * Uses individual moveTask calls (Sync API per task) since bulk Sync and REST update don't work
    */
   private async handleMoveAction(
     taskIds: string[],
     params: BulkOperationInput
   ): Promise<BulkOperationSummary> {
-    // Build move arguments
-    const moveArgs: Record<string, unknown> = {};
+    // Build destination object - only one destination allowed per Todoist API
+    const destination: {
+      project_id?: string;
+      section_id?: string;
+      parent_id?: string;
+    } = {};
 
     if (params.project_id !== undefined)
-      moveArgs.project_id = params.project_id;
+      destination.project_id = params.project_id;
     if (params.section_id !== undefined)
-      moveArgs.section_id = params.section_id;
-    if (params.parent_id !== undefined) moveArgs.parent_id = params.parent_id;
+      destination.section_id = params.section_id;
+    if (params.parent_id !== undefined)
+      destination.parent_id = params.parent_id;
 
-    // T017: Generate SyncCommand array
-    const commands: SyncCommand[] = taskIds.map((taskId, index) => ({
-      type: 'item_move',
-      uuid: `cmd-${index}-task-${taskId}`,
-      args: {
-        id: taskId,
-        ...moveArgs,
-      },
-    }));
+    // Execute move operations using moveTask (one by one, each uses Sync API)
+    const moveResults = await Promise.all(
+      taskIds.map(async taskId => {
+        try {
+          await this.apiService.moveTask(taskId, destination);
+          return {
+            task_id: taskId,
+            success: true,
+            error: null,
+            resource_uri: `todoist://task/${taskId}`,
+          };
+        } catch (error) {
+          return {
+            task_id: taskId,
+            success: false,
+            error:
+              error instanceof Error ? error.message : 'Move operation failed',
+            resource_uri: `todoist://task/${taskId}`,
+          };
+        }
+      })
+    );
 
-    // T017: Call executeBatch and map results
-    const response = await this.apiService.executeBatch(commands);
-    return this.buildBulkOperationSummary(response, taskIds);
+    // Build summary from individual results
+    const successful = moveResults.filter(r => r.success).length;
+    const failed = moveResults.filter(r => !r.success).length;
+
+    return {
+      total_tasks: taskIds.length,
+      successful,
+      failed,
+      results: moveResults,
+    };
+  }
+
+  /**
+   * Handle delete action
+   * Uses individual deleteTask calls (REST API per task) for reliable deletion
+   * Returns individual results for each task to support partial execution mode
+   */
+  private async handleDeleteAction(
+    taskIds: string[]
+  ): Promise<BulkOperationSummary> {
+    // Execute delete operations using deleteTask (one by one)
+    const deleteResults = await Promise.all(
+      taskIds.map(async taskId => {
+        try {
+          await this.apiService.deleteTask(taskId);
+          return {
+            task_id: taskId,
+            success: true,
+            error: null,
+            resource_uri: `todoist://task/${taskId}`,
+          };
+        } catch (error) {
+          return {
+            task_id: taskId,
+            success: false,
+            error:
+              error instanceof Error
+                ? error.message
+                : 'Delete operation failed',
+            resource_uri: `todoist://task/${taskId}`,
+          };
+        }
+      })
+    );
+
+    // Build summary from individual results
+    const successful = deleteResults.filter(r => r.success).length;
+    const failed = deleteResults.filter(r => !r.success).length;
+
+    return {
+      total_tasks: taskIds.length,
+      successful,
+      failed,
+      results: deleteResults,
+    };
   }
 
   /**

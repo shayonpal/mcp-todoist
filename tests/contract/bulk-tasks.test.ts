@@ -40,6 +40,8 @@ describe('todoist_bulk_tasks MCP Tool Contract', () => {
     // Create mock API service
     apiService = {
       executeBatch: jest.fn(),
+      deleteTask: jest.fn(),
+      moveTask: jest.fn(),
     } as unknown as jest.Mocked<TodoistApiService>;
 
     bulkTasksTool = new TodoistBulkTasksTool(mockApiConfig, {
@@ -57,6 +59,16 @@ describe('todoist_bulk_tasks MCP Tool Contract', () => {
         temp_id_mapping: {},
         full_sync: false,
       } as SyncResponse;
+    });
+
+    // Mock deleteTask for successful operations
+    apiService.deleteTask = jest.fn(async () => {
+      return Promise.resolve();
+    });
+
+    // Mock moveTask for successful operations
+    apiService.moveTask = jest.fn(async () => {
+      return Promise.resolve();
     });
   });
 
@@ -460,8 +472,14 @@ describe('todoist_bulk_tasks MCP Tool Contract', () => {
       expect(result.error).toBeDefined();
     });
 
-    test('should validate action is one of: update, complete, uncomplete, move', async () => {
-      const validActions = ['update', 'complete', 'uncomplete', 'move'];
+    test('should validate action is one of: update, complete, uncomplete, move, delete', async () => {
+      const validActions = [
+        'update',
+        'complete',
+        'uncomplete',
+        'move',
+        'delete',
+      ];
 
       for (const action of validActions) {
         const params = {
@@ -476,6 +494,219 @@ describe('todoist_bulk_tasks MCP Tool Contract', () => {
           expect(result.error.code).not.toBe('INVALID_PARAMS');
         }
       }
+    });
+  });
+
+  // T010: Bulk delete tasks
+  describe('T010: Bulk delete tasks', () => {
+    test('should successfully delete 5 tasks', async () => {
+      const params = {
+        action: 'delete' as const,
+        task_ids: ['7654321', '7654322', '7654323', '7654324', '7654325'],
+      };
+
+      const result = await bulkTasksTool.execute(params);
+
+      expect(result.success).toBe(true);
+      if (!isBulkTasksResponse(result)) {
+        throw new Error('Expected BulkTasksResponse');
+      }
+      expect(result.data.total_tasks).toBe(5);
+      expect(result.data.successful).toBe(5);
+      expect(result.data.failed).toBe(0);
+      expect(result.data.results).toHaveLength(5);
+
+      // Verify all results are successful
+      result.data.results.forEach(r => {
+        expect(r.success).toBe(true);
+        expect(r.error).toBeNull();
+        expect(r.resource_uri).toMatch(/^todoist:\/\/task\//);
+      });
+
+      // Verify deleteTask was called 5 times (once per task)
+      expect(apiService.deleteTask).toHaveBeenCalledTimes(5);
+    });
+
+    test('should handle partial failure during delete', async () => {
+      // Mock deleteTask to fail for specific task IDs
+      apiService.deleteTask = jest.fn(async (taskId: string) => {
+        if (taskId === '9999991' || taskId === '9999992') {
+          throw new Error('Task not found');
+        }
+        return Promise.resolve();
+      });
+
+      const params = {
+        action: 'delete' as const,
+        task_ids: ['7654321', '9999991', '7654323', '9999992', '7654325'],
+      };
+
+      const result = await bulkTasksTool.execute(params);
+
+      expect(result.success).toBe(true); // Overall operation succeeds
+      if (!isBulkTasksResponse(result)) {
+        throw new Error('Expected BulkTasksResponse');
+      }
+      expect(result.data.total_tasks).toBe(5);
+      expect(result.data.successful).toBe(3);
+      expect(result.data.failed).toBe(2);
+
+      // Verify failed results have error messages
+      const failedResults = result.data.results.filter(r => !r.success);
+      expect(failedResults).toHaveLength(2);
+      failedResults.forEach(r => {
+        expect(r.error).toContain('not found');
+      });
+
+      // Verify successful results
+      const successfulResults = result.data.results.filter(r => r.success);
+      expect(successfulResults).toHaveLength(3);
+      successfulResults.forEach(r => {
+        expect(r.error).toBeNull();
+      });
+    });
+
+    test('should use individual deleteTask calls (not batch)', async () => {
+      const params = {
+        action: 'delete' as const,
+        task_ids: ['7654321', '7654322', '7654323'],
+      };
+
+      await bulkTasksTool.execute(params);
+
+      // Should call deleteTask for each task individually
+      expect(apiService.deleteTask).toHaveBeenCalledTimes(3);
+      expect(apiService.deleteTask).toHaveBeenCalledWith('7654321');
+      expect(apiService.deleteTask).toHaveBeenCalledWith('7654322');
+      expect(apiService.deleteTask).toHaveBeenCalledWith('7654323');
+
+      // Should NOT use executeBatch for delete
+      expect(apiService.executeBatch).not.toHaveBeenCalled();
+    });
+
+    test('should handle all delete failures gracefully', async () => {
+      // Mock deleteTask to always fail
+      apiService.deleteTask = jest.fn(async () => {
+        throw new Error('Delete operation failed');
+      });
+
+      const params = {
+        action: 'delete' as const,
+        task_ids: ['7654321', '7654322'],
+      };
+
+      const result = await bulkTasksTool.execute(params);
+
+      expect(result.success).toBe(true); // Overall operation succeeds
+      if (!isBulkTasksResponse(result)) {
+        throw new Error('Expected BulkTasksResponse');
+      }
+      expect(result.data.total_tasks).toBe(2);
+      expect(result.data.successful).toBe(0);
+      expect(result.data.failed).toBe(2);
+
+      // All results should show failure
+      result.data.results.forEach(r => {
+        expect(r.success).toBe(false);
+        expect(r.error).toBe('Delete operation failed');
+      });
+    });
+  });
+
+  // T011: Bulk move tasks with new implementation
+  describe('T011: Bulk move tasks', () => {
+    test('should successfully move 5 tasks to a project', async () => {
+      const params = {
+        action: 'move' as const,
+        task_ids: ['7654321', '7654322', '7654323', '7654324', '7654325'],
+        project_id: '220474322',
+      };
+
+      const result = await bulkTasksTool.execute(params);
+
+      expect(result.success).toBe(true);
+      if (!isBulkTasksResponse(result)) {
+        throw new Error('Expected BulkTasksResponse');
+      }
+      expect(result.data.total_tasks).toBe(5);
+      expect(result.data.successful).toBe(5);
+      expect(result.data.failed).toBe(0);
+
+      // Verify moveTask was called 5 times with correct destination
+      expect(apiService.moveTask).toHaveBeenCalledTimes(5);
+      expect(apiService.moveTask).toHaveBeenCalledWith('7654321', {
+        project_id: '220474322',
+      });
+    });
+
+    test('should successfully move tasks to a section', async () => {
+      const params = {
+        action: 'move' as const,
+        task_ids: ['7654321', '7654322'],
+        section_id: '12345',
+      };
+
+      const result = await bulkTasksTool.execute(params);
+
+      expect(result.success).toBe(true);
+      if (!isBulkTasksResponse(result)) {
+        throw new Error('Expected BulkTasksResponse');
+      }
+      expect(result.data.successful).toBe(2);
+
+      // Verify moveTask was called with section_id
+      expect(apiService.moveTask).toHaveBeenCalledWith('7654321', {
+        section_id: '12345',
+      });
+      expect(apiService.moveTask).toHaveBeenCalledWith('7654322', {
+        section_id: '12345',
+      });
+    });
+
+    test('should use individual moveTask calls (not batch)', async () => {
+      const params = {
+        action: 'move' as const,
+        task_ids: ['7654321', '7654322', '7654323'],
+        project_id: '220474322',
+      };
+
+      await bulkTasksTool.execute(params);
+
+      // Should call moveTask for each task individually
+      expect(apiService.moveTask).toHaveBeenCalledTimes(3);
+
+      // Should NOT use executeBatch for move
+      expect(apiService.executeBatch).not.toHaveBeenCalled();
+    });
+
+    test('should handle partial failure during move', async () => {
+      // Mock moveTask to fail for specific task IDs
+      apiService.moveTask = jest.fn(async (taskId: string) => {
+        if (taskId === '9999991') {
+          throw new Error('Task not found');
+        }
+        return Promise.resolve();
+      });
+
+      const params = {
+        action: 'move' as const,
+        task_ids: ['7654321', '9999991', '7654323'],
+        project_id: '220474322',
+      };
+
+      const result = await bulkTasksTool.execute(params);
+
+      expect(result.success).toBe(true);
+      if (!isBulkTasksResponse(result)) {
+        throw new Error('Expected BulkTasksResponse');
+      }
+      expect(result.data.total_tasks).toBe(3);
+      expect(result.data.successful).toBe(2);
+      expect(result.data.failed).toBe(1);
+
+      const failedResults = result.data.results.filter(r => !r.success);
+      expect(failedResults).toHaveLength(1);
+      expect(failedResults[0].error).toContain('not found');
     });
   });
 

@@ -197,6 +197,30 @@ export class InMemoryTodoistApiService {
     this.tasks.delete(taskId);
   }
 
+  async moveTask(
+    taskId: string,
+    destination: {
+      project_id?: string;
+      section_id?: string;
+      parent_id?: string;
+    }
+  ): Promise<void> {
+    // Validate that only one destination is specified (matching real API behavior)
+    const destinations = [
+      destination.project_id,
+      destination.section_id,
+      destination.parent_id,
+    ].filter(Boolean);
+    if (destinations.length !== 1) {
+      throw new Error(
+        'Exactly one of project_id, section_id, or parent_id must be specified for move operation'
+      );
+    }
+
+    // Move is essentially an update in the real API
+    await this.updateTask(taskId, destination);
+  }
+
   async completeTask(taskId: string): Promise<void> {
     const task = this.tasks.get(taskId);
     if (task) {
