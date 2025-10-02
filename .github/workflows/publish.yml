@@ -7,7 +7,7 @@ on:
       - 'v*'
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
 
 jobs:
@@ -52,3 +52,49 @@ jobs:
         env:
           NPM_CONFIG_PROVENANCE: 'true'
         run: npm publish --access public
+
+      - name: Generate GitHub release notes
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          python3 - <<'PY'
+          import os
+          import pathlib
+          import re
+
+          tag = os.environ.get('RELEASE_TAG')
+          if not tag:
+            raise SystemExit('RELEASE_TAG not provided')
+
+          version = tag[1:] if tag.startswith('v') else tag
+          changelog_path = pathlib.Path('CHANGELOG.md')
+          text = changelog_path.read_text(encoding='utf-8')
+
+          pattern = re.compile(r'^## \[(?P<version>[^\]]+)\][^\n]*\n(?P<body>.*?)(?=^## \[|\Z)', re.MULTILINE | re.DOTALL)
+
+          body = None
+          for match in pattern.finditer(text):
+            if match.group('version') == version:
+              body = match.group('body').strip()
+              break
+
+          if not body:
+            raise SystemExit(f'No changelog entry found for version {version}')
+
+          pathlib.Path('release-notes.md').write_text(body + '\n', encoding='utf-8')
+          PY
+
+      - name: Create or update GitHub release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          TITLE="$RELEASE_TAG"
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release edit "$RELEASE_TAG" --title "$TITLE" --notes-file release-notes.md
+          else
+            gh release create "$RELEASE_TAG" --title "$TITLE" --notes-file release-notes.md
+          fi

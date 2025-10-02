@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [1.2.1] - 2025-10-02
+
+### Added
+
+- GitHub Actions trusted publishing workflow that pushes npm releases via OpenID Connect and emits signed provenance metadata.
+
+### Fixed
+
+- Automated release pipeline now upgrades npm and injects the Todoist secret so CI tests pass during publish.
+
 ## [1.2.0] - 2025-10-01
 
 ### Added
@@ -93,6 +103,8 @@
 - Project configuration (TypeScript, Jest, ESLint, Prettier)
 - README and project documentation
 
+[Unreleased]: https://github.com/shayonpal/mcp-todoist/compare/v1.2.1...HEAD
+[1.2.1]: https://github.com/shayonpal/mcp-todoist/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/shayonpal/mcp-todoist/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/shayonpal/mcp-todoist/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/shayonpal/mcp-todoist/compare/v0.1.0...v1.0.0
