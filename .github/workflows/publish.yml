@@ -14,6 +14,8 @@ jobs:
   publish:
     name: Publish package to npm
     runs-on: ubuntu-latest
+    env:
+      TODOIST_API_TOKEN: ${{ secrets.TODOIST_API_TOKEN }}
 
     steps:
       - name: Checkout repository
