@@ -1,0 +1,36 @@
+# Dependencies
+node_modules
+npm-debug.log*
+
+# Build outputs
+dist
+
+# Testing
+coverage
+*.log
+
+# Development files
+.git
+.github
+.vscode
+.idea
+
+# Documentation
+*.md
+!README.md
+
+# Config files
+.env
+.env.*
+!.env.example
+
+# Specs and tests
+specs
+tests
+
+# CI/CD
+.gitignore
+.prettierrc
+.prettierignore
+.eslintrc.json
+jest.config.js
