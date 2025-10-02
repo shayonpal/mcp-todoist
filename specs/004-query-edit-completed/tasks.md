@@ -42,16 +42,16 @@ Single project structure (from plan.md):
 
 ## Phase 3.1: Type Definitions
 
-### T001 [P] Add completed_at field to Task interface
+### T001 [P] [X] Add completed_at field to Task interface
 **File**: `src/types/todoist.ts`
 **Description**: Add optional `completed_at?: string` field to existing Task interface to support completed task timestamps
 **Prerequisites**: None
-**Validation**: TypeScript compiles without errors
+**Validation**: TypeScript compiles without errors ✓
 **Details**:
-- Locate existing `Task` interface in src/types/todoist.ts
-- Add new field: `completed_at?: string; // ISO 8601 datetime when task was completed`
-- Ensure field is optional (tasks may not be completed)
-- Run `npm run typecheck` to verify
+- Locate existing `Task` interface in src/types/todoist.ts ✓
+- Add new field: `completed_at?: string; // ISO 8601 datetime when task was completed` ✓
+- Ensure field is optional (tasks may not be completed) ✓
+- Run `npm run typecheck` to verify ✓
 
 ---
 
@@ -59,11 +59,11 @@ Single project structure (from plan.md):
 
 **CRITICAL: These tests MUST be written and MUST FAIL before ANY implementation**
 
-### T002 [P] Contract tests for list_completed action with by_completion_date
+### T002 [P] [X] Contract tests for list_completed action with by_completion_date
 **File**: `tests/contract/todoist-tasks-completed.test.ts` (new file)
 **Description**: Create contract tests for list_completed action using by_completion_date query type. Tests MUST fail initially.
 **Prerequisites**: T001 (types)
-**Validation**: Tests written, all fail (no implementation yet), test file has 10 test cases
+**Validation**: Tests written ✓, all fail ✓ (no implementation yet), test file has 10 test cases ✓
 **Details**:
 - Create new test file in tests/contract/
 - Import TodoistTasksTool and mock TodoistApiService
@@ -82,11 +82,11 @@ Single project structure (from plan.md):
 - Each test should check: input validation, error handling, response structure
 - Expected: All tests fail (implementation doesn't exist yet)
 
-### T003 [P] Contract tests for list_completed action with by_due_date
+### T003 [P] [X] Contract tests for list_completed action with by_due_date
 **File**: `tests/contract/todoist-tasks-completed.test.ts` (extend existing from T002)
 **Description**: Add contract tests for list_completed action using by_due_date query type. Tests MUST fail initially.
 **Prerequisites**: T002
-**Validation**: Tests written, all fail, 5 additional test cases added
+**Validation**: Tests written ✓, all fail ✓, 5 additional test cases added ✓
 **Details**:
 - Extend test file from T002
 - Implement 5 test cases from contracts/todoist-api-contracts.md:
@@ -97,11 +97,11 @@ Single project structure (from plan.md):
   5. Recurring task due dates handled
 - Expected: All tests fail (implementation doesn't exist yet)
 
-### T004 [P] Integration test for completed tasks query workflow
+### T004 [P] [X] Integration test for completed tasks query workflow
 **File**: `tests/integration/completed-tasks-workflow.test.ts` (new file)
 **Description**: Create end-to-end integration test for querying completed tasks with multiple filters and pagination
 **Prerequisites**: T001 (types)
-**Validation**: Test written, fails (no implementation), covers full workflow from quickstart.md
+**Validation**: Test written ✓, fails ✓ (no implementation), covers full workflow from quickstart.md ✓
 **Details**:
 - Create new integration test file
 - Test scenario from quickstart.md "Project Retrospective":
@@ -112,11 +112,11 @@ Single project structure (from plan.md):
 - Mock Todoist API responses with realistic data
 - Expected: Test fails (tool handler doesn't exist)
 
-### T005 [P] Integration test for reopen → edit → recomplete workflow
+### T005 [P] [X] Integration test for reopen → edit → recomplete workflow
 **File**: `tests/integration/completed-tasks-workflow.test.ts` (extend from T004)
 **Description**: Add integration test for the workflow: query completed task, reopen it, edit it, recomplete it
 **Prerequisites**: T004
-**Validation**: Test written, fails, covers full edit workflow from quickstart.md
+**Validation**: Test written ✓, fails ✓, covers full edit workflow from quickstart.md ✓
 **Details**:
 - Extend integration test file from T004
 - Test scenario from quickstart.md "Edit a Completed Task":
@@ -128,11 +128,11 @@ Single project structure (from plan.md):
 - Mock API responses for each step
 - Expected: Test fails (implementation not complete)
 
-### T006 [P] Unit tests for time window validation logic
+### T006 [P] [X] Unit tests for time window validation logic
 **File**: `tests/unit/time-window-validation.test.ts` (new file)
 **Description**: Create unit tests for time window calculation and validation refinements
 **Prerequisites**: None
-**Validation**: Tests written, fail (validation logic doesn't exist), covers all validation rules
+**Validation**: Tests written ✓, fail ✓ (validation logic doesn't exist), covers all validation rules ✓
 **Details**:
 - Create unit test file
 - Test time window calculation logic:
