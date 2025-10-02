@@ -186,7 +186,7 @@
 
 ## Phase 3.4: Integration & Error Handling
 
-- [ ] **T020** Add error mapping for Sync API errors in `src/server.ts`
+- [x] **T020** Add error mapping for Sync API errors in `src/server.ts`
   - Extend: `mapTodoistErrorToMCP()` function
   - Map: TASK_NOT_FOUND (404) → "Task not found"
   - Map: INVALID_ARGUMENT (400) → "Invalid field value: {details}"

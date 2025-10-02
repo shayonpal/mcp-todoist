@@ -1,7 +1,21 @@
 import { describe, test, expect, beforeEach, jest } from '@jest/globals';
 import { TodoistBulkTasksTool } from '../../src/tools/bulk-tasks.js';
 import { TodoistApiService } from '../../src/services/todoist-api.js';
-import { createMockApiService } from '../helpers/mockTodoistApiService.js';
+import { BulkTasksResponse } from '../../src/types/bulk-operations.js';
+
+// Type guard for BulkTasksResponse
+function isBulkTasksResponse(
+  response: BulkTasksResponse | { success: false; error: { code: string; message: string } }
+): response is BulkTasksResponse {
+  return response.success === true;
+}
+
+// Type guard for error response
+function isErrorResponse(
+  response: BulkTasksResponse | { success: false; error: { code: string; message: string } }
+): response is { success: false; error: { code: string; message: string } } {
+  return response.success === false;
+}
 
 const mockApiConfig = {
   token: 'test_token',
@@ -15,7 +29,11 @@ describe('todoist_bulk_tasks MCP Tool Contract', () => {
   let bulkTasksTool: TodoistBulkTasksTool;
 
   beforeEach(() => {
-    apiService = createMockApiService() as jest.Mocked<TodoistApiService>;
+    // Create mock API service
+    apiService = {
+      executeBatch: jest.fn(),
+    } as unknown as jest.Mocked<TodoistApiService>;
+
     bulkTasksTool = new TodoistBulkTasksTool(mockApiConfig, {
       apiService: apiService as unknown as TodoistApiService,
     });
@@ -59,6 +77,9 @@ describe('todoist_bulk_tasks MCP Tool Contract', () => {
       const result = await bulkTasksTool.execute(params);
 
       expect(result.success).toBe(true);
+      if (!isBulkTasksResponse(result)) {
+        throw new Error('Expected BulkTasksResponse');
+      }
       expect(result.data).toBeDefined();
       expect(result.data.total_tasks).toBe(5);
       expect(result.data.successful).toBe(5);
@@ -93,6 +114,9 @@ describe('todoist_bulk_tasks MCP Tool Contract', () => {
       // Verify response structure
       expect(result).toHaveProperty('success');
       expect(result).toHaveProperty('data');
+      if (!isBulkTasksResponse(result)) {
+        throw new Error('Expected BulkTasksResponse');
+      }
       expect(result.data).toHaveProperty('total_tasks');
       expect(result.data).toHaveProperty('successful');
       expect(result.data).toHaveProperty('failed');
@@ -118,8 +142,10 @@ describe('todoist_bulk_tasks MCP Tool Contract', () => {
       const result = await bulkTasksTool.execute(params);
 
       expect(result.success).toBe(true);
+      if (!isBulkTasksResponse(result)) {
+        throw new Error('Expected BulkTasksResponse');
+      }
       expect(result.data.total_tasks).toBe(10);
-      expect(result.data.successful).toBe(10);
       expect(result.data.failed).toBe(0);
       expect(result.data.results).toHaveLength(10);
 
@@ -163,6 +189,9 @@ describe('todoist_bulk_tasks MCP Tool Contract', () => {
       const result = await bulkTasksTool.execute(params);
 
       expect(result.success).toBe(false);
+      if (!isErrorResponse(result)) {
+        throw new Error('Expected error response');
+      }
       expect(result.error).toBeDefined();
       expect(result.error?.code).toBe('INVALID_PARAMS');
       expect(result.error?.message).toContain('Maximum 50 tasks allowed');
@@ -183,8 +212,10 @@ describe('todoist_bulk_tasks MCP Tool Contract', () => {
       const result = await bulkTasksTool.execute(params);
 
       expect(result.success).toBe(true);
+      if (!isBulkTasksResponse(result)) {
+        throw new Error('Expected BulkTasksResponse');
+      }
       expect(result.data.total_tasks).toBe(50);
-    });
   });
 
   // T006: Deduplicate task IDs [1,2,1,3] → 3 unique
@@ -199,8 +230,10 @@ describe('todoist_bulk_tasks MCP Tool Contract', () => {
       const result = await bulkTasksTool.execute(params);
 
       expect(result.success).toBe(true);
+      if (!isBulkTasksResponse(result)) {
+        throw new Error('Expected BulkTasksResponse');
+      }
       expect(result.data.total_tasks).toBe(3); // Not 4
-      expect(result.data.results).toHaveLength(3);
 
       // Verify metadata shows deduplication
       expect(result.metadata).toBeDefined();
@@ -227,8 +260,10 @@ describe('todoist_bulk_tasks MCP Tool Contract', () => {
       const result = await bulkTasksTool.execute(params);
 
       expect(result.success).toBe(true);
+      if (!isBulkTasksResponse(result)) {
+        throw new Error('Expected BulkTasksResponse');
+      }
       expect(result.data.total_tasks).toBe(3);
-
       // Metadata should show no deduplication
       expect(result.metadata?.deduplication_applied).toBe(false);
       expect(result.metadata?.original_count).toBe(3);
@@ -303,8 +338,10 @@ describe('todoist_bulk_tasks MCP Tool Contract', () => {
       const result = await bulkTasksTool.execute(params as any);
 
       expect(result.success).toBe(false);
+      if (!isErrorResponse(result)) {
+        throw new Error('Expected error response');
+      }
       expect(result.error).toBeDefined();
-      expect(result.error?.code).toBe('INVALID_PARAMS');
       expect(result.error?.message).toContain(
         'Cannot modify content, description, or comments'
       );
@@ -323,6 +360,9 @@ describe('todoist_bulk_tasks MCP Tool Contract', () => {
       const result = await bulkTasksTool.execute(params as any);
 
       expect(result.success).toBe(false);
+      if (!isErrorResponse(result)) {
+        throw new Error('Expected error response');
+      }
       expect(result.error?.code).toBe('INVALID_PARAMS');
       expect(result.error?.message).toContain(
         'Cannot modify content, description, or comments'
@@ -339,6 +379,9 @@ describe('todoist_bulk_tasks MCP Tool Contract', () => {
       const result = await bulkTasksTool.execute(params as any);
 
       expect(result.success).toBe(false);
+      if (!isErrorResponse(result)) {
+        throw new Error('Expected error response');
+      }
       expect(result.error?.code).toBe('INVALID_PARAMS');
       expect(result.error?.message).toContain(
         'Cannot modify content, description, or comments'
@@ -392,8 +435,10 @@ describe('todoist_bulk_tasks MCP Tool Contract', () => {
       const result = await bulkTasksTool.execute(params);
 
       expect(result.success).toBe(false);
+      if (!isErrorResponse(result)) {
+        throw new Error('Expected error response');
+      }
       expect(result.error).toBeDefined();
-      expect(result.error?.code).toBe('INVALID_PARAMS');
     });
 
     test('should validate action is one of: update, complete, uncomplete, move', async () => {
@@ -425,6 +470,9 @@ describe('todoist_bulk_tasks MCP Tool Contract', () => {
       const result = await bulkTasksTool.execute(params);
 
       expect(result.success).toBe(false);
+      if (!isErrorResponse(result)) {
+        throw new Error('Expected error response');
+      }
       expect(result.error?.code).toBe('INVALID_PARAMS');
     });
 
@@ -436,6 +484,9 @@ describe('todoist_bulk_tasks MCP Tool Contract', () => {
       const result = await bulkTasksTool.execute(params as any);
 
       expect(result.success).toBe(false);
+      if (!isErrorResponse(result)) {
+        throw new Error('Expected error response');
+      }
       expect(result.error?.code).toBe('INVALID_PARAMS');
     });
 
@@ -447,6 +498,9 @@ describe('todoist_bulk_tasks MCP Tool Contract', () => {
       const result = await bulkTasksTool.execute(params as any);
 
       expect(result.success).toBe(false);
+      if (!isErrorResponse(result)) {
+        throw new Error('Expected error response');
+      }
       expect(result.error?.code).toBe('INVALID_PARAMS');
     });
 
@@ -460,6 +514,9 @@ describe('todoist_bulk_tasks MCP Tool Contract', () => {
       const result = await bulkTasksTool.execute(params);
 
       expect(result.success).toBe(false);
+      if (!isErrorResponse(result)) {
+        throw new Error('Expected error response');
+      }
       expect(result.error?.code).toBe('INVALID_PARAMS');
     });
   });

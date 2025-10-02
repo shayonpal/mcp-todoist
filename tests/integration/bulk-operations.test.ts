@@ -5,6 +5,14 @@ import { TodoistProjectsTool } from '../../src/tools/todoist-projects.js';
 import { CacheService } from '../../src/services/cache.js';
 import { BatchOperationsService } from '../../src/services/batch.js';
 import { createInMemoryApiService } from '../helpers/inMemoryTodoistApiService.js';
+import { BulkTasksResponse } from '../../src/types/bulk-operations.js';
+
+// Type guard for BulkTasksResponse
+function isBulkTasksResponse(
+  response: BulkTasksResponse | { success: false; error: { code: string; message: string } }
+): response is BulkTasksResponse {
+  return response.success === true;
+}
 
 const mockApiConfig = {
   token: 'test_token',
@@ -68,6 +76,9 @@ describe('Bulk Operations Integration Tests', () => {
 
       // Verify bulk operation succeeded
       expect(bulkResult.success).toBe(true);
+      if (!isBulkTasksResponse(bulkResult)) {
+        throw new Error('Expected BulkTasksResponse');
+      }
       expect(bulkResult.data.total_tasks).toBe(15);
       expect(bulkResult.data.successful).toBe(15);
       expect(bulkResult.data.failed).toBe(0);
@@ -106,6 +117,9 @@ describe('Bulk Operations Integration Tests', () => {
         due_string: 'tomorrow',
       });
 
+      if (!isBulkTasksResponse(bulkResult)) {
+        throw new Error('Expected BulkTasksResponse');
+      }
       expect(bulkResult.metadata).toBeDefined();
       expect(bulkResult.metadata?.execution_time_ms).toBeGreaterThan(0);
       expect(bulkResult.metadata?.execution_time_ms).toBeLessThan(2000);
@@ -157,6 +171,9 @@ describe('Bulk Operations Integration Tests', () => {
       });
 
       expect(bulkResult.success).toBe(true);
+      if (!isBulkTasksResponse(bulkResult)) {
+        throw new Error('Expected BulkTasksResponse');
+      }
       expect(bulkResult.data.total_tasks).toBe(7);
       expect(bulkResult.data.successful).toBe(7);
       expect(bulkResult.data.failed).toBe(0);
@@ -215,6 +232,9 @@ describe('Bulk Operations Integration Tests', () => {
 
       // Overall operation should succeed (partial execution)
       expect(bulkResult.success).toBe(true);
+      if (!isBulkTasksResponse(bulkResult)) {
+        throw new Error('Expected BulkTasksResponse');
+      }
       expect(bulkResult.data.total_tasks).toBe(20);
       expect(bulkResult.data.successful).toBe(17);
       expect(bulkResult.data.failed).toBe(3);
@@ -279,6 +299,9 @@ describe('Bulk Operations Integration Tests', () => {
 
       // Partial success (no rollback)
       expect(bulkResult.success).toBe(true);
+      if (!isBulkTasksResponse(bulkResult)) {
+        throw new Error('Expected BulkTasksResponse');
+      }
       expect(bulkResult.data.successful).toBe(3);
       expect(bulkResult.data.failed).toBe(1);
 
@@ -342,6 +365,9 @@ describe('Bulk Operations Integration Tests', () => {
 
       // Should eventually succeed after retry
       expect(bulkResult.success).toBe(true);
+      if (!isBulkTasksResponse(bulkResult)) {
+        throw new Error('Expected BulkTasksResponse');
+      }
       expect(bulkResult.data.successful).toBe(5);
 
       // Verify retry was attempted
@@ -409,6 +435,9 @@ describe('Bulk Operations Integration Tests', () => {
 
       // Should fail after exhausting retries
       expect(bulkResult.success).toBe(false);
+      if (isBulkTasksResponse(bulkResult)) {
+        throw new Error('Expected error response');
+      }
       expect(bulkResult.error).toBeDefined();
       expect(bulkResult.error?.code).toMatch(/RATE_LIMIT|INTERNAL_ERROR/);
     });
@@ -438,6 +467,9 @@ describe('Bulk Operations Integration Tests', () => {
       });
 
       expect(bulkResult.success).toBe(true);
+      if (!isBulkTasksResponse(bulkResult)) {
+        throw new Error('Expected BulkTasksResponse');
+      }
       expect(bulkResult.data.successful).toBe(8);
 
       // Verify one task has all updated fields
@@ -480,6 +512,9 @@ describe('Bulk Operations Integration Tests', () => {
       });
 
       expect(bulkResult.success).toBe(true);
+      if (!isBulkTasksResponse(bulkResult)) {
+        throw new Error('Expected BulkTasksResponse');
+      }
       expect(bulkResult.data.successful).toBe(5);
 
       // Verify tasks are no longer completed

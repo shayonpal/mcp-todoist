@@ -204,8 +204,14 @@ export class TodoistMCPServer {
         return ErrorCode.InternalError;
       case TodoistErrorCode.RESOURCE_NOT_FOUND:
         return ErrorCode.InvalidRequest;
-      case TodoistErrorCode.VALIDATION_ERROR:
+      case TodoistErrorCode.NOT_FOUND: // Sync API: Task not found (404)
+        return ErrorCode.InvalidRequest;
+      case TodoistErrorCode.VALIDATION_ERROR: // Sync API: Invalid field value (400)
         return ErrorCode.InvalidParams;
+      case TodoistErrorCode.INSUFFICIENT_PERMISSIONS: // Sync API: Forbidden (403)
+        return ErrorCode.InvalidRequest;
+      case TodoistErrorCode.SERVER_ERROR: // Sync API: Todoist service error (500)
+        return ErrorCode.InternalError;
       case TodoistErrorCode.SYNC_ERROR:
         return ErrorCode.InternalError;
       case TodoistErrorCode.BATCH_PARTIAL_FAILURE:
