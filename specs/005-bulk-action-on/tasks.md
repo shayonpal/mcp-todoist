@@ -176,7 +176,7 @@
 
 ### Server Integration
 
-- [ ] **T019** Register `todoist_bulk_tasks` tool in `src/server.ts`
+- [x] **T019** Register `todoist_bulk_tasks` tool in `src/server.ts`
   - Import: `bulkTasksTool` from tools/bulk-tasks
   - Add: Tool to `initializeTools()` method
   - Ensure: Tool appears in list_tools response
