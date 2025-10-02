@@ -1,5 +1,6 @@
 # Todoist MCP Server
 
+[![npm version](https://img.shields.io/npm/v/@shayonpal/mcp-todoist.svg)](https://www.npmjs.com/package/@shayonpal/mcp-todoist)
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL%203.0-blue.svg)](LICENSE)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](package.json)
 
@@ -46,6 +47,14 @@ MCP server enabling programmatic Todoist task and project management through an 
 
 ## Installation
 
+### Option 1: Install from npm (Recommended)
+
+```bash
+npm i @shayonpal/mcp-todoist
+```
+
+### Option 2: Install from source
+
 1. Clone the repository:
 ```bash
 git clone https://github.com/shayonpal/mcp-todoist.git
@@ -84,6 +93,22 @@ Add to your Claude Desktop configuration file:
 **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
 
+**If installed from npm:**
+```json
+{
+  "mcpServers": {
+    "todoist": {
+      "command": "npx",
+      "args": ["-y", "@shayonpal/mcp-todoist"],
+      "env": {
+        "TODOIST_API_TOKEN": "your_api_token_here"
+      }
+    }
+  }
+}
+```
+
+**If installed from source:**
 ```json
 {
   "mcpServers": {
@@ -98,7 +123,113 @@ Add to your Claude Desktop configuration file:
 }
 ```
 
-**Note**: Use absolute paths in the configuration.
+**Note**: When using source installation, use absolute paths in the configuration.
+
+#### Claude Code CLI
+
+**Recommended: Use CLI command**
+
+Add the server using the `claude mcp add` command:
+
+```bash
+# Project scope (shared with team, stored in .mcp.json)
+claude mcp add todoist --scope project npx -y @shayonpal/mcp-todoist
+
+# User scope (personal, works across all projects)
+claude mcp add todoist --scope user npx -y @shayonpal/mcp-todoist
+
+# Local scope (personal, current project only) - default
+claude mcp add todoist npx -y @shayonpal/mcp-todoist
+```
+
+Then set your Todoist API token as an environment variable:
+```bash
+export TODOIST_API_TOKEN=your_api_token_here
+```
+
+Or manually add the environment variable to `.mcp.json`:
+```json
+{
+  "mcpServers": {
+    "todoist": {
+      "command": "npx",
+      "args": ["-y", "@shayonpal/mcp-todoist"],
+      "env": {
+        "TODOIST_API_TOKEN": "${TODOIST_API_TOKEN}"
+      }
+    }
+  }
+}
+```
+
+**Scope selection:**
+- **Project scope** (recommended for teams): Shared via `.mcp.json` in version control
+- **User scope**: Personal, available across all projects on your machine
+- **Local scope**: Personal, specific to current project only (default)
+
+#### Codex CLI
+
+Add to `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.todoist]
+command = "npx"
+args = ["-y", "@shayonpal/mcp-todoist"]
+env = { "TODOIST_API_TOKEN" = "your_api_token_here" }
+startup_timeout_ms = 20000
+```
+
+**Note**: Codex uses TOML format with `mcp_servers` (underscore). All strings must be quoted.
+
+#### Cursor IDE
+
+**Recommended: One-click install**
+
+[![Add to Cursor](https://img.shields.io/badge/Add_to-Cursor-blue?logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJMMiAyMkgyMkwxMiAyWiIgZmlsbD0id2hpdGUiLz4KPC9zdmc+Cg==)](cursor://anysphere.cursor-deeplink/mcp/install?name=todoist&config=eyJ0b2RvaXN0Ijp7InR5cGUiOiJzdGRpbyIsImNvbW1hbmQiOiJucHgiLCJhcmdzIjpbIi15IiwiQHNoYXlvbnBhbC9tY3AtdG9kb2lzdCJdLCJlbnYiOnsiVE9ET0lTVF9BUElfVE9LRU4iOiIke2VudjpUT0RPSVNUX0FQSV9UT0tFTn0ifX19)
+
+Click the button above to automatically install the server in Cursor. Make sure you have `TODOIST_API_TOKEN` set as an environment variable.
+
+**Manual installation:**
+
+**Configuration locations:**
+- **Project-specific**: `.cursor/mcp.json` in project root
+- **Global**: `~/.cursor/mcp.json` in home directory
+
+**Option 1: Using environment variables**
+```json
+{
+  "mcpServers": {
+    "todoist": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@shayonpal/mcp-todoist"],
+      "env": {
+        "TODOIST_API_TOKEN": "${env:TODOIST_API_TOKEN}"
+      }
+    }
+  }
+}
+```
+
+**Option 2: Using environment file**
+```json
+{
+  "mcpServers": {
+    "todoist": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@shayonpal/mcp-todoist"],
+      "envFile": ".env"
+    }
+  }
+}
+```
+
+**Supported config interpolation:**
+- `${env:NAME}` - Environment variables
+- `${userHome}` - Path to home folder
+- `${workspaceFolder}` - Project root directory
+- `${workspaceFolderBasename}` - Project name
 
 #### Other MCP Clients
 

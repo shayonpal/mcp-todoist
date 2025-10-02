@@ -1,17 +1,23 @@
 {
-  "name": "mcp-todoist",
-  "version": "1.0.0",
+  "name": "@shayonpal/mcp-todoist",
+  "version": "1.2.0",
   "description": "MCP server enabling programmatic Todoist task and project management through optimized tool set",
   "main": "dist/server.js",
   "type": "module",
   "bin": {
-    "mcp-todoist": "./dist/server.js"
+    "mcp-todoist": "dist/server.js"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "engines": {
     "node": ">=18.0.0"
   },
   "scripts": {
     "build": "tsc && chmod 755 dist/server.js",
+    "prepublishOnly": "npm run build && npm test",
     "start": "node dist/server.js",
     "dev": "tsx src/server.ts",
     "test": "jest",

@@ -1,0 +1,65 @@
+Here is a comprehensive development plan for the Todoist MCP Server.
+
+### 1. Foundational Improvements (Weeks 1-2)
+
+These tasks focus on establishing a solid baseline for reliability and developer experience.
+
+*   **Prerequisites:** Node.js, npm/yarn.
+*   **Tasks:**
+    1.  **Comprehensive Dependency Audit:** Run `npm audit` to identify and fix any security vulnerabilities in the dependencies.
+    2.  **CI/CD Pipeline Setup:** Create a GitHub Actions workflow (`.github/workflows/ci.yml`) that runs on every push and pull request. This workflow should:
+        *   Install dependencies (`npm ci`).
+        *   Run linter (`npm run lint`).
+        *   Run tests (`npm test`).
+        *   Build the project (`npm run build`).
+    3.  **Code Coverage Reporting:** Integrate a code coverage tool like Codecov or Coveralls into the CI/CD pipeline to track test coverage over time. This will help visualize and prioritize areas for new tests.
+    4.  **Stricter TypeScript Configuration:** In `tsconfig.json`, enable stricter type-checking options like `strictNullChecks`, `noImplicitAny`, and `noUnusedLocals` to catch potential bugs at compile time.
+
+### 2. Reliability and Robustness (Weeks 3-4)
+
+This phase focuses on making the server more resilient to errors and unexpected inputs.
+
+*   **Dependencies:** Foundational improvements (CI/CD pipeline) should be in place.
+*   **Tasks:**
+    1.  **Centralized Error Handling:** Refactor the error handling logic in `src/middleware/error-handler.ts` to ensure all errors are consistently caught and formatted. This includes handling errors from the Todoist API, validation errors, and unexpected runtime errors.
+    2.  **Enhanced Input Validation:** Expand the Zod schemas in `src/schemas/validation.ts` to cover all incoming data from clients. Ensure that all API endpoints use these schemas to validate incoming requests.
+    3.  **Rate Limiting Strategy:** Review the existing rate-limiting implementation. Consider adding a more sophisticated strategy, such as a token bucket or leaky bucket algorithm, to handle bursts of requests more gracefully.
+    4.  **Idempotency for Mutable Operations:** For `create` and `update` operations, implement a mechanism to handle idempotent requests. This can be achieved by allowing clients to pass a unique idempotency key, which the server can use to detect and de-duplicate requests.
+
+### 3. Test Coverage and Quality (Weeks 5-8)
+
+This is a concerted effort to increase test coverage and ensure that all critical paths are tested.
+
+*   **Dependencies:** A code coverage reporting tool should be set up.
+*   **Tasks:**
+    1.  **Unit Test Expansion:**
+        *   Write unit tests for all utility functions in `src/utils`.
+        *   Write unit tests for the caching service in `src/services/cache.ts`.
+        *   Increase unit test coverage for all tool implementations in `src/tools`.
+    2.  **Integration Test Expansion:**
+        *   Write integration tests for all batch operations.
+        *   Write integration tests for error scenarios, such as invalid API keys, network errors, and invalid input data.
+        *   Add integration tests for edge cases, such as creating tasks with deadlines in the past or updating non-existent items.
+    3.  **Contract Test Verification:**
+        *   Review and update all contract tests in `tests/contract` to ensure they are in sync with the latest Todoist API documentation.
+        *   Add contract tests for any missing API endpoints.
+    4.  **End-to-End (E2E) Testing Framework:** Introduce an E2E testing framework like Playwright or Cypress to test the entire system from the client's perspective. This will involve creating a test suite that makes real API calls to a test Todoist account.
+
+### 4. Developer Experience and Community Readiness (Weeks 9-10)
+
+This final phase focuses on making the project easy to contribute to and maintain.
+
+*   **Tasks:**
+    1.  **Documentation Overhaul:**
+        *   Update `README.md` with detailed instructions on how to set up the development environment, run tests, and contribute to the project.
+        *   Add API documentation using a tool like Swagger or OpenAPI to document all available endpoints, request/response schemas, and error codes.
+        *   Create a `CONTRIBUTING.md` file with clear guidelines for submitting bug reports, feature requests, and pull requests.
+    2.  **Release Automation:**
+        *   Set up a release automation tool like `semantic-release` to automate the process of versioning, generating changelogs, and publishing new releases to npm.
+    3.  **Code of Conduct:** Add a `CODE_OF_CONDUCT.md` file to foster a welcoming and inclusive community.
+    4.  **Good First Issues:** Identify and label issues that are suitable for new contributors. This will help lower the barrier to entry for people who want to get involved with the project.
+
+### Discovery Required
+
+*   **Todoist API Rate Limits:** The exact rate limits of the Todoist API are not well-documented. Further investigation is needed to understand the rate limits and implement a robust rate-limiting strategy.
+*   **Community Interest:** Before investing heavily in community-building efforts, it would be beneficial to gauge the level of interest from the community. This could be done by creating a post on the Todoist subreddit or other relevant forums.

@@ -1,0 +1,529 @@
+
+
+Perfect! I now have a comprehensive understanding of the repository. Let me create a detailed development plan based on my analysis.
+
+## **Comprehensive Development Plan: Todoist MCP Server**
+
+### **Executive Summary**
+
+The Todoist MCP Server is a well-structured TypeScript project implementing the Model Context Protocol for Todoist API integration. The codebase demonstrates solid engineering practices with ~14,500 lines of code, comprehensive test coverage (contract, integration, and unit tests), and clear documentation. Based on recent commits and repository structure, here's a prioritized roadmap for improving reliability, test coverage, developer experience, and community readiness.
+
+---
+
+## **Phase 1: Testing & Quality Assurance (Priority: Critical)**
+
+### **1.1 Achieve Full Test Coverage**
+
+**Current State:**
+- ✅ 7 contract test files (tool schemas & business logic)
+- ✅ 6 integration test files (cross-feature workflows)
+- ✅ 5 unit test files (validation, helpers)
+- ⚠️ No actual coverage report found (need to run)
+- ⚠️ Manual test scripts exist but need formalization
+
+**Action Items:**
+
+1. **Generate Baseline Coverage Report**
+   - Run `npm run test:coverage` to establish current metrics
+   - Document coverage gaps by file/module
+   - Target: 85%+ line coverage, 80%+ branch coverage
+
+2. **Add Missing Test Coverage**
+   - `src/server.ts` - MCP server lifecycle, error mapping
+   - `src/middleware/` - Logging and error handler edge cases
+   - `src/services/cache.ts` - Cache invalidation, TTL behavior
+   - `src/config/index.ts` - All config validation branches
+   - Edge cases in all tool implementations
+
+3. **Formalize Manual Tests**
+   - Convert `tests/manual/verify-natural-language.ts` → automated integration test
+   - Convert `tests/manual/validate-labels-quickstart.ts` → CI smoke test
+   - Document any remaining manual testing procedures
+
+4. **Add E2E Testing Infrastructure**
+   - Create `tests/e2e/` directory
+   - Implement end-to-end tests using real Todoist sandbox account
+   - Test full MCP protocol flow (stdio transport, tool calls, responses)
+
+**Dependencies:** None  
+**Estimated Effort:** 1-2 weeks
+
+---
+
+### **1.2 Enhance Test Infrastructure**
+
+**Action Items:**
+
+1. **Improve Test Helpers**
+   - Consolidate mock factories in `tests/helpers/`
+   - Add snapshot testing for tool schemas
+   - Create shared test fixtures for common scenarios
+
+2. **Add Performance Testing**
+   - Benchmark rate limiter accuracy
+   - Test batch operation performance (1, 10, 50, 100 commands)
+   - Memory leak detection for long-running scenarios
+
+3. **CI/CD Pipeline Setup** (See Phase 3)
+
+**Dependencies:** 1.1  
+**Estimated Effort:** 3-5 days
+
+---
+
+## **Phase 2: Code Quality & Developer Experience (Priority: High)**
+
+### **2.1 Resolve Technical Debt**
+
+**Current Issues Found:**
+- TODO comment in `src/services/batch.ts:272` - "Implement proper topological sorting"
+- ESLint warnings for `@typescript-eslint/no-non-null-assertion` (recently addressed)
+- No dedicated docs/ directory for architecture documentation
+
+**Action Items:**
+
+1. **Address TODO Comments**
+   ```typescript
+   // src/services/batch.ts:272
+   // TODO: Implement proper topological sorting if complex dependencies are needed
+   ```
+   - Implement DAG-based dependency resolution for batch operations
+   - Add tests for complex dependency chains
+   - Document the algorithm in code comments
+
+2. **Strengthen Type Safety**
+   - Review all uses of `any` (allowed in tests per `.eslintrc.cjs`)
+   - Add branded types for IDs (TaskId, ProjectId, etc.) to prevent mixing
+   - Enable stricter TypeScript compiler options if feasible
+
+3. **Code Documentation**
+   - Add JSDoc comments to all public APIs
+   - Document error codes and their meanings
+   - Add inline examples for complex functions
+
+**Dependencies:** None  
+**Estimated Effort:** 1 week
+
+---
+
+### **2.2 Developer Tooling Enhancements**
+
+**Action Items:**
+
+1. **Create `docs/` Directory Structure**
+   ```
+   docs/
+   ├── architecture.md       # System design, component diagram
+   ├── api-mapping.md       # Todoist API → MCP tool mapping
+   ├── rate-limiting.md     # Rate limiter algorithm details
+   ├── batch-operations.md  # Batch API usage patterns
+   ├── testing-guide.md     # How to write/run tests
+   ├── troubleshooting.md   # Common issues & solutions
+   └── release-process.md   # Version, changelog, publish steps
+   ```
+
+2. **Improve Build Scripts**
+   - Add `npm run build:watch` for development
+   - Create `npm run clean` to remove dist/ and coverage/
+   - Add `npm run check` to run all quality checks (lint, typecheck, test)
+
+3. **Development Environment Setup**
+   - Create `.vscode/settings.json` (recommended VSCode settings)
+   - Add `.vscode/extensions.json` (recommended extensions)
+   - Document recommended development tools in README
+
+4. **Enhanced Error Messages**
+   - Review all error messages for clarity
+   - Add links to documentation where applicable
+   - Include actionable suggestions in error output
+
+**Dependencies:** None  
+**Estimated Effort:** 4-6 days
+
+---
+
+### **2.3 API & Schema Improvements**
+
+**Action Items:**
+
+1. **Schema Validation Hardening**
+   - Add custom Zod validators for Todoist-specific constraints
+   - Improve error messages from schema validation
+   - Add schema versioning for future API changes
+
+2. **Better Type Exports**
+   - Create `src/types/index.ts` as centralized export point
+   - Export all public types from main package
+   - Add type documentation for external consumers
+
+3. **Request/Response Logging**
+   - Add optional debug mode for detailed API request/response logging
+   - Implement request ID tracking for correlation
+   - Add performance metrics logging (request duration, rate limit status)
+
+**Dependencies:** None  
+**Estimated Effort:** 3-5 days
+
+---
+
+## **Phase 3: Community Readiness (Priority: High)**
+
+### **3.1 CI/CD Pipeline**
+
+**Current State:**
+- ✅ GitHub issue templates (bug_report, feature_request)
+- ✅ PR template
+- ❌ No GitHub Actions workflows
+
+**Action Items:**
+
+1. **Create `.github/workflows/ci.yml`**
+   ```yaml
+   - Lint check (eslint)
+   - Type check (tsc)
+   - Run tests with coverage
+   - Code coverage reporting (Codecov/Coveralls)
+   - Node versions: 18, 20, 22 (matrix)
+   ```
+
+2. **Create `.github/workflows/release.yml`**
+   - Triggered on version tags (v*)
+   - Build and publish to npm
+   - Generate GitHub release with changelog
+   - Run smoke tests before publishing
+
+3. **Add Status Badges**
+   - CI status
+   - Code coverage
+   - npm version
+   - License
+   - Node version support
+
+**Dependencies:** 1.1 (test coverage baseline)  
+**Estimated Effort:** 2-3 days
+
+---
+
+### **3.2 Documentation Enhancements**
+
+**Action Items:**
+
+1. **Expand README.md**
+   - Add "Quick Start" section with minimal example
+   - Include animated GIF/video demo
+   - Add "Common Use Cases" with code examples
+   - Add troubleshooting section
+   - Link to docs/ directory
+
+2. **Improve CONTRIBUTING.md**
+   - Add "Good First Issue" guidelines
+   - Document branch naming conventions
+   - Add code review checklist
+   - Include commit message examples
+
+3. **Create User Documentation**
+   - Write usage examples for each tool
+   - Document natural language date formats
+   - Explain rate limiting behavior with examples
+   - Create FAQ section
+
+4. **API Reference Generation**
+   - Set up TypeDoc for API documentation
+   - Configure automatic API docs generation
+   - Host on GitHub Pages or Vercel
+
+**Dependencies:** 2.2.1 (docs/ directory)  
+**Estimated Effort:** 1 week
+
+---
+
+### **3.3 Community Infrastructure**
+
+**Action Items:**
+
+1. **GitHub Repository Settings**
+   - Enable Discussions for Q&A
+   - Create labels (good-first-issue, help-wanted, bug, enhancement)
+   - Set up issue templates for different types
+   - Configure branch protection (require tests, reviews)
+
+2. **Create CODE_OF_CONDUCT.md**
+   - Use Contributor Covenant or similar standard
+
+3. **Add SECURITY.md**
+   - Document security vulnerability reporting process
+   - Include supported versions
+   - Add security best practices for API token handling
+
+4. **Create Examples Directory**
+   ```
+   examples/
+   ├── basic-task-management.md
+   ├── project-workflow.md
+   ├── natural-language-dates.md
+   ├── batch-operations.md
+   └── custom-filters.md
+   ```
+
+**Dependencies:** None  
+**Estimated Effort:** 2-3 days
+
+---
+
+## **Phase 4: Reliability & Performance (Priority: Medium)**
+
+### **4.1 Enhanced Error Handling**
+
+**Action Items:**
+
+1. **Implement Retry Strategy**
+   - Review current retry logic in `todoist-api.ts`
+   - Add exponential backoff configuration
+   - Implement circuit breaker pattern for API unavailability
+   - Add retry budget to prevent infinite retries
+
+2. **Better Error Context**
+   - Include request ID in all errors
+   - Add error categorization (retriable, permanent, user-error)
+   - Implement structured error logging
+   - Add error recovery suggestions
+
+3. **Graceful Degradation**
+   - Handle partial batch operation failures
+   - Implement fallback strategies for optional features
+   - Add health check endpoint for MCP server status
+
+**Dependencies:** None  
+**Estimated Effort:** 1 week
+
+---
+
+### **4.2 Performance Optimization**
+
+**Action Items:**
+
+1. **Rate Limiter Optimization**
+   - Add rate limit status exposure
+   - Implement request queuing for smoother rate limiting
+   - Add metrics for rate limit hit rate
+   - Consider token bucket refill optimization
+
+2. **Cache Enhancements**
+   - Extend caching beyond labels (projects, sections)
+   - Implement cache warming strategies
+   - Add cache statistics/monitoring
+   - Add configurable cache TTL
+
+3. **Request Batching**
+   - Implement automatic request batching for bulk operations
+   - Add smart batching (combine related requests)
+   - Optimize batch size based on payload
+
+**Dependencies:** None  
+**Estimated Effort:** 1-2 weeks
+
+---
+
+### **4.3 Monitoring & Observability**
+
+**Action Items:**
+
+1. **Add Telemetry**
+   - Implement optional telemetry for usage patterns
+   - Add performance metrics collection
+   - Create debug mode with detailed logging
+   - Add request tracing
+
+2. **Health Monitoring**
+   - Implement server health checks
+   - Add API connectivity monitoring
+   - Create diagnostic tool for troubleshooting
+   - Add rate limit status reporting
+
+**Dependencies:** None  
+**Estimated Effort:** 3-5 days
+
+---
+
+## **Phase 5: Feature Enhancements (Priority: Low)**
+
+### **5.1 API Completeness**
+
+**Potential Additions** (requires discovery):
+
+1. **Additional Todoist Features**
+   - Activity log support (if useful for MCP use cases)
+   - Collaboration features (share, assign, delegate)
+   - Templates support
+   - Productivity statistics
+
+2. **MCP Protocol Enhancements**
+   - Add resources (read-only Todoist entities)
+   - Implement prompts (pre-built task templates)
+   - Add sampling support if applicable
+
+**Dependencies:** Community feedback  
+**Estimated Effort:** TBD (requires scoping)
+
+---
+
+### **5.2 Developer Features**
+
+**Action Items:**
+
+1. **Development Tools**
+   - Add mock server for local development
+   - Create Todoist API playground tool
+   - Implement request/response recording for tests
+   - Add developer console for debugging
+
+2. **Configuration Improvements**
+   - Support multiple Todoist accounts
+   - Add profile-based configuration
+   - Implement config validation CLI tool
+   - Add config migration helpers
+
+**Dependencies:** None  
+**Estimated Effort:** 1-2 weeks
+
+---
+
+## **Phase 6: Release Preparation (Priority: Critical before v2.0)**
+
+### **6.1 Pre-Release Checklist**
+
+**Action Items:**
+
+1. **Version 1.x Stability**
+   - Audit all public APIs for breaking changes
+   - Document deprecations with migration path
+   - Ensure backward compatibility
+   - Fix all known critical bugs
+
+2. **Release Documentation**
+   - Complete CHANGELOG.md for all unreleased changes
+   - Update README with latest features
+   - Verify all documentation accuracy
+   - Create migration guide (if needed)
+
+3. **Release Testing**
+   - Run full test suite
+   - Manual testing with Claude Desktop
+   - Test on all supported Node versions (18, 20, 22)
+   - Test on macOS, Linux, Windows
+
+4. **Package Publishing**
+   - Verify package.json metadata
+   - Test npm pack/install locally
+   - Prepare npm package keywords/description
+   - Set up npm 2FA for publishing
+
+**Dependencies:** All previous phases  
+**Estimated Effort:** 3-5 days
+
+---
+
+## **Discovery & Investigation Tasks**
+
+These require research before committing to implementation:
+
+1. **MCP Protocol Updates**
+   - Monitor MCP SDK updates (@modelcontextprotocol/sdk)
+   - Evaluate new MCP protocol features
+   - Plan migration if protocol version changes
+
+2. **Todoist API Changes**
+   - Monitor Todoist API changelog
+   - Test against API v1 for any undocumented changes
+   - Plan for future API versions
+
+3. **Community Feature Requests**
+   - Collect feedback from early adopters
+   - Prioritize community-requested features
+   - Evaluate feature fit for MCP use case
+
+4. **Performance Profiling**
+   - Profile memory usage under load
+   - Identify bottlenecks in request handling
+   - Evaluate async/await patterns for optimization
+
+---
+
+## **Prioritized Execution Order**
+
+### **Immediate (Weeks 1-2)**
+1. Generate test coverage baseline (1.1.1)
+2. Set up CI/CD pipeline (3.1)
+3. Create docs/ directory structure (2.2.1)
+4. Address critical TODO items (2.1.1)
+
+### **Short-term (Weeks 3-6)**
+5. Achieve 85%+ test coverage (1.1.2-1.1.4)
+6. Enhance test infrastructure (1.2)
+7. Complete developer tooling (2.2.2-2.2.4)
+8. Expand documentation (3.2)
+
+### **Medium-term (Weeks 7-12)**
+9. Community infrastructure (3.3)
+10. Enhanced error handling (4.1)
+11. Performance optimization (4.2)
+12. API documentation generation (3.2.4)
+
+### **Long-term (Months 3+)**
+13. Monitoring & observability (4.3)
+14. Feature enhancements (5.1-5.2)
+15. Version 2.0 planning
+
+---
+
+## **Success Metrics**
+
+### **Quality**
+- ✅ 85%+ line coverage, 80%+ branch coverage
+- ✅ Zero high-severity linting warnings
+- ✅ All tests passing on CI
+- ✅ TypeScript strict mode compliance
+
+### **Reliability**
+- ✅ < 0.1% error rate in production usage
+- ✅ Rate limiter accuracy > 99%
+- ✅ Graceful handling of all Todoist API errors
+- ✅ Zero crashes from unhandled exceptions
+
+### **Community**
+- ✅ CI pipeline running on all PRs
+- ✅ Documentation covers 100% of public APIs
+- ✅ Response time < 48h for issues
+- ✅ Clear contribution guidelines
+
+### **Developer Experience**
+- ✅ Setup time < 5 minutes (first-time contributors)
+- ✅ Build time < 30 seconds
+- ✅ Test suite run time < 2 minutes
+- ✅ Clear error messages with actionable guidance
+
+---
+
+## **Risk Mitigation**
+
+### **High Risk Items**
+1. **Todoist API Changes** → Monitor changelog, implement version detection
+2. **MCP Protocol Evolution** → Follow SDK updates, maintain compatibility layer
+3. **Breaking Changes** → Semantic versioning, deprecation warnings, migration guides
+
+### **Dependencies to Monitor**
+- `@modelcontextprotocol/sdk` - Core MCP implementation
+- `axios` - HTTP client (security updates)
+- `zod` - Schema validation (breaking changes)
+
+---
+
+## **Next Steps**
+
+1. **Approve this plan** and prioritize phases based on project goals
+2. **Create GitHub issues** for each major action item
+3. **Set up project board** to track progress
+4. **Assign ownership** for different phases
+5. **Define sprint cadence** (recommend 2-week sprints)
+
+Would you like me to create detailed GitHub issues for Phase 1 (Testing & QA) to get started immediately?
