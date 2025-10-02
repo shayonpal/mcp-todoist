@@ -65,9 +65,7 @@ describe('Time Window Validation Logic', () => {
         limit: 50,
       };
 
-      expect(() =>
-        CompletedTasksInputSchema.parse(validInput)
-      ).not.toThrow();
+      expect(() => CompletedTasksInputSchema.parse(validInput)).not.toThrow();
     });
 
     test('should accept exactly 92-day window', () => {
@@ -79,9 +77,7 @@ describe('Time Window Validation Logic', () => {
         limit: 50,
       };
 
-      expect(() =>
-        CompletedTasksInputSchema.parse(validInput)
-      ).not.toThrow();
+      expect(() => CompletedTasksInputSchema.parse(validInput)).not.toThrow();
     });
 
     test('should reject window exceeding 92 days', () => {
@@ -143,9 +139,7 @@ describe('Time Window Validation Logic', () => {
         limit: 50,
       };
 
-      expect(() =>
-        CompletedTasksInputSchema.parse(validInput)
-      ).not.toThrow();
+      expect(() => CompletedTasksInputSchema.parse(validInput)).not.toThrow();
     });
 
     test('should accept exactly 42-day window', () => {
@@ -157,9 +151,7 @@ describe('Time Window Validation Logic', () => {
         limit: 50,
       };
 
-      expect(() =>
-        CompletedTasksInputSchema.parse(validInput)
-      ).not.toThrow();
+      expect(() => CompletedTasksInputSchema.parse(validInput)).not.toThrow();
     });
 
     test('should reject window exceeding 42 days', () => {
@@ -221,9 +213,7 @@ describe('Time Window Validation Logic', () => {
         limit: 50,
       };
 
-      expect(() =>
-        CompletedTasksInputSchema.parse(validInput)
-      ).not.toThrow();
+      expect(() => CompletedTasksInputSchema.parse(validInput)).not.toThrow();
     });
 
     test('should reject until before since', () => {
@@ -296,9 +286,7 @@ describe('Time Window Validation Logic', () => {
         limit: 50,
       };
 
-      expect(() =>
-        CompletedTasksInputSchema.parse(validInput)
-      ).not.toThrow();
+      expect(() => CompletedTasksInputSchema.parse(validInput)).not.toThrow();
     });
 
     test('should accept ISO 8601 with milliseconds', () => {
@@ -310,9 +298,7 @@ describe('Time Window Validation Logic', () => {
         limit: 50,
       };
 
-      expect(() =>
-        CompletedTasksInputSchema.parse(validInput)
-      ).not.toThrow();
+      expect(() => CompletedTasksInputSchema.parse(validInput)).not.toThrow();
     });
 
     test('should reject date without time component', () => {

@@ -54,9 +54,8 @@ describe('Completed Tasks Workflow Integration', () => {
       },
     });
     await apiService.completeTask(task2.id);
-    (
-      await apiService.getTask(task2.id) as any
-    ).completed_at = '2025-08-15T10:30:00Z';
+    ((await apiService.getTask(task2.id)) as any).completed_at =
+      '2025-08-15T10:30:00Z';
 
     const task3 = await apiService.createTask({
       content: 'Team Retrospective',
@@ -70,9 +69,8 @@ describe('Completed Tasks Workflow Integration', () => {
       },
     });
     await apiService.completeTask(task3.id);
-    (
-      await apiService.getTask(task3.id) as any
-    ).completed_at = '2025-09-30T16:00:00Z';
+    ((await apiService.getTask(task3.id)) as any).completed_at =
+      '2025-09-30T16:00:00Z';
 
     todoistTasksTool = new TodoistTasksTool(mockApiConfig, {
       apiService: apiService as unknown as TodoistApiService,
