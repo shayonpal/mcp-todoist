@@ -125,13 +125,13 @@
 
 ### Service Layer (Todoist Sync API)
 
-- [ ] **T014** [P] Extend `TodoistApiService` with Sync API rate limiter in `src/services/todoist-api.ts`
+- [x] **T014** [P] Extend `TodoistApiService` with Sync API rate limiter in `src/services/todoist-api.ts`
   - Add second rate limiter for Sync API: 50 requests/minute
   - Token bucket implementation (~0.83 tokens/sec refill)
   - Separate from existing REST API limiter (300 req/min)
   - Export `getSyncApiRateLimitStatus()` method
 
-- [ ] **T015** Implement `executeBatch()` method in `src/services/todoist-api.ts`
+- [x] **T015** Implement `executeBatch()` method in `src/services/todoist-api.ts`
   - Accept: `commands: SyncCommand[]` parameter
   - Call: `POST /sync/v9/sync` with commands array
   - Handle: Rate limiting with Sync API limiter
