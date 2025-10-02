@@ -4,6 +4,10 @@
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL%203.0-blue.svg)](LICENSE)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](package.json)
 
+<a href="https://glama.ai/mcp/servers/@shayonpal/mcp-todoist">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@shayonpal/mcp-todoist/badge" />
+</a>
+
 MCP server enabling programmatic Todoist task and project management through an optimized tool set using Todoist REST API v1. Integrates seamlessly with Claude Desktop and other MCP-compatible clients.
 
 ## Table of Contents
