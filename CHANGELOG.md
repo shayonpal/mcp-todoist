@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### Added
+
+- Smithery deployment configuration
+  - Dockerfile for container-based deployment
+  - smithery.yaml configuration for Smithery platform
+  - Optimized Docker build with production dependencies
+
 ## [1.4.0] - 2025-10-02
 
 ### Added
