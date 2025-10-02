@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [1.3.0] - 2025-10-02
+
 ### Added
 
 - Completed tasks querying (`todoist_tasks` tool)
