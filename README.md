@@ -238,9 +238,26 @@ Refer to your MCP client's documentation for configuration instructions. The ser
 ## Available Tools
 
 ### todoist_tasks
-Complete task management with create, get, update, delete, list, complete, and uncomplete actions. Supports natural language dates, deadlines, priorities, labels, and recurring tasks.
+Complete task management with create, get, update, delete, list, complete, uncomplete, and list_completed actions. Supports natural language dates, deadlines, priorities, labels, recurring tasks, and querying completed tasks within time-bounded windows.
 
-**Key parameters**: `action`, `task_id`, `content`, `due_date`, `due_string`, `deadline`, `priority`, `labels`, `project_id`
+**Key parameters**: `action`, `task_id`, `content`, `due_date`, `due_string`, `deadline`, `priority`, `labels`, `project_id`, `completed_query_type`, `since`, `until`
+
+**Completed tasks querying**:
+- `list_completed` action retrieves completed tasks
+- Query by completion date (3-month window) or due date (6-week window)
+- Supports filtering by project, section, workspace, labels, and more
+- Cursor-based pagination for large result sets
+- Example: Query all tasks completed in September with Work label
+  ```json
+  {
+    "action": "list_completed",
+    "completed_query_type": "by_completion_date",
+    "since": "2025-09-01T00:00:00Z",
+    "until": "2025-09-30T23:59:59Z",
+    "filter_query": "@Work",
+    "limit": 50
+  }
+  ```
 
 ### todoist_projects
 Project management with create, get, update, delete, list, archive, and unarchive actions. Organize work with hierarchical projects and custom views.

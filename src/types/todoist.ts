@@ -29,6 +29,7 @@ export interface TodoistTask {
   assigner_id?: string; // Who assigned the task
   comment_count: number; // Number of comments
   completed: boolean; // Completion status
+  completed_at?: string; // ISO 8601 timestamp when task was completed (present only for completed tasks)
   due?: {
     date: string; // ISO 8601 date
     datetime?: string; // ISO 8601 datetime with timezone

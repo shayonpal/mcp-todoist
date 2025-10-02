@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+### Added
+
+- Completed tasks querying (`todoist_tasks` tool)
+  - New `list_completed` action for retrieving completed tasks
+  - Query by completion date (3-month time window)
+  - Query by due date (6-week time window)
+  - Comprehensive filtering: project, section, workspace, parent task, filter queries
+  - Cursor-based pagination with configurable limit (1-200 items per page)
+  - Time window validation with clear error messages
+  - Full integration with existing task workflows (reopen, edit, recomplete)
+
 ## [1.2.1] - 2025-10-02
 
 ### Added

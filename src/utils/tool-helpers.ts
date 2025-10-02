@@ -47,9 +47,14 @@ export function handleToolError(
     // Extract a more specific message from the first error
     const firstError = error.errors[0];
     let message = 'Invalid input parameters';
-    if (firstError && firstError.path.length > 0) {
-      const field = firstError.path.join('.');
-      message = `${field}: ${firstError.message}`;
+    if (firstError) {
+      if (firstError.path.length > 0) {
+        const field = firstError.path.join('.');
+        message = `${field}: ${firstError.message}`;
+      } else {
+        // For refinement errors (empty path), use the message directly
+        message = firstError.message;
+      }
     }
     todoistError = {
       code: TodoistErrorCode.VALIDATION_ERROR,
