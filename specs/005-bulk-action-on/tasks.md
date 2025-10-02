@@ -142,7 +142,7 @@
 
 ### MCP Tool Handler
 
-- [ ] **T016** Create `todoist_bulk_tasks` tool handler in `src/tools/bulk-tasks.ts`
+- [x] **T016** Create `todoist_bulk_tasks` tool handler in `src/tools/bulk-tasks.ts`
   - Import: `bulkOperationInputSchema` from validation
   - Import: `BulkTasksResponse` types
   - Import: `TodoistApiService`
@@ -154,7 +154,7 @@
   - Return: Formatted `BulkTasksResponse` with metadata
   - Error handling: Use `handleToolError()` wrapper
 
-- [ ] **T017** Implement action handlers in `src/tools/bulk-tasks.ts`
+- [x] **T017** Implement action handlers in `src/tools/bulk-tasks.ts`
   - **handleUpdateAction()**: Build item_update commands with field updates
   - **handleCompleteAction()**: Build item_complete commands
   - **handleUncompleteAction()**: Build item_uncomplete commands
@@ -166,7 +166,7 @@
     - Build BulkOperationSummary with counts
     - Return formatted response
 
-- [ ] **T018** Implement result mapping helper in `src/tools/bulk-tasks.ts`
+- [x] **T018** Implement result mapping helper in `src/tools/bulk-tasks.ts`
   - Function: `mapSyncStatusToResults(sync_status, task_ids)`
   - Parse: Todoist sync_status object
   - Map: "ok" → `{ success: true, error: null }`
