@@ -1,13 +1,12 @@
 import { describe, test, expect } from '@jest/globals';
 import { z } from 'zod';
+import { CompletedTasksInputSchema } from '../../src/schemas/validation.js';
 
 /**
  * T006: Unit tests for time window validation logic
  *
  * These tests verify the time window calculation and validation refinements
- * that will be implemented in CompletedTasksInputSchema (T007).
- *
- * Tests MUST fail initially since the schema doesn't exist yet.
+ * implemented in CompletedTasksInputSchema (T007).
  */
 
 describe('Time Window Validation Logic', () => {
@@ -46,16 +45,6 @@ describe('Time Window Validation Logic', () => {
   });
 
   describe('CompletedTasksInputSchema (by_completion_date)', () => {
-    // Schema will be implemented in T007
-    // These tests MUST fail until implementation
-    let CompletedTasksInputSchema: z.ZodSchema;
-
-    beforeEach(() => {
-      // This will be imported from src/schemas/validation.ts after T007
-      // For now, we define it as undefined to ensure tests fail
-      CompletedTasksInputSchema = undefined as any;
-    });
-
     test('should accept valid request within 92-day limit', () => {
       const validInput = {
         action: 'list_completed',
@@ -112,7 +101,7 @@ describe('Time Window Validation Logic', () => {
 
       try {
         CompletedTasksInputSchema.parse(invalidInput);
-        fail('Should have thrown validation error');
+        throw new Error('Should have thrown validation error');
       } catch (error) {
         expect(error).toBeInstanceOf(z.ZodError);
         const zodError = error as z.ZodError;
@@ -124,12 +113,6 @@ describe('Time Window Validation Logic', () => {
   });
 
   describe('CompletedTasksInputSchema (by_due_date)', () => {
-    let CompletedTasksInputSchema: z.ZodSchema;
-
-    beforeEach(() => {
-      CompletedTasksInputSchema = undefined as any;
-    });
-
     test('should accept valid request within 42-day limit', () => {
       const validInput = {
         action: 'list_completed',
@@ -186,7 +169,7 @@ describe('Time Window Validation Logic', () => {
 
       try {
         CompletedTasksInputSchema.parse(invalidInput);
-        fail('Should have thrown validation error');
+        throw new Error('Should have thrown validation error');
       } catch (error) {
         expect(error).toBeInstanceOf(z.ZodError);
         const zodError = error as z.ZodError;
@@ -198,12 +181,6 @@ describe('Time Window Validation Logic', () => {
   });
 
   describe('Until > Since Validation', () => {
-    let CompletedTasksInputSchema: z.ZodSchema;
-
-    beforeEach(() => {
-      CompletedTasksInputSchema = undefined as any;
-    });
-
     test('should accept valid date order (until after since)', () => {
       const validInput = {
         action: 'list_completed',
@@ -259,7 +236,7 @@ describe('Time Window Validation Logic', () => {
 
       try {
         CompletedTasksInputSchema.parse(invalidInput);
-        fail('Should have thrown validation error');
+        throw new Error('Should have thrown validation error');
       } catch (error) {
         expect(error).toBeInstanceOf(z.ZodError);
         const zodError = error as z.ZodError;
@@ -271,12 +248,6 @@ describe('Time Window Validation Logic', () => {
   });
 
   describe('ISO 8601 DateTime Format Validation', () => {
-    let CompletedTasksInputSchema: z.ZodSchema;
-
-    beforeEach(() => {
-      CompletedTasksInputSchema = undefined as any;
-    });
-
     test('should accept valid ISO 8601 datetime with Z', () => {
       const validInput = {
         action: 'list_completed',

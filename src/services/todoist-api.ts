@@ -447,6 +447,86 @@ export class TodoistApiService {
     });
   }
 
+  /**
+   * Get completed tasks by completion date
+   * Time window: Maximum 92 days (3 months)
+   */
+  async getCompletedTasksByCompletionDate(params: {
+    since: string;
+    until: string;
+    project_id?: string;
+    section_id?: string;
+    workspace_id?: number;
+    parent_id?: string;
+    filter_query?: string;
+    filter_lang?: string;
+    cursor?: string;
+    limit?: number;
+  }): Promise<{ items: TodoistTask[]; next_cursor: string | null }> {
+    const queryParams: Record<string, string> = {
+      since: params.since,
+      until: params.until,
+    };
+
+    if (params.project_id) queryParams.project_id = params.project_id;
+    if (params.section_id) queryParams.section_id = params.section_id;
+    if (params.workspace_id !== undefined)
+      queryParams.workspace_id = params.workspace_id.toString();
+    if (params.parent_id) queryParams.parent_id = params.parent_id;
+    if (params.filter_query) queryParams.filter_query = params.filter_query;
+    if (params.filter_lang) queryParams.filter_lang = params.filter_lang;
+    if (params.cursor) queryParams.cursor = params.cursor;
+    if (params.limit) queryParams.limit = params.limit.toString();
+
+    return this.executeRequest<{
+      items: TodoistTask[];
+      next_cursor: string | null;
+    }>('/tasks/completed/by_completion_date', {
+      method: 'GET',
+      params: queryParams,
+    });
+  }
+
+  /**
+   * Get completed tasks by due date
+   * Time window: Maximum 42 days (6 weeks)
+   */
+  async getCompletedTasksByDueDate(params: {
+    since: string;
+    until: string;
+    project_id?: string;
+    section_id?: string;
+    workspace_id?: number;
+    parent_id?: string;
+    filter_query?: string;
+    filter_lang?: string;
+    cursor?: string;
+    limit?: number;
+  }): Promise<{ items: TodoistTask[]; next_cursor: string | null }> {
+    const queryParams: Record<string, string> = {
+      since: params.since,
+      until: params.until,
+    };
+
+    if (params.project_id) queryParams.project_id = params.project_id;
+    if (params.section_id) queryParams.section_id = params.section_id;
+    if (params.workspace_id !== undefined)
+      queryParams.workspace_id = params.workspace_id.toString();
+    if (params.parent_id) queryParams.parent_id = params.parent_id;
+    if (params.filter_query) queryParams.filter_query = params.filter_query;
+    if (params.filter_lang) queryParams.filter_lang = params.filter_lang;
+    if (params.cursor) queryParams.cursor = params.cursor;
+    if (params.limit) queryParams.limit = params.limit.toString();
+
+    return this.executeRequest<{
+      items: TodoistTask[];
+      next_cursor: string | null;
+    }>('/tasks/completed/by_due_date', {
+      method: 'GET',
+      params: queryParams,
+    });
+  }
+
   async moveTask(
     taskId: string,
     destination: {

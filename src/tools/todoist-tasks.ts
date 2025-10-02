@@ -34,6 +34,7 @@ const TodoistTasksInputSchema = z.object({
     'complete',
     'uncomplete',
     'batch',
+    'list_completed',
   ]),
   // Task ID (for get, update, delete, complete, uncomplete)
   task_id: z.string().optional(),
@@ -58,6 +59,15 @@ const TodoistTasksInputSchema = z.object({
   limit: z.number().int().max(200).optional(),
   // Batch operation fields
   batch_commands: z.array(BatchCommandSchema).optional(),
+  // Completed tasks query fields (list_completed action)
+  completed_query_type: z
+    .enum(['by_completion_date', 'by_due_date'])
+    .optional(),
+  since: z.string().optional(),
+  until: z.string().optional(),
+  workspace_id: z.number().optional(),
+  filter_query: z.string().optional(),
+  filter_lang: z.string().optional(),
 });
 
 type TodoistTasksInput = z.infer<typeof TodoistTasksInputSchema>;
@@ -72,6 +82,7 @@ interface TodoistTasksOutput {
     | TodoistTask[]
     | TaskWithMetadata
     | TaskWithMetadata[]
+    | { items: TaskWithMetadata[]; next_cursor: string | null }
     | Record<string, unknown>;
   message?: string;
   metadata?: {
@@ -143,7 +154,7 @@ export class TodoistTasksTool {
     return {
       name: 'todoist_tasks',
       description:
-        'Comprehensive task management for Todoist - create, read, update, delete, and query tasks with full CRUD operations and batch support',
+        'Comprehensive task management for Todoist - create, read, update, delete, and query tasks (including completed tasks) with full CRUD operations and batch support',
       inputSchema: {
         type: 'object' as const,
         properties: {
@@ -158,6 +169,7 @@ export class TodoistTasksTool {
               'complete',
               'uncomplete',
               'batch',
+              'list_completed',
             ],
             description: 'Action to perform',
           },
@@ -223,6 +235,38 @@ export class TodoistTasksTool {
             description: 'Batch commands (for batch action)',
             items: { type: 'object' },
           },
+          // Completed tasks query fields (list_completed action)
+          completed_query_type: {
+            type: 'string',
+            enum: ['by_completion_date', 'by_due_date'],
+            description:
+              'Query type for completed tasks: by_completion_date (3-month window) or by_due_date (6-week window). Required for list_completed action.',
+          },
+          since: {
+            type: 'string',
+            description:
+              'Start of time window (ISO 8601 datetime, inclusive). Required for list_completed. Max window: 92 days for completion date, 42 days for due date.',
+          },
+          until: {
+            type: 'string',
+            description:
+              'End of time window (ISO 8601 datetime, inclusive). Required for list_completed. Must be after since.',
+          },
+          workspace_id: {
+            type: 'number',
+            description:
+              'Filter by workspace ID (for list_completed). Optional.',
+          },
+          filter_query: {
+            type: 'string',
+            description:
+              'Advanced filter query using Todoist filter syntax (for list_completed). Examples: "@Work & p1" (Work label + priority 1), "search: meeting" (content search). Optional.',
+          },
+          filter_lang: {
+            type: 'string',
+            description:
+              'Language code for parsing filter_query (for list_completed). Default: "en". Optional.',
+          },
         },
         required: ['action'],
       },
@@ -260,6 +304,9 @@ export class TodoistTasksTool {
         break;
       case 'list':
         // No required fields for list
+        break;
+      case 'list_completed':
+        // Validation will be done by CompletedTasksInputSchema in handleListCompleted
         break;
       default:
         throw new ValidationError('Invalid action specified');
@@ -306,6 +353,9 @@ export class TodoistTasksTool {
           break;
         case 'batch':
           result = await this.handleBatch(validatedInput);
+          break;
+        case 'list_completed':
+          result = await this.handleListCompleted(validatedInput);
           break;
         default:
           throw new ValidationError('Invalid action specified');
@@ -649,6 +699,64 @@ export class TodoistTasksTool {
         failed_commands: batchResult.failed_commands,
         batch_errors: batchResult.errors,
       },
+    };
+  }
+
+  /**
+   * Query completed tasks by completion date or due date
+   */
+  private async handleListCompleted(
+    input: TodoistTasksInput
+  ): Promise<TodoistTasksOutput> {
+    // Validate with CompletedTasksInputSchema
+    const { CompletedTasksInputSchema } = await import(
+      '../schemas/validation.js'
+    );
+    const validatedInput = CompletedTasksInputSchema.parse(input);
+
+    // Dispatch to appropriate API method
+    let response: { items: TodoistTask[]; next_cursor: string | null };
+
+    if (validatedInput.completed_query_type === 'by_completion_date') {
+      response = await this.apiService.getCompletedTasksByCompletionDate({
+        since: validatedInput.since,
+        until: validatedInput.until,
+        project_id: validatedInput.project_id,
+        section_id: validatedInput.section_id,
+        workspace_id: validatedInput.workspace_id,
+        parent_id: validatedInput.parent_id,
+        filter_query: validatedInput.filter_query,
+        filter_lang: validatedInput.filter_lang,
+        cursor: validatedInput.cursor,
+        limit: validatedInput.limit,
+      });
+    } else {
+      response = await this.apiService.getCompletedTasksByDueDate({
+        since: validatedInput.since,
+        until: validatedInput.until,
+        project_id: validatedInput.project_id,
+        section_id: validatedInput.section_id,
+        workspace_id: validatedInput.workspace_id,
+        parent_id: validatedInput.parent_id,
+        filter_query: validatedInput.filter_query,
+        filter_lang: validatedInput.filter_lang,
+        cursor: validatedInput.cursor,
+        limit: validatedInput.limit,
+      });
+    }
+
+    // Enrich tasks with metadata
+    const enrichedTasks = await Promise.all(
+      response.items.map(task => this.enrichTaskWithMetadata(task))
+    );
+
+    return {
+      success: true,
+      data: {
+        items: enrichedTasks,
+        next_cursor: response.next_cursor,
+      },
+      message: `Retrieved ${enrichedTasks.length} completed tasks`,
     };
   }
 

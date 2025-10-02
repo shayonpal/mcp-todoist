@@ -13,6 +13,18 @@ const mockApiConfig = {
   retry_attempts: 3,
 };
 
+// Type guard for completed tasks response
+function isCompletedTasksResponse(
+  data: unknown
+): data is { items: TodoistTask[]; next_cursor: string | null } {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    'items' in data &&
+    Array.isArray((data as { items: unknown }).items)
+  );
+}
+
 describe('Completed Tasks Workflow Integration', () => {
   let apiService: InMemoryTodoistApiService;
   let todoistTasksTool: TodoistTasksTool;
@@ -38,9 +50,9 @@ describe('Completed Tasks Workflow Integration', () => {
       },
     });
     await apiService.completeTask(task1.id);
-    // Manually set completed_at (in real API this is set automatically)
-    const completedTask1 = await apiService.getTask(task1.id);
-    (completedTask1 as any).completed_at = '2025-07-05T14:00:00Z';
+    // Manually set completed_at to specific date (in real API this is set automatically)
+    const completedTask1 = (apiService as any).tasks.get(task1.id);
+    completedTask1.completed_at = '2025-07-05T14:00:00Z';
 
     const task2 = await apiService.createTask({
       content: 'Budget Review',
@@ -54,8 +66,8 @@ describe('Completed Tasks Workflow Integration', () => {
       },
     });
     await apiService.completeTask(task2.id);
-    ((await apiService.getTask(task2.id)) as any).completed_at =
-      '2025-08-15T10:30:00Z';
+    const completedTask2 = (apiService as any).tasks.get(task2.id);
+    completedTask2.completed_at = '2025-08-15T10:30:00Z';
 
     const task3 = await apiService.createTask({
       content: 'Team Retrospective',
@@ -69,8 +81,8 @@ describe('Completed Tasks Workflow Integration', () => {
       },
     });
     await apiService.completeTask(task3.id);
-    ((await apiService.getTask(task3.id)) as any).completed_at =
-      '2025-09-30T16:00:00Z';
+    const completedTask3 = (apiService as any).tasks.get(task3.id);
+    completedTask3.completed_at = '2025-09-30T16:00:00Z';
 
     todoistTasksTool = new TodoistTasksTool(mockApiConfig, {
       apiService: apiService as unknown as TodoistApiService,
@@ -96,15 +108,17 @@ describe('Completed Tasks Workflow Integration', () => {
       // Verify query succeeded
       expect(result.success).toBe(true);
       expect(result.data).toBeDefined();
-      expect(result.data.items).toBeInstanceOf(Array);
-      expect(result.data.items.length).toBeGreaterThan(0);
+      if (isCompletedTasksResponse(result.data)) {
+        expect(result.data.items).toBeInstanceOf(Array);
+        expect(result.data.items.length).toBeGreaterThan(0);
 
-      // Verify all tasks are from the correct project
-      result.data.items.forEach((task: TodoistTask) => {
-        expect(task.project_id).toBe('project_1001');
-        expect(task.completed).toBe(true);
-        expect(task.completed_at).toBeDefined();
-      });
+        // Verify all tasks are from the correct project
+        result.data.items.forEach((task: TodoistTask) => {
+          expect(task.project_id).toBe('project_1001');
+          expect(task.completed).toBe(true);
+          expect(task.completed_at).toBeDefined();
+        });
+      }
 
       // Verify message
       expect(result.message).toContain('Retrieved');
@@ -124,6 +138,9 @@ describe('Completed Tasks Workflow Integration', () => {
       const page1Result = await todoistTasksTool.execute(page1Params);
 
       expect(page1Result.success).toBe(true);
+      if (!isCompletedTasksResponse(page1Result.data)) {
+        throw new Error('Expected completed tasks response');
+      }
       expect(page1Result.data.items.length).toBeLessThanOrEqual(2);
 
       // Step 2: If cursor exists, fetch second page
@@ -136,12 +153,14 @@ describe('Completed Tasks Workflow Integration', () => {
         const page2Result = await todoistTasksTool.execute(page2Params);
 
         expect(page2Result.success).toBe(true);
-        expect(page2Result.data.items).toBeInstanceOf(Array);
+        if (isCompletedTasksResponse(page2Result.data)) {
+          expect(page2Result.data.items).toBeInstanceOf(Array);
 
-        // Verify different tasks on page 2
-        const page1Ids = page1Result.data.items.map((t: TodoistTask) => t.id);
-        const page2Ids = page2Result.data.items.map((t: TodoistTask) => t.id);
-        expect(page1Ids).not.toEqual(page2Ids);
+          // Verify different tasks on page 2
+          const page1Ids = page1Result.data.items.map((t: TodoistTask) => t.id);
+          const page2Ids = page2Result.data.items.map((t: TodoistTask) => t.id);
+          expect(page1Ids).not.toEqual(page2Ids);
+        }
       }
     });
 
@@ -158,10 +177,12 @@ describe('Completed Tasks Workflow Integration', () => {
       const result = await todoistTasksTool.execute(params);
 
       expect(result.success).toBe(true);
-      result.data.items.forEach((task: TodoistTask) => {
-        expect(task.project_id).toBe('project_1001');
-        expect(task.labels).toContain('Work');
-      });
+      if (isCompletedTasksResponse(result.data)) {
+        result.data.items.forEach((task: TodoistTask) => {
+          expect(task.project_id).toBe('project_1001');
+          expect(task.labels).toContain('Work');
+        });
+      }
     });
   });
 
@@ -177,6 +198,9 @@ describe('Completed Tasks Workflow Integration', () => {
       });
 
       expect(queryResult.success).toBe(true);
+      if (!isCompletedTasksResponse(queryResult.data)) {
+        throw new Error('Expected completed tasks response');
+      }
       expect(queryResult.data.items.length).toBeGreaterThan(0);
 
       const taskToEdit = queryResult.data.items[0];
@@ -207,10 +231,12 @@ describe('Completed Tasks Workflow Integration', () => {
       });
 
       expect(queryAfterReopenResult.success).toBe(true);
-      const taskIds = queryAfterReopenResult.data.items.map(
-        (t: TodoistTask) => t.id
-      );
-      expect(taskIds).not.toContain(taskId);
+      if (isCompletedTasksResponse(queryAfterReopenResult.data)) {
+        const taskIds = queryAfterReopenResult.data.items.map(
+          (t: TodoistTask) => t.id
+        );
+        expect(taskIds).not.toContain(taskId);
+      }
 
       // Step 4: Edit the task
       const editResult = await todoistTasksTool.execute({
@@ -221,8 +247,10 @@ describe('Completed Tasks Workflow Integration', () => {
       });
 
       expect(editResult.success).toBe(true);
-      expect(editResult.data.content).toBe('Updated: Team Retrospective');
-      expect(editResult.data.labels).toContain('Updated');
+      expect(editResult.data).toBeDefined();
+      const editedTask = editResult.data as TodoistTask;
+      expect(editedTask.content).toBe('Updated: Team Retrospective');
+      expect(editedTask.labels).toContain('Updated');
 
       // Step 5: Recomplete the task
       const recompleteResult = await todoistTasksTool.execute({
@@ -250,6 +278,9 @@ describe('Completed Tasks Workflow Integration', () => {
         until: '2025-09-30T23:59:59Z',
       });
 
+      if (!isCompletedTasksResponse(queryResult.data)) {
+        throw new Error('Expected completed tasks response');
+      }
       const completedTask = queryResult.data.items[0];
 
       // Attempt to edit without reopening

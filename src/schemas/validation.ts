@@ -440,3 +440,54 @@ export type BatchOperationInput = z.infer<typeof BatchOperationSchema>;
 export type APIConfigurationInput = z.infer<typeof APIConfigurationSchema>;
 export type PaginationInput = z.infer<typeof PaginationSchema>;
 export type SortInput = z.infer<typeof SortSchema>;
+
+/**
+ * Completed Tasks Query validation schema
+ * Supports querying completed tasks by completion date (3-month window) or due date (6-week window)
+ */
+export const CompletedTasksInputSchema = z
+  .object({
+    action: z.literal('list_completed'),
+    completed_query_type: z.enum(['by_completion_date', 'by_due_date']),
+    since: z.string().datetime('Since must be in ISO 8601 format'),
+    until: z.string().datetime('Until must be in ISO 8601 format'),
+    project_id: z.string().optional(),
+    section_id: z.string().optional(),
+    workspace_id: z.number().optional(),
+    parent_id: z.string().optional(),
+    filter_query: z.string().optional(),
+    filter_lang: z.string().default('en'),
+    cursor: z.string().optional(),
+    limit: z.number().min(1).max(200).default(50),
+  })
+  .refine(
+    data => {
+      const since = new Date(data.since);
+      const until = new Date(data.until);
+      const daysDiff = Math.ceil(
+        (until.getTime() - since.getTime()) / (1000 * 60 * 60 * 24)
+      );
+
+      if (data.completed_query_type === 'by_completion_date') {
+        return daysDiff <= 92;
+      } else {
+        return daysDiff <= 42;
+      }
+    },
+    data => {
+      const maxDays =
+        data.completed_query_type === 'by_completion_date' ? 92 : 42;
+      const queryType =
+        data.completed_query_type === 'by_completion_date'
+          ? 'completion date'
+          : 'due date';
+      return {
+        message: `Time window exceeds ${maxDays} days maximum for ${queryType} queries`,
+      };
+    }
+  )
+  .refine(data => new Date(data.until) > new Date(data.since), {
+    message: 'Until date must be after since date',
+  });
+
+export type CompletedTasksInput = z.infer<typeof CompletedTasksInputSchema>;

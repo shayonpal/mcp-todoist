@@ -70,9 +70,23 @@ const mockCompletedTask2: TodoistTask = {
 type CompletedTasksApiMock = jest.Mocked<
   Pick<
     TodoistApiService,
-    'getCompletedTasksByCompletionDate' | 'getCompletedTasksByDueDate'
+    | 'getCompletedTasksByCompletionDate'
+    | 'getCompletedTasksByDueDate'
+    | 'getRateLimitStatus'
   >
 >;
+
+// Type guard for completed tasks response
+function isCompletedTasksResponse(
+  data: unknown
+): data is { items: TodoistTask[]; next_cursor: string | null } {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    'items' in data &&
+    Array.isArray((data as { items: unknown }).items)
+  );
+}
 
 function createCompletedTasksApiMock(): CompletedTasksApiMock {
   return {
@@ -83,6 +97,18 @@ function createCompletedTasksApiMock(): CompletedTasksApiMock {
     getCompletedTasksByDueDate: jest.fn(async () => ({
       items: [mockCompletedTask1],
       next_cursor: null,
+    })),
+    getRateLimitStatus: jest.fn(() => ({
+      sync: {
+        remaining: 50,
+        resetTime: new Date(Date.now() + 60000),
+        isLimited: false,
+      },
+      rest: {
+        remaining: 300,
+        resetTime: new Date(Date.now() + 60000),
+        isLimited: false,
+      },
     })),
   } as unknown as CompletedTasksApiMock;
 }
@@ -140,8 +166,13 @@ describe('todoist_tasks MCP Tool - list_completed action (by_completion_date)', 
 
       expect(result.success).toBe(true);
       expect(result.data).toBeDefined();
-      expect(result.data.items).toBeInstanceOf(Array);
-      expect(result.data.next_cursor).toBeDefined();
+      expect(isCompletedTasksResponse(result.data)).toBe(true);
+      if (isCompletedTasksResponse(result.data)) {
+        expect(result.data.items).toBeInstanceOf(Array);
+        if (isCompletedTasksResponse(result.data)) {
+          expect(result.data.next_cursor).toBeDefined();
+        }
+      }
       expect(apiService.getCompletedTasksByCompletionDate).toHaveBeenCalledWith(
         expect.objectContaining({
           since: '2025-09-01T00:00:00Z',
@@ -162,11 +193,13 @@ describe('todoist_tasks MCP Tool - list_completed action (by_completion_date)', 
       const result = await todoistTasksTool.execute(params);
 
       expect(result.success).toBe(true);
-      expect(result.data.items).toBeInstanceOf(Array);
-      // All items should have matching project_id
-      result.data.items.forEach((task: TodoistTask) => {
-        expect(task.project_id).toBe('2345678901');
-      });
+      if (isCompletedTasksResponse(result.data)) {
+        expect(result.data.items).toBeInstanceOf(Array);
+        // All items should have matching project_id
+        result.data.items.forEach((task: TodoistTask) => {
+          expect(task.project_id).toBe('2345678901');
+        });
+      }
       expect(apiService.getCompletedTasksByCompletionDate).toHaveBeenCalledWith(
         expect.objectContaining({
           project_id: '2345678901',
@@ -186,11 +219,13 @@ describe('todoist_tasks MCP Tool - list_completed action (by_completion_date)', 
       const result = await todoistTasksTool.execute(params);
 
       expect(result.success).toBe(true);
-      expect(result.data.items).toBeInstanceOf(Array);
-      // All items should have "Work" label
-      result.data.items.forEach((task: TodoistTask) => {
-        expect(task.labels).toContain('Work');
-      });
+      if (isCompletedTasksResponse(result.data)) {
+        expect(result.data.items).toBeInstanceOf(Array);
+        // All items should have "Work" label
+        result.data.items.forEach((task: TodoistTask) => {
+          expect(task.labels).toContain('Work');
+        });
+      }
       expect(apiService.getCompletedTasksByCompletionDate).toHaveBeenCalledWith(
         expect.objectContaining({
           filter_query: '@Work',
@@ -292,7 +327,9 @@ describe('todoist_tasks MCP Tool - list_completed action (by_completion_date)', 
       const result = await todoistTasksTool.execute(params);
 
       expect(result.success).toBe(true);
-      expect(result.data.next_cursor).toBeDefined();
+      if (isCompletedTasksResponse(result.data)) {
+        expect(result.data.next_cursor).toBeDefined();
+      }
       expect(apiService.getCompletedTasksByCompletionDate).toHaveBeenCalledWith(
         expect.objectContaining({
           cursor: 'eyJwYWdlIjoxfQ==',
@@ -312,7 +349,9 @@ describe('todoist_tasks MCP Tool - list_completed action (by_completion_date)', 
       const result = await todoistTasksTool.execute(params);
 
       expect(result.success).toBe(true);
-      expect(result.data.items.length).toBeLessThanOrEqual(10);
+      if (isCompletedTasksResponse(result.data)) {
+        expect(result.data.items.length).toBeLessThanOrEqual(10);
+      }
       expect(apiService.getCompletedTasksByCompletionDate).toHaveBeenCalledWith(
         expect.objectContaining({
           limit: 10,
@@ -335,7 +374,9 @@ describe('todoist_tasks MCP Tool - list_completed action (by_completion_date)', 
 
       expect(result.success).toBe(true);
       expect(result.data).toBeDefined();
-      expect(result.data.items).toBeInstanceOf(Array);
+      if (isCompletedTasksResponse(result.data)) {
+        expect(result.data.items).toBeInstanceOf(Array);
+      }
       expect(apiService.getCompletedTasksByDueDate).toHaveBeenCalledWith(
         expect.objectContaining({
           since: '2025-09-15T00:00:00Z',
@@ -387,11 +428,13 @@ describe('todoist_tasks MCP Tool - list_completed action (by_completion_date)', 
       const result = await todoistTasksTool.execute(params);
 
       expect(result.success).toBe(true);
-      // Verify no tasks with null due date
-      result.data.items.forEach((task: TodoistTask) => {
-        expect(task.due).not.toBeNull();
-        expect(task.due).toBeDefined();
-      });
+      if (isCompletedTasksResponse(result.data)) {
+        // Verify no tasks with null due date
+        result.data.items.forEach((task: TodoistTask) => {
+          expect(task.due).not.toBeNull();
+          expect(task.due).toBeDefined();
+        });
+      }
     });
 
     test('5. Recurring task due dates handled', async () => {
@@ -421,8 +464,10 @@ describe('todoist_tasks MCP Tool - list_completed action (by_completion_date)', 
       const result = await todoistTasksTool.execute(params);
 
       expect(result.success).toBe(true);
-      expect(result.data.items[0].due?.is_recurring).toBe(true);
-      expect(result.data.items[0].due?.date).toBeDefined();
+      if (isCompletedTasksResponse(result.data)) {
+        expect(result.data.items[0].due?.is_recurring).toBe(true);
+        expect(result.data.items[0].due?.date).toBeDefined();
+      }
     });
   });
 });

@@ -201,6 +201,7 @@ export class InMemoryTodoistApiService {
     const task = this.tasks.get(taskId);
     if (task) {
       task.completed = true;
+      task.completed_at = new Date().toISOString();
       this.tasks.set(taskId, task);
     }
   }
@@ -209,6 +210,7 @@ export class InMemoryTodoistApiService {
     const task = this.tasks.get(taskId);
     if (task) {
       task.completed = false;
+      delete task.completed_at;
       this.tasks.set(taskId, task);
     }
   }
@@ -514,6 +516,110 @@ export class InMemoryTodoistApiService {
     }
 
     return { temp_id_mapping, sync_status };
+  }
+
+  /**
+   * Get completed tasks by completion date
+   */
+  async getCompletedTasksByCompletionDate(params: {
+    since: string;
+    until: string;
+    project_id?: string;
+    section_id?: string;
+    workspace_id?: number;
+    parent_id?: string;
+    filter_query?: string;
+    filter_lang?: string;
+    cursor?: string;
+    limit?: number;
+  }): Promise<{ items: TodoistTask[]; next_cursor: string | null }> {
+    const sinceDate = new Date(params.since);
+    const untilDate = new Date(params.until);
+
+    const tasks = Array.from(this.tasks.values()).filter(task => {
+      if (!task.completed || !task.completed_at) return false;
+
+      const completedDate = new Date(task.completed_at);
+      if (completedDate < sinceDate || completedDate > untilDate) return false;
+
+      if (params.project_id && task.project_id !== params.project_id)
+        return false;
+      if (params.section_id && task.section_id !== params.section_id)
+        return false;
+      if (params.parent_id && task.parent_id !== params.parent_id) return false;
+
+      // Simple label filter support (@LabelName)
+      if (params.filter_query) {
+        const labelMatch = params.filter_query.match(/@(\w+)/);
+        if (labelMatch && !task.labels?.includes(labelMatch[1])) return false;
+      }
+
+      return true;
+    });
+
+    const limit = params.limit || 50;
+    const offset = params.cursor
+      ? parseInt(Buffer.from(params.cursor, 'base64').toString(), 10)
+      : 0;
+    const items = this.clone(tasks.slice(offset, offset + limit));
+    const next_cursor =
+      tasks.length > offset + limit
+        ? Buffer.from((offset + limit).toString()).toString('base64')
+        : null;
+
+    return { items, next_cursor };
+  }
+
+  /**
+   * Get completed tasks by due date
+   */
+  async getCompletedTasksByDueDate(params: {
+    since: string;
+    until: string;
+    project_id?: string;
+    section_id?: string;
+    workspace_id?: number;
+    parent_id?: string;
+    filter_query?: string;
+    filter_lang?: string;
+    cursor?: string;
+    limit?: number;
+  }): Promise<{ items: TodoistTask[]; next_cursor: string | null }> {
+    const sinceDate = new Date(params.since);
+    const untilDate = new Date(params.until);
+
+    const tasks = Array.from(this.tasks.values()).filter(task => {
+      if (!task.completed || !task.due) return false;
+
+      const dueDate = new Date(task.due.date);
+      if (dueDate < sinceDate || dueDate > untilDate) return false;
+
+      if (params.project_id && task.project_id !== params.project_id)
+        return false;
+      if (params.section_id && task.section_id !== params.section_id)
+        return false;
+      if (params.parent_id && task.parent_id !== params.parent_id) return false;
+
+      // Simple label filter support (@LabelName)
+      if (params.filter_query) {
+        const labelMatch = params.filter_query.match(/@(\w+)/);
+        if (labelMatch && !task.labels?.includes(labelMatch[1])) return false;
+      }
+
+      return true;
+    });
+
+    const limit = params.limit || 50;
+    const offset = params.cursor
+      ? parseInt(Buffer.from(params.cursor, 'base64').toString(), 10)
+      : 0;
+    const items = this.clone(tasks.slice(offset, offset + limit));
+    const next_cursor =
+      tasks.length > offset + limit
+        ? Buffer.from((offset + limit).toString()).toString('base64')
+        : null;
+
+    return { items, next_cursor };
   }
 }
 
