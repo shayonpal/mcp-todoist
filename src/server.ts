@@ -16,6 +16,7 @@ import { TodoistCommentsTool } from './tools/todoist-comments.js';
 import { TodoistFiltersTool } from './tools/todoist-filters.js';
 import { TodoistRemindersTool } from './tools/todoist-reminders.js';
 import { TodoistLabelsTool } from './tools/todoist-labels.js';
+import { TodoistBulkTasksTool } from './tools/bulk-tasks.js';
 import { getConfig } from './config/index.js';
 import { logger } from './middleware/logging.js';
 import { TodoistAPIError, TodoistErrorCode } from './types/errors.js';
@@ -64,6 +65,7 @@ export class TodoistMCPServer {
       const filtersTool = new TodoistFiltersTool(this.config);
       const remindersTool = new TodoistRemindersTool(this.config);
       const labelsTool = new TodoistLabelsTool(this.config);
+      const bulkTasksTool = new TodoistBulkTasksTool(this.config);
 
       // Register tools in the map
       this.tools.set('todoist_tasks', tasksTools);
@@ -73,6 +75,7 @@ export class TodoistMCPServer {
       this.tools.set('todoist_filters', filtersTool);
       this.tools.set('todoist_reminders', remindersTool);
       this.tools.set('todoist_labels', labelsTool);
+      this.tools.set('todoist_bulk_tasks', bulkTasksTool);
 
       logger.info('All tools initialized successfully', {
         toolCount: this.tools.size,
@@ -103,6 +106,7 @@ export class TodoistMCPServer {
         TodoistFiltersTool.getToolDefinition(),
         TodoistRemindersTool.getToolDefinition(),
         TodoistLabelsTool.getToolDefinition(),
+        TodoistBulkTasksTool.getToolDefinition(),
       ];
 
       logger.info('Returning tool definitions', {
@@ -200,8 +204,14 @@ export class TodoistMCPServer {
         return ErrorCode.InternalError;
       case TodoistErrorCode.RESOURCE_NOT_FOUND:
         return ErrorCode.InvalidRequest;
-      case TodoistErrorCode.VALIDATION_ERROR:
+      case TodoistErrorCode.NOT_FOUND: // Sync API: Task not found (404)
+        return ErrorCode.InvalidRequest;
+      case TodoistErrorCode.VALIDATION_ERROR: // Sync API: Invalid field value (400)
         return ErrorCode.InvalidParams;
+      case TodoistErrorCode.INSUFFICIENT_PERMISSIONS: // Sync API: Forbidden (403)
+        return ErrorCode.InvalidRequest;
+      case TodoistErrorCode.SERVER_ERROR: // Sync API: Todoist service error (500)
+        return ErrorCode.InternalError;
       case TodoistErrorCode.SYNC_ERROR:
         return ErrorCode.InternalError;
       case TodoistErrorCode.BATCH_PARTIAL_FAILURE:

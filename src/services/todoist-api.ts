@@ -24,15 +24,26 @@ import {
   ValidationError,
   TodoistErrorCode,
 } from '../types/errors.js';
+import { SyncError } from '../types/bulk-operations.js';
 
-export type SyncCommand = Record<string, unknown>;
+// Generic SyncCommand type for all Sync API operations
+// Note: bulk-operations.ts has a more specific version for bulk task operations
+export type SyncCommand = {
+  type: string;
+  uuid?: string;
+  temp_id?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  args?: Record<string, any>;
+};
 
+// SyncResponse for general Sync API operations
+// Includes reminders, temp_id_mapping, and sync_status
 export interface SyncResponse {
-  temp_id_mapping?: Record<string, string>;
-  sync_status?: Record<string, string>;
+  sync_status: Record<string, 'ok' | SyncError>;
+  temp_id_mapping: Record<string, string>;
+  full_sync: boolean;
   reminders?: TodoistReminder[];
   reminders_location?: TodoistReminder[];
-  [key: string]: unknown;
 }
 
 type TaskQueryParams = {
@@ -163,8 +174,10 @@ export class TodoistApiService {
     };
 
     // Initialize rate limiters based on Todoist API limits
-    this.syncRateLimiter = new TokenBucketRateLimiter(100, 100); // 100 full sync per 15min
-    this.restRateLimiter = new TokenBucketRateLimiter(1000, 1000); // 1000 partial sync per 15min
+    // Sync API: 50 requests/minute (token bucket with 50 capacity, ~0.83 tokens/sec refill)
+    this.syncRateLimiter = new TokenBucketRateLimiter(50, 50); // 50 req/min for Sync API
+    // REST API: 300 requests/minute (token bucket with 300 capacity, 5 tokens/sec refill)
+    this.restRateLimiter = new TokenBucketRateLimiter(300, 300); // 300 req/min for REST API
 
     this.httpClient = axios.create({
       baseURL: this.config.base_url,
@@ -311,6 +324,86 @@ export class TodoistApiService {
       sync: this.syncRateLimiter.getStatus(),
       rest: this.restRateLimiter.getStatus(),
     };
+  }
+
+  /**
+   * Get Sync API rate limiter status
+   * T014: Export method for Sync API rate limiting monitoring
+   */
+  getSyncApiRateLimitStatus() {
+    return this.syncRateLimiter.getStatus();
+  }
+
+  /**
+   * Execute batch of commands using Todoist Sync API
+   * T015: Batch operations support for bulk task operations
+   *
+   * @param commands Array of SyncCommand objects to execute
+   * @returns SyncResponse with sync_status for each command
+   * @throws RateLimitError on 429, retries with backoff
+   * @throws ServiceUnavailableError on 500-level errors, retries up to 3 times
+   */
+  async executeBatch(commands: SyncCommand[]): Promise<SyncResponse> {
+    let lastError: Error | null = null;
+    const maxRetries = this.config.retry_attempts || 3;
+
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        // Call Sync API with rate limiting
+        const response = await this.executeRequest<SyncResponse>(
+          'https://api.todoist.com/api/v1/sync',
+          {
+            method: 'POST',
+            data: {
+              commands,
+            },
+          },
+          true // Mark as sync endpoint for rate limiting
+        );
+
+        return response;
+      } catch (error) {
+        lastError = error as Error;
+
+        // Handle rate limiting with retry
+        if (error instanceof RateLimitError) {
+          if (attempt < maxRetries - 1) {
+            // Wait for the retry-after period
+            const retryAfter = error.retryAfter || 60; // Default 60 seconds
+            await new Promise(resolve =>
+              setTimeout(resolve, retryAfter * 1000)
+            );
+            continue; // Retry
+          }
+          throw error; // Max retries exhausted
+        }
+
+        // Handle 500-level errors with retry
+        if (error instanceof ServiceUnavailableError) {
+          if (attempt < maxRetries - 1) {
+            // Exponential backoff: 1s, 2s, 4s
+            const backoffMs = Math.pow(2, attempt) * 1000;
+            await new Promise(resolve => setTimeout(resolve, backoffMs));
+            continue; // Retry
+          }
+          throw error; // Max retries exhausted
+        }
+
+        // Other errors: don't retry
+        throw error;
+      }
+    }
+
+    // Should never reach here, but TypeScript needs this
+    throw (
+      lastError ||
+      new TodoistAPIError(
+        TodoistErrorCode.SERVER_ERROR,
+        'executeBatch failed after all retries',
+        undefined,
+        false
+      )
+    );
   }
 
   // Task operations

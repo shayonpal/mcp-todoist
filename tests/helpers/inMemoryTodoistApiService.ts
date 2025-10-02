@@ -197,6 +197,30 @@ export class InMemoryTodoistApiService {
     this.tasks.delete(taskId);
   }
 
+  async moveTask(
+    taskId: string,
+    destination: {
+      project_id?: string;
+      section_id?: string;
+      parent_id?: string;
+    }
+  ): Promise<void> {
+    // Validate that only one destination is specified (matching real API behavior)
+    const destinations = [
+      destination.project_id,
+      destination.section_id,
+      destination.parent_id,
+    ].filter(Boolean);
+    if (destinations.length !== 1) {
+      throw new Error(
+        'Exactly one of project_id, section_id, or parent_id must be specified for move operation'
+      );
+    }
+
+    // Move is essentially an update in the real API
+    await this.updateTask(taskId, destination);
+  }
+
   async completeTask(taskId: string): Promise<void> {
     const task = this.tasks.get(taskId);
     if (task) {
@@ -213,6 +237,70 @@ export class InMemoryTodoistApiService {
       delete task.completed_at;
       this.tasks.set(taskId, task);
     }
+  }
+
+  async executeBatch(commands: any[]): Promise<any> {
+    const sync_status: Record<string, 'ok' | any> = {};
+
+    for (const command of commands) {
+      try {
+        // Check if task exists first for all task operations
+        if (
+          [
+            'item_update',
+            'item_complete',
+            'item_uncomplete',
+            'item_move',
+          ].includes(command.type)
+        ) {
+          const taskExists = this.tasks.has(command.args.id);
+          if (!taskExists) {
+            sync_status[command.uuid] = {
+              error: 'TASK_NOT_FOUND',
+              error_message: `Task ${command.args.id} not found`,
+            };
+            continue;
+          }
+        }
+
+        switch (command.type) {
+          case 'item_update':
+            await this.updateTask(command.args.id, command.args);
+            sync_status[command.uuid] = 'ok';
+            break;
+          case 'item_complete':
+            await this.completeTask(command.args.id);
+            sync_status[command.uuid] = 'ok';
+            break;
+          case 'item_uncomplete':
+            await this.reopenTask(command.args.id);
+            sync_status[command.uuid] = 'ok';
+            break;
+          case 'item_move':
+            // Move is essentially an update
+            await this.updateTask(command.args.id, command.args);
+            sync_status[command.uuid] = 'ok';
+            break;
+          default:
+            sync_status[command.uuid] = {
+              error: 'UNKNOWN_COMMAND',
+              error_message: `Unknown command type: ${command.type}`,
+            };
+        }
+      } catch (error) {
+        sync_status[command.uuid] = {
+          error: 'COMMAND_FAILED',
+          error_message:
+            error instanceof Error ? error.message : 'Unknown error',
+        };
+      }
+    }
+
+    return {
+      sync_status,
+      temp_id_mapping: {},
+      full_sync: false,
+    };
   }
 
   // Project operations
