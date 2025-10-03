@@ -179,24 +179,34 @@ export class TodoistApiService {
     // REST API: 300 requests/minute (token bucket with 300 capacity, 5 tokens/sec refill)
     this.restRateLimiter = new TokenBucketRateLimiter(300, 300); // 300 req/min for REST API
 
-    // Create HTTP client without Authorization header if token is null
-    // Token will be validated and injected via ensureToken() on first API call
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      'User-Agent': 'MCP-Todoist/1.0.0',
-    };
-
-    if (this.config.token) {
-      headers['Authorization'] = `Bearer ${this.config.token}`;
-    }
-
+    // Create HTTP client with base headers
+    // Authorization header managed separately via setAuthorizationHeader()
     this.httpClient = axios.create({
       baseURL: this.config.base_url,
       timeout: this.config.timeout,
-      headers,
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': 'MCP-Todoist/1.0.0',
+      },
     });
 
+    // Set authorization header if token is available at construction
+    if (this.config.token) {
+      this.setAuthorizationHeader(this.config.token);
+    }
+
     this.setupInterceptors();
+  }
+
+  /**
+   * Set or update the Authorization header on the HTTP client
+   * Centralized method to prevent inconsistent authorization state
+   *
+   * @param token - The Bearer token to use for authorization
+   */
+  private setAuthorizationHeader(token: string): void {
+    this.httpClient.defaults.headers.common['Authorization'] =
+      `Bearer ${token}`;
   }
 
   /**
@@ -216,8 +226,7 @@ export class TodoistApiService {
 
     // Update Authorization header if not already set (deferred initialization case)
     if (!this.httpClient.defaults.headers.common['Authorization']) {
-      this.httpClient.defaults.headers.common['Authorization'] =
-        `Bearer ${this.config.token}`;
+      this.setAuthorizationHeader(this.config.token);
     }
 
     return this.config.token;

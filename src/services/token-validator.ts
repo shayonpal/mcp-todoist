@@ -19,7 +19,12 @@ import {
 } from '../types/token-validation.types.js';
 import { logger } from '../middleware/logging.js';
 
-const TOKEN_FORMAT_REGEX = /^[A-Za-z0-9_-]{16,64}$/;
+// Token format validation constants
+const MIN_TOKEN_LENGTH = 16;
+const MAX_TOKEN_LENGTH = 64;
+const TOKEN_FORMAT_REGEX = new RegExp(
+  `^[A-Za-z0-9_-]{${MIN_TOKEN_LENGTH},${MAX_TOKEN_LENGTH}}$`
+);
 
 /**
  * Custom error class for token validation failures
@@ -283,16 +288,19 @@ class TokenValidatorSingletonImpl implements TokenValidator {
       return;
     }
 
+    // Use duck typing to detect mock API service
     const mockApiService = this.apiService as unknown as {
       setValidationBehavior?: (
         behavior: 'succeed' | 'fail' | 'throw',
         error?: Error
       ) => void;
       validationBehavior?: 'succeed' | 'fail' | 'throw';
+      configureTokenBehavior?: (token: string) => void;
     };
 
+    // Not a mock service - skip configuration
     if (typeof mockApiService.setValidationBehavior !== 'function') {
-      return; // Real API service
+      return;
     }
 
     // Respect explicit overrides configured in tests
@@ -303,31 +311,14 @@ class TokenValidatorSingletonImpl implements TokenValidator {
       return;
     }
 
-    const behaviorByToken: Record<string, { status: number; message: string }> =
-      {
-        invalid_token_returns_401: {
-          status: 401,
-          message: 'Invalid or expired Todoist API token',
-        },
-        token_with_insufficient_permissions: {
-          status: 403,
-          message: 'Token lacks required scopes',
-        },
-      };
-
-    const mapping = behaviorByToken[token];
-
-    if (!mapping) {
+    // Delegate token-based behavior configuration to the mock service
+    // This decouples production code from test-specific token mappings
+    if (typeof mockApiService.configureTokenBehavior === 'function') {
+      mockApiService.configureTokenBehavior(token);
+    } else {
+      // Fallback: Default to success for unknown tokens
       mockApiService.setValidationBehavior('succeed');
-      return;
     }
-
-    const error = Object.assign(new Error(mapping.message), {
-      status: mapping.status,
-      response: { status: mapping.status },
-    });
-
-    mockApiService.setValidationBehavior('throw', error);
   }
 }
 

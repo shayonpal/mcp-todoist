@@ -18,6 +18,7 @@ import {
   toTodoistSection,
 } from './mockTodoistApiService.js';
 import { TokenValidatorSingleton } from '../../src/services/token-validator.js';
+import { getTestTokenBehavior } from './test-token-config.js';
 
 interface SyncCommand {
   type: string;
@@ -100,6 +101,29 @@ export class InMemoryTodoistApiService {
   resetValidationBehavior(): void {
     this.validationBehavior = 'succeed';
     this.validationError = null;
+  }
+
+  /**
+   * Configure validation behavior based on test token
+   * Uses test-token-config to map tokens to validation responses
+   * @param token - The test token to configure behavior for
+   */
+  configureTokenBehavior(token: string): void {
+    const behavior = getTestTokenBehavior(token);
+
+    if (!behavior) {
+      // Unknown token - default to success
+      this.setValidationBehavior('succeed');
+      return;
+    }
+
+    // Create error matching the expected behavior
+    const error = Object.assign(new Error(behavior.message), {
+      status: behavior.status,
+      response: { status: behavior.status },
+    });
+
+    this.setValidationBehavior('throw', error);
   }
 
   /**
