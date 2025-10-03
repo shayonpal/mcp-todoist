@@ -324,4 +324,5 @@ export function createServerInstance(): TodoistMCPServerImpl {
   return new TodoistMCPServerImpl();
 }
 
-// Note: Auto-start removed to avoid TypeScript compilation issues in test environment.
+// Note: Auto-start functionality moved to src/index.ts and src/server-cli.ts
+// This allows the server implementation to be imported without side effects.

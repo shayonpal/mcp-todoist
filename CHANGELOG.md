@@ -24,6 +24,13 @@
   - Improved test isolation with proper singleton reset mechanisms
   - Standardized mock token format (minimum length validation)
 
+### Breaking Changes
+
+- **Low Impact**: `APIConfiguration.token` type changed from `string` to `string | null`
+  - Impact: Only affects code directly importing and using this internal type interface
+  - Migration: Update type annotations to handle nullable tokens or check token presence before use
+  - Rationale: Enables deferred token validation for MCP platform compliance
+
 ## [1.4.1] - 2025-10-02
 
 ### Added
