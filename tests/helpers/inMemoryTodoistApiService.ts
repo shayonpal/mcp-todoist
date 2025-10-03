@@ -32,6 +32,8 @@ export class InMemoryTodoistApiService {
   private reminders = new Map<string, TodoistReminder>();
   private labels = new Map<string, TodoistLabel>();
   private idCounter = 1000;
+  private validationBehavior: 'succeed' | 'fail' | 'throw' = 'succeed';
+  private validationError: Error | null = null;
 
   constructor() {
     const initialTasks = [
@@ -74,6 +76,44 @@ export class InMemoryTodoistApiService {
       rest: { remaining: 99, resetTime, isLimited: false },
       sync: { remaining: 99, resetTime, isLimited: false },
     };
+  }
+
+  /**
+   * Configure validation behavior for testing
+   * @param behavior - 'succeed' (default), 'fail', or 'throw'
+   * @param error - Optional error to throw when behavior is 'throw'
+   */
+  setValidationBehavior(
+    behavior: 'succeed' | 'fail' | 'throw',
+    error?: Error
+  ): void {
+    this.validationBehavior = behavior;
+    if (error) {
+      this.validationError = error;
+    }
+  }
+
+  /**
+   * Reset validation behavior to default (succeed)
+   */
+  resetValidationBehavior(): void {
+    this.validationBehavior = 'succeed';
+    this.validationError = null;
+  }
+
+  /**
+   * Mock token validation - configurable behavior for testing
+   * This simulates Todoist API token validation with controllable outcomes
+   */
+  async validateToken(): Promise<void> {
+    if (this.validationBehavior === 'throw') {
+      throw this.validationError || new Error('Invalid token');
+    }
+    if (this.validationBehavior === 'fail') {
+      throw new Error('Token validation failed');
+    }
+    // Default: succeed
+    return Promise.resolve();
   }
 
   // Task operations

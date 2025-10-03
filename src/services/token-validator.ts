@@ -61,6 +61,14 @@ class TokenValidatorSingletonImpl implements TokenValidator {
   }
 
   /**
+   * Set a mock API service for testing
+   * @internal
+   */
+  setMockApiService(mockService: TodoistApiService | null): void {
+    this.apiService = mockService;
+  }
+
+  /**
    * Get current validation state without triggering validation
    */
   getValidationState(): TokenValidationState {

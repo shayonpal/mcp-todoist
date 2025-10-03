@@ -7,15 +7,40 @@
  * @see /specs/006-more-mcp-compliance/contracts/token-validation.contract.ts
  */
 
-import { describe, test, expect, beforeEach, afterEach } from '@jest/globals';
+import {
+  describe,
+  test,
+  expect,
+  beforeEach,
+  afterEach,
+  jest,
+} from '@jest/globals';
 import { HealthCheckResponse } from '../../src/types/token-validation.types.js';
+import { createInMemoryApiService } from '../helpers/inMemoryTodoistApiService.js';
 
 describe('Health Check Metadata Contract', () => {
   let originalToken: string | undefined;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     // Save original token
     originalToken = process.env.TODOIST_API_TOKEN;
+
+    // Clear Jest module cache to ensure fresh imports
+    jest.resetModules();
+
+    // Reset config cache
+    const { resetConfig } = await import('../../src/config/index.js');
+    resetConfig();
+
+    // Reset singleton state for isolated tests
+    const { TokenValidatorSingleton } = await import(
+      '../../src/services/token-validator.js'
+    );
+    (TokenValidatorSingleton as any).resetForTesting();
+
+    // Setup mock API service for all tests
+    const mockApiService = createInMemoryApiService();
+    (TokenValidatorSingleton as any).setMockApiService(mockApiService);
   });
 
   afterEach(() => {
@@ -164,12 +189,23 @@ describe('Health Check Metadata Contract', () => {
     });
 
     test('status=invalid when token validation failed', async () => {
-      delete process.env.TODOIST_API_TOKEN;
+      // Set an invalid token to trigger AUTH_FAILED validation error
+      process.env.TODOIST_API_TOKEN = 'invalid_token_12345';
+
+      // Create a mock API service that fails validation
+      const mockApiService = createInMemoryApiService();
+      // Override validateToken to throw an error
+      mockApiService.validateToken = async () => {
+        throw new Error('Invalid token');
+      };
 
       // Trigger validation failure
       const { TokenValidatorSingleton } = await import(
         '../../src/services/token-validator.js'
       );
+      // Set the failing mock
+      (TokenValidatorSingleton as any).setMockApiService(mockApiService);
+
       try {
         await TokenValidatorSingleton.validateOnce();
       } catch {

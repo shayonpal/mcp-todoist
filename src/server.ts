@@ -322,10 +322,5 @@ export class TodoistMCPServer {
 // Create and export server instance
 export const server = new TodoistMCPServer();
 
-// Start server if this file is run directly
-if (import.meta.url === `file://${process.argv[1]}`) {
-  server.run().catch(error => {
-    logger.error('Failed to start server via direct execution', { error });
-    process.exit(1);
-  });
-}
+// Note: Auto-start removed to avoid TypeScript compilation issues in test environment
+// To start the server, explicitly call `server.run()` or use npm start

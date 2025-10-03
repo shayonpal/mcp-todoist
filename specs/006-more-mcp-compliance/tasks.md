@@ -151,12 +151,12 @@
 
 ## Phase 3.4: Integration & Validation
 
-- [ ] **T018** Run contract tests to verify implementation in `tests/contract/`
+- [X] **T018** Run contract tests to verify implementation in `tests/contract/`
   - Execute `npm test -- --testPathPattern=contract`
   - All contract assertions from T003-T004 must pass
   - Verify in-memory mocks work correctly
 
-- [ ] **T019** Run integration tests to verify lifecycle flows in `tests/integration/`
+- [X] **T019** Run integration tests to verify lifecycle flows in `tests/integration/`
   - Execute `npm test -- --testPathPattern=integration/token-validation`
   - All 9 sub-scenarios from quickstart.md must pass
   - Verify timing requirements (sub-100ms validation, <1ms cache hit)

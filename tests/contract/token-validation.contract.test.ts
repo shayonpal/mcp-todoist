@@ -13,6 +13,7 @@ import {
   TokenErrorCategory,
   TOKEN_ERROR_MESSAGES,
 } from '../../src/types/token-validation.types.js';
+import { createInMemoryApiService } from '../helpers/inMemoryTodoistApiService.js';
 
 describe('Token Validation State Machine Contract', () => {
   let originalToken: string | undefined;
@@ -30,6 +31,10 @@ describe('Token Validation State Machine Contract', () => {
       '../../src/services/token-validator.js'
     );
     (TokenValidatorSingleton as any).resetForTesting();
+
+    // Setup mock API service for all tests
+    const mockApiService = createInMemoryApiService();
+    (TokenValidatorSingleton as any).setMockApiService(mockApiService);
   });
 
   afterEach(() => {
