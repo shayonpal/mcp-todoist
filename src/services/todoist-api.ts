@@ -179,17 +179,75 @@ export class TodoistApiService {
     // REST API: 300 requests/minute (token bucket with 300 capacity, 5 tokens/sec refill)
     this.restRateLimiter = new TokenBucketRateLimiter(300, 300); // 300 req/min for REST API
 
+    // Create HTTP client without Authorization header if token is null
+    // Token will be validated and injected via ensureToken() on first API call
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'User-Agent': 'MCP-Todoist/1.0.0',
+    };
+
+    if (this.config.token) {
+      headers['Authorization'] = `Bearer ${this.config.token}`;
+    }
+
     this.httpClient = axios.create({
       baseURL: this.config.base_url,
       timeout: this.config.timeout,
-      headers: {
-        Authorization: `Bearer ${this.config.token}`,
-        'Content-Type': 'application/json',
-        'User-Agent': 'MCP-Todoist/1.0.0',
-      },
+      headers,
     });
 
     this.setupInterceptors();
+  }
+
+  /**
+   * Ensure token is available for API requests
+   * This is a lightweight guard that prevents null token usage
+   * Token validation is handled separately by TokenValidator
+   *
+   * @throws {AuthenticationError} If token is null or empty
+   * @returns {string} The configured token
+   */
+  private ensureToken(): string {
+    if (!this.config.token || this.config.token.trim().length === 0) {
+      throw new AuthenticationError(
+        'API token not configured. Set TODOIST_API_TOKEN environment variable.'
+      );
+    }
+
+    // Update Authorization header if not already set (deferred initialization case)
+    if (!this.httpClient.defaults.headers.common['Authorization']) {
+      this.httpClient.defaults.headers.common['Authorization'] =
+        `Bearer ${this.config.token}`;
+    }
+
+    return this.config.token;
+  }
+
+  /**
+   * Public method for token validation
+   * Called by TokenValidator during validation process
+   * This bypasses ensureToken() to avoid circular dependency
+   *
+   * @throws {AuthenticationError} If API call fails
+   */
+  async validateToken(): Promise<void> {
+    // Skip ensureToken() check to avoid circular dependency with TokenValidator
+    // TokenValidator will handle token presence checking
+    if (!this.config.token) {
+      throw new AuthenticationError('Token not configured');
+    }
+
+    // Set Authorization header for validation call
+    if (!this.httpClient.defaults.headers.common['Authorization']) {
+      this.httpClient.defaults.headers.common['Authorization'] =
+        `Bearer ${this.config.token}`;
+    }
+
+    // Use lightweight endpoint: GET /projects with limit=1
+    await this.executeRequest<TodoistProject[]>('/projects', {
+      method: 'GET',
+      params: { limit: 1 },
+    });
   }
 
   /**
@@ -344,6 +402,8 @@ export class TodoistApiService {
    * @throws ServiceUnavailableError on 500-level errors, retries up to 3 times
    */
   async executeBatch(commands: SyncCommand[]): Promise<SyncResponse> {
+    this.ensureToken();
+
     let lastError: Error | null = null;
     const maxRetries = this.config.retry_attempts || 3;
 
@@ -410,6 +470,8 @@ export class TodoistApiService {
   async getTasks(
     params?: TaskQueryParams
   ): Promise<{ results: TodoistTask[]; next_cursor: string | null }> {
+    this.ensureToken();
+
     const response = await this.executeRequest<{
       results: TodoistTask[];
       next_cursor: string | null;
@@ -431,6 +493,8 @@ export class TodoistApiService {
     cursor?: string,
     limit?: number
   ): Promise<{ results: TodoistTask[]; next_cursor: string | null }> {
+    this.ensureToken();
+
     const params: Record<string, string | number> = { query };
     if (lang) params.lang = lang;
     if (cursor) params.cursor = cursor;
@@ -452,12 +516,16 @@ export class TodoistApiService {
   }
 
   async getTask(taskId: string): Promise<TodoistTask> {
+    this.ensureToken();
+
     return this.executeRequest<TodoistTask>(`/tasks/${taskId}`, {
       method: 'GET',
     });
   }
 
   async createTask(taskData: Partial<TodoistTask>): Promise<TodoistTask> {
+    this.ensureToken();
+
     // T023: Transform deadline parameter to API format
     // API expects: deadline_date (string input) -> returns deadline (object output)
     const apiPayload: Record<string, unknown> = { ...taskData };
@@ -492,6 +560,8 @@ export class TodoistApiService {
     taskId: string,
     taskData: Partial<TodoistTask>
   ): Promise<TodoistTask> {
+    this.ensureToken();
+
     // T024: Transform deadline parameter to API format
     // API expects: deadline_date (string input) -> returns deadline (object output)
     const apiPayload: Record<string, unknown> = { ...taskData };
@@ -523,18 +593,24 @@ export class TodoistApiService {
   }
 
   async deleteTask(taskId: string): Promise<void> {
+    this.ensureToken();
+
     return this.executeRequest<void>(`/tasks/${taskId}`, {
       method: 'DELETE',
     });
   }
 
   async completeTask(taskId: string): Promise<void> {
+    this.ensureToken();
+
     return this.executeRequest<void>(`/tasks/${taskId}/close`, {
       method: 'POST',
     });
   }
 
   async reopenTask(taskId: string): Promise<void> {
+    this.ensureToken();
+
     return this.executeRequest<void>(`/tasks/${taskId}/reopen`, {
       method: 'POST',
     });
@@ -556,6 +632,8 @@ export class TodoistApiService {
     cursor?: string;
     limit?: number;
   }): Promise<{ items: TodoistTask[]; next_cursor: string | null }> {
+    this.ensureToken();
+
     const queryParams: Record<string, string> = {
       since: params.since,
       until: params.until,
@@ -596,6 +674,8 @@ export class TodoistApiService {
     cursor?: string;
     limit?: number;
   }): Promise<{ items: TodoistTask[]; next_cursor: string | null }> {
+    this.ensureToken();
+
     const queryParams: Record<string, string> = {
       since: params.since,
       until: params.until,
@@ -628,6 +708,8 @@ export class TodoistApiService {
       parent_id?: string;
     }
   ): Promise<void> {
+    this.ensureToken();
+
     // Validate that only one destination is specified
     const destinations = [
       destination.project_id,
@@ -663,6 +745,8 @@ export class TodoistApiService {
 
   // Project operations
   async getProjects(): Promise<TodoistProject[]> {
+    this.ensureToken();
+
     const response = await this.executeRequest<{
       results: TodoistProject[];
       next_cursor: string | null;
@@ -675,6 +759,8 @@ export class TodoistApiService {
   }
 
   async getProject(projectId: string): Promise<TodoistProject> {
+    this.ensureToken();
+
     return this.executeRequest<TodoistProject>(`/projects/${projectId}`, {
       method: 'GET',
     });
@@ -683,6 +769,8 @@ export class TodoistApiService {
   async createProject(
     projectData: Partial<TodoistProject>
   ): Promise<TodoistProject> {
+    this.ensureToken();
+
     return this.executeRequest<TodoistProject>('/projects', {
       method: 'POST',
       data: projectData,
@@ -693,6 +781,8 @@ export class TodoistApiService {
     projectId: string,
     projectData: Partial<TodoistProject>
   ): Promise<TodoistProject> {
+    this.ensureToken();
+
     return this.executeRequest<TodoistProject>(`/projects/${projectId}`, {
       method: 'POST',
       data: projectData,
@@ -700,6 +790,8 @@ export class TodoistApiService {
   }
 
   async deleteProject(projectId: string): Promise<void> {
+    this.ensureToken();
+
     return this.executeRequest<void>(`/projects/${projectId}`, {
       method: 'DELETE',
     });
@@ -707,6 +799,8 @@ export class TodoistApiService {
 
   // Section operations
   async getSections(projectId?: string): Promise<TodoistSection[]> {
+    this.ensureToken();
+
     const params = projectId ? { project_id: projectId } : undefined;
     const response = await this.executeRequest<{
       results: TodoistSection[];
@@ -721,6 +815,8 @@ export class TodoistApiService {
   }
 
   async getSection(sectionId: string): Promise<TodoistSection> {
+    this.ensureToken();
+
     return this.executeRequest<TodoistSection>(`/sections/${sectionId}`, {
       method: 'GET',
     });
@@ -729,6 +825,8 @@ export class TodoistApiService {
   async createSection(
     sectionData: Partial<TodoistSection>
   ): Promise<TodoistSection> {
+    this.ensureToken();
+
     return this.executeRequest<TodoistSection>('/sections', {
       method: 'POST',
       data: sectionData,
@@ -739,6 +837,8 @@ export class TodoistApiService {
     sectionId: string,
     sectionData: Partial<TodoistSection>
   ): Promise<TodoistSection> {
+    this.ensureToken();
+
     return this.executeRequest<TodoistSection>(`/sections/${sectionId}`, {
       method: 'POST',
       data: sectionData,
@@ -746,6 +846,8 @@ export class TodoistApiService {
   }
 
   async deleteSection(sectionId: string): Promise<void> {
+    this.ensureToken();
+
     return this.executeRequest<void>(`/sections/${sectionId}`, {
       method: 'DELETE',
     });
@@ -756,6 +858,8 @@ export class TodoistApiService {
     task_id?: string;
     project_id?: string;
   }): Promise<TodoistComment[]> {
+    this.ensureToken();
+
     const response = await this.executeRequest<{
       results: TodoistComment[];
       next_cursor: string | null;
@@ -769,6 +873,8 @@ export class TodoistApiService {
   }
 
   async getComment(commentId: string): Promise<TodoistComment> {
+    this.ensureToken();
+
     return this.executeRequest<TodoistComment>(`/comments/${commentId}`, {
       method: 'GET',
     });
@@ -777,6 +883,8 @@ export class TodoistApiService {
   async createComment(
     commentData: Partial<TodoistComment>
   ): Promise<TodoistComment> {
+    this.ensureToken();
+
     return this.executeRequest<TodoistComment>('/comments', {
       method: 'POST',
       data: commentData,
@@ -787,6 +895,8 @@ export class TodoistApiService {
     commentId: string,
     commentData: Partial<TodoistComment>
   ): Promise<TodoistComment> {
+    this.ensureToken();
+
     return this.executeRequest<TodoistComment>(`/comments/${commentId}`, {
       method: 'POST',
       data: commentData,
@@ -794,6 +904,8 @@ export class TodoistApiService {
   }
 
   async deleteComment(commentId: string): Promise<void> {
+    this.ensureToken();
+
     return this.executeRequest<void>(`/comments/${commentId}`, {
       method: 'DELETE',
     });
@@ -807,6 +919,8 @@ export class TodoistApiService {
     results: TodoistLabel[];
     next_cursor: string | null;
   }> {
+    this.ensureToken();
+
     const params: Record<string, string> = {};
     if (cursor) params.cursor = cursor;
     if (limit) params.limit = limit.toString();
@@ -823,12 +937,16 @@ export class TodoistApiService {
   }
 
   async getLabel(labelId: string): Promise<TodoistLabel> {
+    this.ensureToken();
+
     return this.executeRequest<TodoistLabel>(`/labels/${labelId}`, {
       method: 'GET',
     });
   }
 
   async createLabel(labelData: Partial<TodoistLabel>): Promise<TodoistLabel> {
+    this.ensureToken();
+
     return this.executeRequest<TodoistLabel>('/labels', {
       method: 'POST',
       data: labelData,
@@ -839,6 +957,8 @@ export class TodoistApiService {
     labelId: string,
     labelData: Partial<TodoistLabel>
   ): Promise<TodoistLabel> {
+    this.ensureToken();
+
     return this.executeRequest<TodoistLabel>(`/labels/${labelId}`, {
       method: 'POST',
       data: labelData,
@@ -846,12 +966,16 @@ export class TodoistApiService {
   }
 
   async deleteLabel(labelId: string): Promise<void> {
+    this.ensureToken();
+
     return this.executeRequest<void>(`/labels/${labelId}`, {
       method: 'DELETE',
     });
   }
 
   async renameSharedLabel(name: string, newName: string): Promise<void> {
+    this.ensureToken();
+
     await this.sync([
       {
         type: 'shared_label_rename',
@@ -861,6 +985,8 @@ export class TodoistApiService {
   }
 
   async removeSharedLabel(name: string): Promise<void> {
+    this.ensureToken();
+
     await this.sync([
       {
         type: 'shared_label_remove',
@@ -872,6 +998,8 @@ export class TodoistApiService {
   // Sync operations (for batch processing)
   // Note: Sync API uses dedicated /sync endpoint
   async sync(commands: SyncCommand[]): Promise<SyncResponse> {
+    this.ensureToken();
+
     return this.executeRequest<SyncResponse>(
       'https://api.todoist.com/api/v1/sync',
       {
@@ -887,6 +1015,8 @@ export class TodoistApiService {
   // Reminder operations - use sync API for all operations
   // Reminders support three types: relative (minutes before due), absolute (specific datetime), location (geofenced)
   async getReminders(itemId?: string): Promise<TodoistReminder[]> {
+    this.ensureToken();
+
     // Use sync API to get reminders
     const resource_types = itemId
       ? ['reminders', 'reminders_location']
@@ -923,6 +1053,8 @@ export class TodoistApiService {
   async createReminder(
     reminderData: Partial<TodoistReminder>
   ): Promise<TodoistReminder> {
+    this.ensureToken();
+
     // Generate temp_id and uuid for sync command
     const tempId = `temp_${Date.now()}_${Math.random()
       .toString(36)
@@ -974,6 +1106,8 @@ export class TodoistApiService {
     reminderId: string,
     reminderData: Partial<TodoistReminder>
   ): Promise<TodoistReminder> {
+    this.ensureToken();
+
     const uuid = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
 
     const commands = [
@@ -1001,6 +1135,8 @@ export class TodoistApiService {
   }
 
   async deleteReminder(reminderId: string): Promise<void> {
+    this.ensureToken();
+
     const uuid = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
 
     const commands = [
@@ -1018,6 +1154,8 @@ export class TodoistApiService {
 
   // Filter methods
   async getFilters(): Promise<TodoistFilter[]> {
+    this.ensureToken();
+
     const response = await this.executeRequest<{
       results: TodoistFilter[];
       next_cursor: string | null;
@@ -1028,12 +1166,16 @@ export class TodoistApiService {
   }
 
   async getFilter(filterId: string): Promise<TodoistFilter> {
+    this.ensureToken();
+
     return this.executeRequest<TodoistFilter>(`/filters/${filterId}`, {});
   }
 
   async createFilter(
     filterData: Partial<TodoistFilter>
   ): Promise<TodoistFilter> {
+    this.ensureToken();
+
     return this.executeRequest<TodoistFilter>('/filters', {
       method: 'POST',
       data: filterData,
@@ -1044,6 +1186,8 @@ export class TodoistApiService {
     filterId: string,
     filterData: Partial<TodoistFilter>
   ): Promise<TodoistFilter> {
+    this.ensureToken();
+
     return this.executeRequest<TodoistFilter>(`/filters/${filterId}`, {
       method: 'POST',
       data: filterData,
@@ -1051,6 +1195,8 @@ export class TodoistApiService {
   }
 
   async deleteFilter(filterId: string): Promise<void> {
+    this.ensureToken();
+
     await this.executeRequest<void>(`/filters/${filterId}`, {
       method: 'DELETE',
     });
@@ -1058,12 +1204,16 @@ export class TodoistApiService {
 
   // Project archive methods
   async archiveProject(projectId: string): Promise<void> {
+    this.ensureToken();
+
     await this.executeRequest<void>(`/projects/${projectId}/archive`, {
       method: 'POST',
     });
   }
 
   async unarchiveProject(projectId: string): Promise<void> {
+    this.ensureToken();
+
     await this.executeRequest<void>(`/projects/${projectId}/unarchive`, {
       method: 'POST',
     });
@@ -1071,10 +1221,14 @@ export class TodoistApiService {
 
   // Comment convenience methods
   async getTaskComments(taskId: string): Promise<TodoistComment[]> {
+    this.ensureToken();
+
     return this.getComments({ task_id: taskId });
   }
 
   async getProjectComments(projectId: string): Promise<TodoistComment[]> {
+    this.ensureToken();
+
     return this.getComments({ project_id: projectId });
   }
 }

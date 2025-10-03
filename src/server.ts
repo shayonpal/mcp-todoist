@@ -17,6 +17,7 @@ import { TodoistFiltersTool } from './tools/todoist-filters.js';
 import { TodoistRemindersTool } from './tools/todoist-reminders.js';
 import { TodoistLabelsTool } from './tools/todoist-labels.js';
 import { TodoistBulkTasksTool } from './tools/bulk-tasks.js';
+import { TokenValidatorSingleton } from './services/token-validator.js';
 import { getConfig } from './config/index.js';
 import { logger } from './middleware/logging.js';
 import { TodoistAPIError, TodoistErrorCode } from './types/errors.js';
@@ -225,81 +226,60 @@ export class TodoistMCPServer {
    * Health check endpoint for API connectivity
    */
   async healthCheck(): Promise<{
-    status: 'healthy' | 'unhealthy';
-    checks: {
-      server: 'ok' | 'error';
-      api: 'ok' | 'error' | 'unknown';
-      tools: 'ok' | 'error';
-    };
+    status: 'healthy';
     timestamp: string;
-    version: string;
+    components: {
+      server: {
+        status: 'operational';
+      };
+      tokenValidation: {
+        status: 'not_configured' | 'configured' | 'valid' | 'invalid';
+        validatedAt?: string;
+      };
+    };
   }> {
     const timestamp = new Date().toISOString();
-    const checks: {
-      server: 'ok' | 'error';
-      api: 'ok' | 'error' | 'unknown';
-      tools: 'ok' | 'error';
-    } = {
-      server: 'ok',
-      api: 'unknown',
-      tools: 'ok',
+
+    // Get token validation state without triggering validation
+    const validationState = TokenValidatorSingleton.getValidationState();
+    const isTokenConfigured = TokenValidatorSingleton.isTokenConfigured();
+
+    // Map validation state to health check status
+    let tokenStatus: 'not_configured' | 'configured' | 'valid' | 'invalid';
+    let validatedAt: string | undefined;
+
+    if (!isTokenConfigured) {
+      tokenStatus = 'not_configured';
+    } else if (validationState.status === 'not_validated') {
+      tokenStatus = 'configured';
+    } else if (validationState.status === 'valid') {
+      tokenStatus = 'valid';
+      validatedAt = validationState.validatedAt?.toISOString();
+    } else {
+      tokenStatus = 'invalid';
+    }
+
+    const response = {
+      status: 'healthy' as const, // Always healthy if server is responding
+      timestamp,
+      components: {
+        server: {
+          status: 'operational' as const,
+        },
+        tokenValidation: {
+          status: tokenStatus,
+          ...(validatedAt && { validatedAt }),
+        },
+      },
     };
 
-    try {
-      // Check if tools are properly initialized
-      if (this.tools.size !== 6) {
-        checks.tools = 'error';
-      }
+    logger.info('Health check completed', {
+      tokenStatus,
+      validatedAt,
+      timestamp,
+    });
 
-      // Test API connectivity by making a lightweight call
-      try {
-        const tasksTool = this.tools.get('todoist_tasks');
-        if (tasksTool instanceof TodoistTasksTool) {
-          // Attempt to list tasks with minimal parameters to test API
-          await tasksTool.execute({ action: 'list', lang: 'en' });
-          checks.api = 'ok';
-        }
-      } catch (error) {
-        logger.warn('Health check API test failed', { error });
-        checks.api = 'error';
-      }
-
-      const status = Object.values(checks).every(check => check === 'ok')
-        ? 'healthy'
-        : 'unhealthy';
-
-      logger.info('Health check completed', {
-        status,
-        checks,
-        timestamp,
-      });
-
-      return {
-        status,
-        checks,
-        timestamp,
-        version: '1.0.0',
-      };
-    } catch (error) {
-      logger.error('Health check failed', { error });
-
-      const errorChecks: {
-        server: 'ok' | 'error';
-        api: 'ok' | 'error' | 'unknown';
-        tools: 'ok' | 'error';
-      } = {
-        server: 'error',
-        api: 'error',
-        tools: 'error',
-      };
-
-      return {
-        status: 'unhealthy',
-        checks: errorChecks,
-        timestamp,
-        version: '1.0.0',
-      };
-    }
+    return response;
   }
 
   /**
@@ -312,6 +292,8 @@ export class TodoistMCPServer {
       version: '1.0.0',
       toolCount: this.tools.size,
       tools: Array.from(this.tools.keys()),
+      tokenConfigured: !!this.config.token,
+      note: 'Token validation deferred until first tool invocation',
     });
 
     try {

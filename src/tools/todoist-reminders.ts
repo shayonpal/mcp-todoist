@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { TodoistApiService } from '../services/todoist-api.js';
+import { TokenValidatorSingleton } from '../services/token-validator.js';
 import { TodoistReminder, APIConfiguration } from '../types/todoist.js';
 import {
   TodoistAPIError,
@@ -327,6 +328,9 @@ export class TodoistRemindersTool {
     const startTime = Date.now();
 
     try {
+      // Validate API token before processing request
+      await TokenValidatorSingleton.validateOnce();
+
       // Validate input parameters
       const validatedParams = TodoistRemindersInputSchema.parse(params);
 

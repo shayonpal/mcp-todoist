@@ -143,7 +143,7 @@ export interface TodoistReminder {
  * Authentication credential linking the system to a user's Todoist account
  */
 export interface APIConfiguration {
-  token: string; // Bearer token from MCP client
+  token: string | null; // Bearer token from MCP client (nullable for deferred validation)
   base_url: string; // Always https://api.todoist.com/api/v1
   timeout: number; // Request timeout in ms (default: 10000)
   retry_attempts: number; // Max retry attempts (default: 3)

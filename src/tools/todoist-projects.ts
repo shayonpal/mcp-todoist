@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { TodoistApiService } from '../services/todoist-api.js';
 import { CacheService } from '../services/cache.js';
+import { TokenValidatorSingleton } from '../services/token-validator.js';
 import { TodoistProject, APIConfiguration } from '../types/todoist.js';
 import { ValidationError } from '../types/errors.js';
 import {
@@ -173,6 +174,9 @@ export class TodoistProjectsTool {
     const startTime = Date.now();
 
     try {
+      // Validate API token before processing request
+      await TokenValidatorSingleton.validateOnce();
+
       // Validate input
       const validatedInput = TodoistProjectsInputSchema.parse(input);
 

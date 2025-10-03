@@ -43,11 +43,11 @@
 
 ## Phase 3.1: Setup & Contract Definition
 
-- [ ] **T001** [P] Create TypeScript type definitions for token validation state in `src/types/token-validation.types.ts`
+- [X] **T001** [P] Create TypeScript type definitions for token validation state in `src/types/token-validation.types.ts`
   - Export `TokenValidationState`, `TokenValidationError`, `TokenErrorCategory`, `HealthCheckResponse` interfaces from contracts/token-validation.contract.ts
   - Export `TOKEN_ERROR_MESSAGES` constant
 
-- [ ] **T002** [P] Create token validator interface contract in `src/services/token-validator.interface.ts`
+- [X] **T002** [P] Create token validator interface contract in `src/services/token-validator.interface.ts`
   - Export `TokenValidator` interface from contracts/token-validation.contract.ts
   - Define singleton initialization pattern
 
@@ -55,7 +55,7 @@
 
 **CRITICAL: These tests MUST be written and MUST FAIL before ANY implementation**
 
-- [ ] **T003** [P] Contract test for token validation state machine in `tests/contract/token-validation.contract.test.ts`
+- [X] **T003** [P] Contract test for token validation state machine in `tests/contract/token-validation.contract.test.ts`
   - Test server starts without token (FR-001)
   - Test MCP protocol handshake without token (FR-002)
   - Test validation triggered on first tool call (FR-003)
@@ -64,13 +64,13 @@
   - Test error message format "[Category]. [Next step]" (FR-008, Clarification Q3)
   - Use in-memory API service mock (`tests/helpers/inMemoryTodoistApiService.ts`)
 
-- [ ] **T004** [P] Contract test for health check metadata in `tests/contract/health-check.contract.test.ts`
+- [X] **T004** [P] Contract test for health check metadata in `tests/contract/health-check.contract.test.ts`
   - Test health check returns 200 OK without token (FR-007)
   - Test `tokenValidation.status` values (not_configured, configured, valid, invalid)
   - Test `validatedAt` timestamp presence when status='valid'
   - Test health check never triggers validation
 
-- [ ] **T005** [P] Integration test for token validation lifecycle in `tests/integration/token-validation-lifecycle.test.ts`
+- [X] **T005** [P] Integration test for token validation lifecycle in `tests/integration/token-validation-lifecycle.test.ts`
   - Test full lifecycle: startup → list_tools → tool call → caching → health check
   - Test token removal mid-session (edge case from spec.md)
   - Test invalid token after valid startup
@@ -78,12 +78,12 @@
 
 ## Phase 3.3: Core Implementation (ONLY after tests are failing)
 
-- [ ] **T006** Update configuration loader to make token nullable in `src/config/index.ts`
+- [X] **T006** Update configuration loader to make token nullable in `src/config/index.ts`
   - Change `getConfig()` to return `apiToken: string | null`
   - Remove token validation from config loader
   - Allow `TODOIST_API_TOKEN` to be undefined/empty
 
-- [ ] **T007** Create token validator singleton in `src/services/token-validator.ts`
+- [X] **T007** Create token validator singleton in `src/services/token-validator.ts`
   - Implement `TokenValidator` interface
   - Private static fields: `validationState`, `validationError`
   - Implement `validateOnce()` with cached validation logic
@@ -93,55 +93,55 @@
   - Map API errors to `TokenErrorCategory` enum
   - Use `TOKEN_ERROR_MESSAGES` for error formatting
 
-- [ ] **T008** Modify TodoistApiService for lazy token validation in `src/services/todoist-api.ts`
+- [X] **T008** Modify TodoistApiService for lazy token validation in `src/services/todoist-api.ts`
   - Add private `ensureToken(): string` guard method
   - Add public `validateToken(): Promise<void>` method
   - Inject `ensureToken()` call at top of all public methods (tasks, projects, sections, comments, filters, reminders, labels)
   - Keep existing rate limiting and retry logic unchanged
   - Remove token validation from constructor
 
-- [ ] **T009** Update server initialization for nullable token in `src/server.ts`
+- [X] **T009** Update server initialization for nullable token in `src/server.ts`
   - Remove config validation from `TodoistMCPServer` constructor
   - Initialize with `config.apiToken` (allow null)
   - Update initialization logs to reflect deferred validation
   - Keep existing MCP protocol handlers unchanged (initialize, list_tools)
 
-- [ ] **T010** [P] Add pre-invocation token check to tasks tool in `src/tools/tasks.ts`
+- [X] **T010** [P] Add pre-invocation token check to tasks tool in `src/tools/tasks.ts`
   - Call `TokenValidator.validateOnce()` at start of tool handler
   - Catch and re-throw `TokenValidationError` as MCP error
   - No changes to tool schema or parameters
 
-- [ ] **T011** [P] Add pre-invocation token check to projects tool in `src/tools/projects.ts`
+- [X] **T011** [P] Add pre-invocation token check to projects tool in `src/tools/projects.ts`
   - Call `TokenValidator.validateOnce()` at start of tool handler
   - Catch and re-throw `TokenValidationError` as MCP error
   - No changes to tool schema or parameters
 
-- [ ] **T012** [P] Add pre-invocation token check to sections tool in `src/tools/sections.ts`
+- [X] **T012** [P] Add pre-invocation token check to sections tool in `src/tools/sections.ts`
   - Call `TokenValidator.validateOnce()` at start of tool handler
   - Catch and re-throw `TokenValidationError` as MCP error
   - No changes to tool schema or parameters
 
-- [ ] **T013** [P] Add pre-invocation token check to comments tool in `src/tools/comments.ts`
+- [X] **T013** [P] Add pre-invocation token check to comments tool in `src/tools/comments.ts`
   - Call `TokenValidator.validateOnce()` at start of tool handler
   - Catch and re-throw `TokenValidationError` as MCP error
   - No changes to tool schema or parameters
 
-- [ ] **T014** [P] Add pre-invocation token check to filters tool in `src/tools/filters.ts`
+- [X] **T014** [P] Add pre-invocation token check to filters tool in `src/tools/filters.ts`
   - Call `TokenValidator.validateOnce()` at start of tool handler
   - Catch and re-throw `TokenValidationError` as MCP error
   - No changes to tool schema or parameters
 
-- [ ] **T015** [P] Add pre-invocation token check to reminders tool in `src/tools/reminders.ts`
+- [X] **T015** [P] Add pre-invocation token check to reminders tool in `src/tools/reminders.ts`
   - Call `TokenValidator.validateOnce()` at start of tool handler
   - Catch and re-throw `TokenValidationError` as MCP error
   - No changes to tool schema or parameters
 
-- [ ] **T016** [P] Add pre-invocation token check to labels tool in `src/tools/labels.ts`
+- [X] **T016** [P] Add pre-invocation token check to labels tool in `src/tools/labels.ts`
   - Call `TokenValidator.validateOnce()` at start of tool handler
   - Catch and re-throw `TokenValidationError` as MCP error
   - No changes to tool schema or parameters
 
-- [ ] **T017** Create or enhance health check handler with token metadata in `src/server.ts`
+- [X] **T017** Create or enhance health check handler with token metadata in `src/server.ts`
   - Add health check request handler (if not exists)
   - Return `HealthCheckResponse` structure from data-model.md
   - Call `TokenValidator.getValidationState()` for metadata
