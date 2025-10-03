@@ -73,11 +73,7 @@ class TokenValidatorSingletonImpl implements TokenValidator {
   isTokenConfigured(): boolean {
     // Check environment directly to avoid config caching issues in tests
     const token = process.env.TODOIST_API_TOKEN;
-    return (
-      token !== null &&
-      token !== undefined &&
-      token.trim().length > 0
-    );
+    return token !== null && token !== undefined && token.trim().length > 0;
   }
 
   /**
