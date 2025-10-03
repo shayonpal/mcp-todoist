@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { TodoistApiService } from '../services/todoist-api.js';
+import { TokenValidatorSingleton } from '../services/token-validator.js';
 import {
   TodoistFilter,
   TodoistTask,
@@ -174,6 +175,9 @@ export class TodoistFiltersTool {
     const startTime = Date.now();
 
     try {
+      // Validate API token before processing request
+      await TokenValidatorSingleton.validateOnce();
+
       // Validate input
       const validatedInput = TodoistFiltersInputSchema.parse(input);
 

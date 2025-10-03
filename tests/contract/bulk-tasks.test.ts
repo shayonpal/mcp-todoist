@@ -6,6 +6,7 @@ import {
   SyncCommand,
   SyncResponse,
 } from '../../src/types/bulk-operations.js';
+import { MOCK_API_CONFIG } from '../helpers/test-token-config.js';
 
 // Type guard for BulkTasksResponse
 function isBulkTasksResponse(
@@ -25,12 +26,7 @@ function isErrorResponse(
   return response.success === false;
 }
 
-const mockApiConfig = {
-  token: 'test_token',
-  base_url: 'https://api.todoist.com/rest/v1',
-  timeout: 10000,
-  retry_attempts: 3,
-};
+const mockApiConfig = MOCK_API_CONFIG;
 
 describe('todoist_bulk_tasks MCP Tool Contract', () => {
   let apiService: jest.Mocked<TodoistApiService>;

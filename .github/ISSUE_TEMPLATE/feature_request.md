@@ -29,7 +29,7 @@ A clear and concise description of any alternative solutions or features you've 
 ## Todoist API Reference
 
 If this feature relates to a specific Todoist API endpoint or capability, please provide a link:
-- [Todoist API Documentation](https://developer.todoist.com/rest/v2/)
+- [Todoist API Documentation](https://developer.todoist.com/api/v1)
 
 ## Additional Context
 

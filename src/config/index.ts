@@ -35,9 +35,21 @@ interface EnvironmentConfig {
 
 /**
  * Parse and validate environment variables
+ *
+ * NOTE: Token validation is now deferred until first API tool invocation.
+ * This allows MCP platform inspection (e.g., Smithery) without requiring token.
  */
+function normalizeApiToken(token: string | undefined | null): string | null {
+  if (typeof token !== 'string') {
+    return null;
+  }
+
+  const trimmed = token.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
 function parseEnvironmentConfig(): {
-  apiToken: string;
+  apiToken: string | null;
   baseUrl: string;
   timeout: number;
   retryAttempts: number;
@@ -48,22 +60,10 @@ function parseEnvironmentConfig(): {
 } {
   const env = process.env as EnvironmentConfig;
 
-  // Validate required API token
-  const apiToken = env.TODOIST_API_TOKEN;
-  if (!apiToken) {
-    throw new ValidationError(
-      'TODOIST_API_TOKEN environment variable is required. ' +
-        'Please set it in your MCP client configuration or .env file.'
-    );
-  }
+  // Token is now optional at startup (deferred validation)
+  const apiToken = normalizeApiToken(env.TODOIST_API_TOKEN ?? null);
 
-  // Validate API token format (basic check)
-  if (typeof apiToken !== 'string' || apiToken.length < 10) {
-    throw new ValidationError(
-      'TODOIST_API_TOKEN appears to be invalid. ' +
-        'Please check your API token from Todoist settings.'
-    );
-  }
+  // Skip token format validation (deferred to first tool call)
 
   // Parse and validate numeric values
   const timeout = env.REQUEST_TIMEOUT
@@ -168,7 +168,7 @@ export function getConfig(): APIConfiguration {
 
       cachedConfig = {
         api: {
-          token: env.apiToken,
+          token: env.apiToken, // Now nullable
           base_url: env.baseUrl,
           timeout: env.timeout,
           retry_attempts: env.retryAttempts,
@@ -201,6 +201,11 @@ export function getConfig(): APIConfiguration {
       );
     }
   }
+
+  // Always reflect the latest token from environment to support deferred validation flows
+  cachedConfig.api.token = normalizeApiToken(
+    process.env.TODOIST_API_TOKEN ?? null
+  );
 
   return cachedConfig.api;
 }

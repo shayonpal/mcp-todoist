@@ -6,6 +6,7 @@ import { CacheService } from '../../src/services/cache.js';
 import { BatchOperationsService } from '../../src/services/batch.js';
 import { createInMemoryApiService } from '../helpers/inMemoryTodoistApiService.js';
 import { BulkTasksResponse } from '../../src/types/bulk-operations.js';
+import { TokenValidatorSingleton } from '../../src/services/token-validator.js';
 
 // Type guard for BulkTasksResponse
 function isBulkTasksResponse(
@@ -17,7 +18,7 @@ function isBulkTasksResponse(
 }
 
 const mockApiConfig = {
-  token: 'test_token',
+  token: 'test_token_123456',
   base_url: 'https://api.todoist.com/rest/v1',
   timeout: 10000,
   retry_attempts: 3,
@@ -34,6 +35,9 @@ describe('Bulk Operations Integration Tests', () => {
     apiService = createInMemoryApiService();
     cache = new CacheService();
     const batchService = new BatchOperationsService(apiService);
+
+    (TokenValidatorSingleton as any).resetForTesting();
+    (TokenValidatorSingleton as any).setMockApiService(apiService);
 
     bulkTasksTool = new TodoistBulkTasksTool(mockApiConfig, {
       apiService,

@@ -17,6 +17,8 @@ import {
   toTodoistProject,
   toTodoistSection,
 } from './mockTodoistApiService.js';
+import { TokenValidatorSingleton } from '../../src/services/token-validator.js';
+import { getTestTokenBehavior } from './test-token-config.js';
 
 interface SyncCommand {
   type: string;
@@ -32,6 +34,8 @@ export class InMemoryTodoistApiService {
   private reminders = new Map<string, TodoistReminder>();
   private labels = new Map<string, TodoistLabel>();
   private idCounter = 1000;
+  private validationBehavior: 'succeed' | 'fail' | 'throw' = 'succeed';
+  private validationError: Error | null = null;
 
   constructor() {
     const initialTasks = [
@@ -74,6 +78,67 @@ export class InMemoryTodoistApiService {
       rest: { remaining: 99, resetTime, isLimited: false },
       sync: { remaining: 99, resetTime, isLimited: false },
     };
+  }
+
+  /**
+   * Configure validation behavior for testing
+   * @param behavior - 'succeed' (default), 'fail', or 'throw'
+   * @param error - Optional error to throw when behavior is 'throw'
+   */
+  setValidationBehavior(
+    behavior: 'succeed' | 'fail' | 'throw',
+    error?: Error
+  ): void {
+    this.validationBehavior = behavior;
+    if (error) {
+      this.validationError = error;
+    }
+  }
+
+  /**
+   * Reset validation behavior to default (succeed)
+   */
+  resetValidationBehavior(): void {
+    this.validationBehavior = 'succeed';
+    this.validationError = null;
+  }
+
+  /**
+   * Configure validation behavior based on test token
+   * Uses test-token-config to map tokens to validation responses
+   * @param token - The test token to configure behavior for
+   */
+  configureTokenBehavior(token: string): void {
+    const behavior = getTestTokenBehavior(token);
+
+    if (!behavior) {
+      // Unknown token - default to success
+      this.setValidationBehavior('succeed');
+      return;
+    }
+
+    // Create error matching the expected behavior
+    const error = Object.assign(new Error(behavior.message), {
+      status: behavior.status,
+      response: { status: behavior.status },
+    });
+
+    this.setValidationBehavior('throw', error);
+  }
+
+  /**
+   * Mock token validation - configurable behavior for testing
+   * This simulates Todoist API token validation with controllable outcomes
+   */
+  async validateToken(): Promise<void> {
+    if (this.validationBehavior === 'throw') {
+      throw this.validationError || new Error('Invalid token');
+    }
+    if (this.validationBehavior === 'fail') {
+      throw new Error('Token validation failed');
+    }
+    // Default: succeed
+    return Promise.resolve();
   }
 
   // Task operations
@@ -712,5 +777,18 @@ export class InMemoryTodoistApiService {
 }
 
 export function createInMemoryApiService(): TodoistApiService {
-  return new InMemoryTodoistApiService() as unknown as TodoistApiService;
+  const service =
+    new InMemoryTodoistApiService() as unknown as TodoistApiService;
+
+  if (typeof (TokenValidatorSingleton as any).resetForTesting === 'function') {
+    (TokenValidatorSingleton as any).resetForTesting();
+  }
+
+  if (
+    typeof (TokenValidatorSingleton as any).setMockApiService === 'function'
+  ) {
+    (TokenValidatorSingleton as any).setMockApiService(service);
+  }
+
+  return service;
 }
