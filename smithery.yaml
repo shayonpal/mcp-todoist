@@ -1,6 +1,3 @@
-runtime: "container"
-build:
-  dockerfile: "Dockerfile"
-  dockerBuildPath: "."
-startCommand:
-  type: "stdio"
+runtime: "typescript"
+env:
+  NODE_ENV: "production"
