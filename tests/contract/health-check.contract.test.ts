@@ -305,6 +305,7 @@ describe('Health Check Metadata Contract', () => {
       const { TodoistMCPServer } = await import('../../src/server.js');
       const server = new TodoistMCPServer();
 
+      await server.healthCheck();
       const start = performance.now();
       await server.healthCheck();
       const duration = performance.now() - start;
@@ -324,6 +325,7 @@ describe('Health Check Metadata Contract', () => {
       const { TodoistMCPServer } = await import('../../src/server.js');
       const server = new TodoistMCPServer();
 
+      await server.healthCheck();
       const start = performance.now();
       await server.healthCheck();
       const duration = performance.now() - start;

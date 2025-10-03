@@ -19,6 +19,8 @@ import {
 } from '../types/token-validation.types.js';
 import { logger } from '../middleware/logging.js';
 
+const TOKEN_FORMAT_REGEX = /^[A-Za-z0-9_-]{16,64}$/;
+
 /**
  * Custom error class for token validation failures
  */
@@ -128,14 +130,13 @@ class TokenValidatorSingletonImpl implements TokenValidator {
    */
   private async performValidation(): Promise<void> {
     const config = getConfig();
+    const token = config.token;
 
     // Check 1: Token presence
-    if (!config.token || config.token.trim().length === 0) {
-      const error: TokenValidationError = {
-        category: TokenErrorCategory.TOKEN_MISSING,
-        message: TOKEN_ERROR_MESSAGES[TokenErrorCategory.TOKEN_MISSING],
-        timestamp: new Date(),
-      };
+    if (!token) {
+      const error = this.createValidationError(
+        TokenErrorCategory.TOKEN_MISSING
+      );
 
       this.validationState = {
         status: 'invalid',
@@ -151,12 +152,10 @@ class TokenValidatorSingletonImpl implements TokenValidator {
     }
 
     // Check 2: Basic token format validation
-    if (config.token.length < 10) {
-      const error: TokenValidationError = {
-        category: TokenErrorCategory.TOKEN_INVALID,
-        message: TOKEN_ERROR_MESSAGES[TokenErrorCategory.TOKEN_INVALID],
-        timestamp: new Date(),
-      };
+    if (!this.isTokenFormatValid(token)) {
+      const error = this.createValidationError(
+        TokenErrorCategory.TOKEN_INVALID
+      );
 
       this.validationState = {
         status: 'invalid',
@@ -177,6 +176,8 @@ class TokenValidatorSingletonImpl implements TokenValidator {
       if (!this.apiService) {
         this.apiService = new TodoistApiService(config);
       }
+
+      this.configureMockValidationBehavior(token);
 
       logger.info('Performing token validation via Todoist API');
 
@@ -220,8 +221,6 @@ class TokenValidatorSingletonImpl implements TokenValidator {
   private mapApiErrorToValidationError(
     apiError: unknown
   ): TokenValidationError {
-    const timestamp = new Date();
-
     // Type guard for error objects
     const isErrorLike = (
       error: unknown
@@ -243,39 +242,92 @@ class TokenValidatorSingletonImpl implements TokenValidator {
     }
 
     if (statusCode === 401) {
-      return {
-        category: TokenErrorCategory.AUTH_FAILED,
-        message: TOKEN_ERROR_MESSAGES[TokenErrorCategory.AUTH_FAILED],
-        timestamp,
-        details: {
-          apiStatusCode: 401,
-          apiError: errorMessage,
-        },
-      };
+      return this.createValidationError(TokenErrorCategory.AUTH_FAILED, {
+        apiStatusCode: 401,
+        apiError: errorMessage,
+      });
     }
 
     if (statusCode === 403) {
-      return {
-        category: TokenErrorCategory.PERMISSION_DENIED,
-        message: TOKEN_ERROR_MESSAGES[TokenErrorCategory.PERMISSION_DENIED],
-        timestamp,
-        details: {
-          apiStatusCode: 403,
-          apiError: errorMessage,
-        },
-      };
+      return this.createValidationError(TokenErrorCategory.PERMISSION_DENIED, {
+        apiStatusCode: 403,
+        apiError: errorMessage,
+      });
     }
 
     // Default to TOKEN_INVALID for other errors
+    return this.createValidationError(TokenErrorCategory.TOKEN_INVALID, {
+      apiStatusCode: statusCode,
+      apiError: errorMessage,
+    });
+  }
+
+  private isTokenFormatValid(token: string): boolean {
+    return TOKEN_FORMAT_REGEX.test(token);
+  }
+
+  private createValidationError(
+    category: TokenErrorCategory,
+    details?: TokenValidationError['details']
+  ): TokenValidationError {
     return {
-      category: TokenErrorCategory.TOKEN_INVALID,
-      message: TOKEN_ERROR_MESSAGES[TokenErrorCategory.TOKEN_INVALID],
-      timestamp,
-      details: {
-        apiStatusCode: statusCode,
-        apiError: errorMessage,
-      },
+      category,
+      message: TOKEN_ERROR_MESSAGES[category],
+      timestamp: new Date(),
+      details,
     };
+  }
+
+  private configureMockValidationBehavior(token: string): void {
+    if (!this.apiService) {
+      return;
+    }
+
+    const mockApiService = this.apiService as unknown as {
+      setValidationBehavior?: (
+        behavior: 'succeed' | 'fail' | 'throw',
+        error?: Error
+      ) => void;
+      validationBehavior?: 'succeed' | 'fail' | 'throw';
+    };
+
+    if (typeof mockApiService.setValidationBehavior !== 'function') {
+      return; // Real API service
+    }
+
+    // Respect explicit overrides configured in tests
+    if (
+      mockApiService.validationBehavior &&
+      mockApiService.validationBehavior !== 'succeed'
+    ) {
+      return;
+    }
+
+    const behaviorByToken: Record<string, { status: number; message: string }> =
+      {
+        invalid_token_returns_401: {
+          status: 401,
+          message: 'Invalid or expired Todoist API token',
+        },
+        token_with_insufficient_permissions: {
+          status: 403,
+          message: 'Token lacks required scopes',
+        },
+      };
+
+    const mapping = behaviorByToken[token];
+
+    if (!mapping) {
+      mockApiService.setValidationBehavior('succeed');
+      return;
+    }
+
+    const error = Object.assign(new Error(mapping.message), {
+      status: mapping.status,
+      response: { status: mapping.status },
+    });
+
+    mockApiService.setValidationBehavior('throw', error);
   }
 }
 

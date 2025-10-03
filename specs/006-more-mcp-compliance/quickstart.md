@@ -250,22 +250,20 @@ npm test -- --testNamePattern="Health check with validated token"
 # Run full integration test suite
 npm test -- --testNamePattern="Token validation lifecycle"
 
-# This test should:
-# 1. Start server without token → verify startup succeeds
-# 2. Call list_tools → verify MCP protocol works
-# 3. Attempt tool call → verify TOKEN_MISSING error
-# 4. Set token + restart → verify server accepts token
-# 5. Call tool → verify validation triggered
-# 6. Call second tool → verify validation cached
-# 7. Check health endpoint → verify metadata accurate
-# 8. Simulate 401 error → verify AUTH_FAILED error
-# 9. Verify cached failure → verify no re-validation
+# This test suite includes 12 tests covering:
+# 1. Full happy path workflow (startup → list_tools → validation → caching → health check)
+# 2. Token removal mid-session
+# 3. Token change detection
+# 4. All error categories (TOKEN_MISSING, TOKEN_INVALID, AUTH_FAILED, PERMISSION_DENIED)
+# 5. Performance requirements (<100ms validation, <1ms cache, <10ms startup)
+# 6. Validation persistence across tool types
+# 7. Failed validation caching
 ```
 
 **Acceptance Criteria**:
-- [ ] All 9 sub-tests pass
-- [ ] Total execution time <5 seconds (no real API calls)
-- [ ] No flaky failures (deterministic mocks)
+- [x] All 12 sub-tests pass
+- [x] Total execution time <5 seconds (3.27s actual)
+- [x] No flaky failures (deterministic mocks)
 
 ---
 

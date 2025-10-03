@@ -11,13 +11,15 @@ import {
   createTasksApiMock,
   TasksApiMock,
 } from '../helpers/mockTodoistApiService.js';
+import { TokenValidatorSingleton } from '../../src/services/token-validator.js';
+import { resetConfig } from '../../src/config/index.js';
 
 type BatchServiceMock = jest.Mocked<
   Pick<BatchOperationsService, 'executeBatch'>
 >;
 
 const mockApiConfig = {
-  token: 'test_token',
+  token: 'test_token_123456',
   base_url: 'https://api.todoist.com/rest/v1',
   timeout: 10000,
   retry_attempts: 3,
@@ -53,6 +55,14 @@ describe('todoist_tasks MCP Tool Contract', () => {
   beforeEach(() => {
     apiService = createTasksApiMock();
     batchService = createMockBatchService();
+
+    (TokenValidatorSingleton as any).resetForTesting();
+    (TokenValidatorSingleton as any).setMockApiService({
+      validateToken: jest.fn(async () => undefined),
+    } as unknown as TodoistApiService);
+
+    process.env.TODOIST_API_TOKEN = mockApiConfig.token;
+    resetConfig();
 
     todoistTasksTool = new TodoistTasksTool(mockApiConfig, {
       apiService: apiService as unknown as TodoistApiService,

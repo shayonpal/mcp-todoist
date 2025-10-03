@@ -74,7 +74,7 @@ describe('Token Validation State Machine Contract', () => {
     });
 
     test('isTokenConfigured returns true when token present', async () => {
-      process.env.TODOIST_API_TOKEN = 'test_token';
+      process.env.TODOIST_API_TOKEN = 'test_token_123456';
 
       const { TokenValidatorSingleton } = await import(
         '../../src/services/token-validator.js'

@@ -4,7 +4,7 @@
  * Main entry point for the Todoist MCP Server
  */
 
-import { server } from './server.js';
+import { getServer } from './server.js';
 import { logger } from './middleware/logging.js';
 import { validateConfig } from './config/index.js';
 
@@ -28,17 +28,20 @@ async function main() {
     }
 
     // Start the server
+    const server = getServer();
     await server.run();
 
     // Handle graceful shutdown
     process.on('SIGINT', async () => {
       logger.info('Received SIGINT, shutting down gracefully...');
+      const server = getServer();
       await server.stop();
       process.exit(0);
     });
 
     process.on('SIGTERM', async () => {
       logger.info('Received SIGTERM, shutting down gracefully...');
+      const server = getServer();
       await server.stop();
       process.exit(0);
     });
@@ -69,6 +72,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   main();
 }
 
-export { server } from './server.js';
+const server = getServer();
+
+export { server, getServer };
 export * from './types/todoist.js';
 export * from './types/errors.js';

@@ -122,7 +122,7 @@ Add to your Claude Desktop configuration file:
   "mcpServers": {
     "todoist": {
       "command": "node",
-      "args": ["/absolute/path/to/mcp-todoist/dist/server.js"],
+      "args": ["/absolute/path/to/mcp-todoist/dist/index.js"],
       "env": {
         "TODOIST_API_TOKEN": "your_api_token_here"
       }

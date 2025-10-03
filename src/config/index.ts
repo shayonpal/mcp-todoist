@@ -39,6 +39,15 @@ interface EnvironmentConfig {
  * NOTE: Token validation is now deferred until first API tool invocation.
  * This allows MCP platform inspection (e.g., Smithery) without requiring token.
  */
+function normalizeApiToken(token: string | undefined | null): string | null {
+  if (typeof token !== 'string') {
+    return null;
+  }
+
+  const trimmed = token.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
 function parseEnvironmentConfig(): {
   apiToken: string | null;
   baseUrl: string;
@@ -52,7 +61,7 @@ function parseEnvironmentConfig(): {
   const env = process.env as EnvironmentConfig;
 
   // Token is now optional at startup (deferred validation)
-  const apiToken = env.TODOIST_API_TOKEN ?? null;
+  const apiToken = normalizeApiToken(env.TODOIST_API_TOKEN ?? null);
 
   // Skip token format validation (deferred to first tool call)
 
@@ -192,6 +201,11 @@ export function getConfig(): APIConfiguration {
       );
     }
   }
+
+  // Always reflect the latest token from environment to support deferred validation flows
+  cachedConfig.api.token = normalizeApiToken(
+    process.env.TODOIST_API_TOKEN ?? null
+  );
 
   return cachedConfig.api;
 }

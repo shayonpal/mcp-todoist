@@ -10,7 +10,7 @@ import {
 import { mockProjects } from '../mocks/todoist-api-responses.js';
 
 const mockApiConfig = {
-  token: 'test_token',
+  token: 'test_token_123456',
   base_url: 'https://api.todoist.com/rest/v1',
   timeout: 10000,
   retry_attempts: 3,

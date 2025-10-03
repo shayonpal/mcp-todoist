@@ -17,6 +17,7 @@ import {
   toTodoistProject,
   toTodoistSection,
 } from './mockTodoistApiService.js';
+import { TokenValidatorSingleton } from '../../src/services/token-validator.js';
 
 interface SyncCommand {
   type: string;
@@ -752,5 +753,18 @@ export class InMemoryTodoistApiService {
 }
 
 export function createInMemoryApiService(): TodoistApiService {
-  return new InMemoryTodoistApiService() as unknown as TodoistApiService;
+  const service =
+    new InMemoryTodoistApiService() as unknown as TodoistApiService;
+
+  if (typeof (TokenValidatorSingleton as any).resetForTesting === 'function') {
+    (TokenValidatorSingleton as any).resetForTesting();
+  }
+
+  if (
+    typeof (TokenValidatorSingleton as any).setMockApiService === 'function'
+  ) {
+    (TokenValidatorSingleton as any).setMockApiService(service);
+  }
+
+  return service;
 }

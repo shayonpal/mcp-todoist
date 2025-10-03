@@ -2,6 +2,28 @@
 
 ## [Unreleased]
 
+## [1.5.0] - 2025-10-03
+
+### Added
+
+- Deferred token validation for MCP platform compatibility
+  - Token now optional at startup (validated on first tool invocation)
+  - Enables MCP platform inspection (e.g., Smithery) without requiring valid token
+  - Token normalization with automatic trimming and empty-string handling
+  - Dynamic token reflection from environment variables
+  - Improved error messages for token validation failures
+
+### Changed
+
+- Server architecture refactored for lazy initialization
+  - Server implementation split into modular `src/server/impl.ts`
+  - Lazy loading pattern for improved startup performance
+  - Exports both `server` instance and `getServer()` factory for flexibility
+- Enhanced test infrastructure
+  - Token validation singleton integration across all test suites
+  - Improved test isolation with proper singleton reset mechanisms
+  - Standardized mock token format (minimum length validation)
+
 ## [1.4.1] - 2025-10-02
 
 ### Added
@@ -140,7 +162,8 @@
 - Project configuration (TypeScript, Jest, ESLint, Prettier)
 - README and project documentation
 
-[Unreleased]: https://github.com/shayonpal/mcp-todoist/compare/v1.4.1...HEAD
+[Unreleased]: https://github.com/shayonpal/mcp-todoist/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/shayonpal/mcp-todoist/compare/v1.4.1...v1.5.0
 [1.4.1]: https://github.com/shayonpal/mcp-todoist/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/shayonpal/mcp-todoist/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/shayonpal/mcp-todoist/compare/v1.2.1...v1.3.0

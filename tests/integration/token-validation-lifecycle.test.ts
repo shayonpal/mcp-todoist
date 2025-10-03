@@ -244,8 +244,8 @@ describe('Token Validation Lifecycle Integration', () => {
     test('server startup <10ms without token', async () => {
       delete process.env.TODOIST_API_TOKEN;
 
-      const start = performance.now();
       const { TodoistMCPServer } = await import('../../src/server.js');
+      const start = performance.now();
       const server = new TodoistMCPServer();
       const duration = performance.now() - start;
 
@@ -276,11 +276,6 @@ describe('Token Validation Lifecycle Integration', () => {
       });
 
       const result = await tool.execute({ action: 'list' });
-
-      // Debug: log result if it fails
-      if (!result.success) {
-        console.log('Tool execution failed:', result);
-      }
 
       expect(result.success).toBe(true);
     });
@@ -327,7 +322,10 @@ describe('Token Validation Lifecycle Integration', () => {
       process.env.TODOIST_API_TOKEN = 'invalid_token';
 
       // Configure mock to fail validation
-      (mockApiService as any).setValidationBehavior('throw', new Error('Invalid token'));
+      (mockApiService as any).setValidationBehavior(
+        'throw',
+        new Error('Invalid token')
+      );
 
       const { TokenValidatorSingleton } = await import(
         '../../src/services/token-validator.js'

@@ -24,7 +24,7 @@ Add your Todoist API token to your MCP client configuration:
   "mcpServers": {
     "todoist": {
       "command": "node",
-      "args": ["/path/to/mcp-todoist/dist/server.js"],
+      "args": ["/path/to/mcp-todoist/dist/index.js"],
       "env": {
         "TODOIST_API_TOKEN": "your_api_token_here"
       }
