@@ -47,7 +47,7 @@ describe('Token Validation Lifecycle Integration', () => {
       // (This will fail until implementation is complete)
       const tasksTool = await import('../../src/tools/todoist-tasks.js');
       const tool = new tasksTool.TodoistTasksTool({
-        apiToken: 'valid_test_token',
+        token: 'valid_test_token',
         timeout: 10000,
         retry_attempts: 3,
         base_url: 'https://api.todoist.com/rest/v1',
@@ -240,7 +240,7 @@ describe('Token Validation Lifecycle Integration', () => {
       // Tools should work without explicit validation call
       const tasksTool = await import('../../src/tools/todoist-tasks.js');
       const tool = new tasksTool.TodoistTasksTool({
-        apiToken: 'valid_test_token',
+        token: 'valid_test_token',
         timeout: 10000,
         retry_attempts: 3,
         base_url: 'https://api.todoist.com/rest/v1',
@@ -262,7 +262,7 @@ describe('Token Validation Lifecycle Integration', () => {
       // Validate via tasks tool
       const tasksTool = await import('../../src/tools/todoist-tasks.js');
       const tasks = new tasksTool.TodoistTasksTool({
-        apiToken: 'valid_test_token',
+        token: 'valid_test_token',
         timeout: 10000,
         retry_attempts: 3,
         base_url: 'https://api.todoist.com/rest/v1',
@@ -275,7 +275,7 @@ describe('Token Validation Lifecycle Integration', () => {
       // Use projects tool (should use cached validation)
       const projectsTool = await import('../../src/tools/todoist-projects.js');
       const projects = new projectsTool.TodoistProjectsTool({
-        apiToken: 'valid_test_token',
+        token: 'valid_test_token',
         timeout: 10000,
         retry_attempts: 3,
         base_url: 'https://api.todoist.com/rest/v1',

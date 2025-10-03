@@ -48,6 +48,19 @@ class TokenValidatorSingletonImpl implements TokenValidator {
   private apiService: TodoistApiService | null = null;
 
   /**
+   * Reset validation state (for testing purposes only)
+   * @internal
+   */
+  resetForTesting(): void {
+    this.validationState = {
+      status: 'not_validated',
+      validatedAt: null,
+      error: null,
+    };
+    this.apiService = null;
+  }
+
+  /**
    * Get current validation state without triggering validation
    */
   getValidationState(): TokenValidationState {
@@ -58,11 +71,12 @@ class TokenValidatorSingletonImpl implements TokenValidator {
    * Check if token is configured (present in environment)
    */
   isTokenConfigured(): boolean {
-    const config = getConfig();
+    // Check environment directly to avoid config caching issues in tests
+    const token = process.env.TODOIST_API_TOKEN;
     return (
-      config.token !== null &&
-      config.token !== undefined &&
-      config.token.trim().length > 0
+      token !== null &&
+      token !== undefined &&
+      token.trim().length > 0
     );
   }
 

@@ -17,9 +17,19 @@ import {
 describe('Token Validation State Machine Contract', () => {
   let originalToken: string | undefined;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     // Save original token
     originalToken = process.env.TODOIST_API_TOKEN;
+
+    // Reset config cache
+    const { resetConfig } = await import('../../src/config/index.js');
+    resetConfig();
+
+    // Reset singleton state for isolated tests
+    const { TokenValidatorSingleton } = await import(
+      '../../src/services/token-validator.js'
+    );
+    (TokenValidatorSingleton as any).resetForTesting();
   });
 
   afterEach(() => {
@@ -131,7 +141,7 @@ describe('Token Validation State Machine Contract', () => {
 
       try {
         await validator.validateOnce();
-        fail('Expected error to be thrown');
+        expect(true).toBe(false); // Should not reach here
       } catch (error: any) {
         const state = validator.getValidationState();
         expect(state.error?.message).toBe(
