@@ -17,8 +17,5 @@ RUN npm run build
 # Remove devDependencies to reduce image size
 RUN npm prune --production
 
-# Expose HTTP port
-EXPOSE 3000
-
-# Run the HTTP server
-CMD ["node", "dist/server-http.js"]
+# Run the server
+CMD ["node", "dist/server.js"]
