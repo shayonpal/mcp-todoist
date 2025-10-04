@@ -283,12 +283,11 @@ export class TodoistMCPServerImpl {
   }
 
   /**
-   * Start the MCP server
+   * Connect to a custom transport
+   * Allows HTTP, SSE, or other transport types
    */
-  async run(): Promise<void> {
-    const transport = new StdioServerTransport();
-
-    logger.info('Starting Todoist MCP Server', {
+  async connect(transport: any): Promise<void> {
+    logger.info('Connecting Todoist MCP Server to transport', {
       version: '1.0.0',
       toolCount: this.tools.size,
       tools: Array.from(this.tools.keys()),
@@ -298,11 +297,19 @@ export class TodoistMCPServerImpl {
 
     try {
       await this.server.connect(transport);
-      logger.info('Todoist MCP Server started successfully');
+      logger.info('Todoist MCP Server connected successfully');
     } catch (error) {
-      logger.error('Failed to start MCP server', { error });
+      logger.error('Failed to connect MCP server to transport', { error });
       throw error;
     }
+  }
+
+  /**
+   * Start the MCP server with stdio transport (default)
+   */
+  async run(): Promise<void> {
+    const transport = new StdioServerTransport();
+    await this.connect(transport);
   }
 
   /**
