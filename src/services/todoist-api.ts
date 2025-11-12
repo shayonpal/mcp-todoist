@@ -37,13 +37,14 @@ export type SyncCommand = {
 };
 
 // SyncResponse for general Sync API operations
-// Includes reminders, temp_id_mapping, and sync_status
+// Includes reminders, filters, temp_id_mapping, and sync_status
 export interface SyncResponse {
   sync_status: Record<string, 'ok' | SyncError>;
   temp_id_mapping: Record<string, string>;
   full_sync: boolean;
   reminders?: TodoistReminder[];
   reminders_location?: TodoistReminder[];
+  filters?: TodoistFilter[];
 }
 
 type TaskQueryParams = {
@@ -1161,23 +1162,39 @@ export class TodoistApiService {
     await this.sync(commands);
   }
 
-  // Filter methods
+  // Filter operations - use sync API for all operations
+  // Filters support query syntax for advanced task filtering
   async getFilters(): Promise<TodoistFilter[]> {
     this.ensureToken();
 
-    const response = await this.executeRequest<{
-      results: TodoistFilter[];
-      next_cursor: string | null;
-    }>('/filters', {});
+    // Use sync API to get filters
+    const response = await this.executeRequest<SyncResponse>(
+      'https://api.todoist.com/api/v1/sync',
+      {
+        method: 'POST',
+        data: {
+          sync_token: '*',
+          resource_types: ['filters'],
+        },
+      },
+      true
+    ); // Mark as sync endpoint for rate limiting
 
-    // API v1 returns paginated response with { results: [...], next_cursor: ... }
-    return response.results || [];
+    return Array.isArray(response.filters) ? response.filters : [];
   }
 
   async getFilter(filterId: string): Promise<TodoistFilter> {
     this.ensureToken();
 
-    return this.executeRequest<TodoistFilter>(`/filters/${filterId}`, {});
+    // Get all filters and find by ID (sync API doesn't support individual filter retrieval)
+    const filters = await this.getFilters();
+    const filter = filters.find(f => f.id === filterId);
+
+    if (!filter) {
+      throw new NotFoundError(`Filter with id ${filterId} not found`);
+    }
+
+    return filter;
   }
 
   async createFilter(
@@ -1185,10 +1202,50 @@ export class TodoistApiService {
   ): Promise<TodoistFilter> {
     this.ensureToken();
 
-    return this.executeRequest<TodoistFilter>('/filters', {
-      method: 'POST',
-      data: filterData,
-    });
+    // Generate temp_id and uuid for sync command
+    const tempId = `temp_${Date.now()}_${Math.random()
+      .toString(36)
+      .substring(7)}`;
+    const uuid = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+
+    const commands = [
+      {
+        type: 'filter_add',
+        temp_id: tempId,
+        uuid,
+        args: filterData,
+      },
+    ];
+
+    const response = await this.sync(commands);
+
+    // Extract the created filter ID from temp_id_mapping
+    const filterId = response.temp_id_mapping?.[tempId];
+
+    if (!filterId) {
+      throw new TodoistAPIError(
+        TodoistErrorCode.SERVER_ERROR,
+        'Failed to create filter',
+        undefined,
+        false,
+        undefined,
+        500
+      );
+    }
+
+    // Fetch and return the created filter
+    const filters = await this.getFilters();
+    const createdFilter = filters.find(f => f.id === filterId);
+
+    if (!createdFilter) {
+      // Return a constructed filter if we can't fetch it
+      return {
+        id: filterId,
+        ...filterData,
+      } as TodoistFilter;
+    }
+
+    return createdFilter;
   }
 
   async updateFilter(
@@ -1197,18 +1254,48 @@ export class TodoistApiService {
   ): Promise<TodoistFilter> {
     this.ensureToken();
 
-    return this.executeRequest<TodoistFilter>(`/filters/${filterId}`, {
-      method: 'POST',
-      data: filterData,
-    });
+    const uuid = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+
+    const commands = [
+      {
+        type: 'filter_update',
+        uuid,
+        args: {
+          id: filterId,
+          ...filterData,
+        },
+      },
+    ];
+
+    await this.sync(commands);
+
+    // Fetch and return the updated filter
+    const filters = await this.getFilters();
+    const updatedFilter = filters.find(f => f.id === filterId);
+
+    if (!updatedFilter) {
+      throw new NotFoundError('Filter not found after update');
+    }
+
+    return updatedFilter;
   }
 
   async deleteFilter(filterId: string): Promise<void> {
     this.ensureToken();
 
-    await this.executeRequest<void>(`/filters/${filterId}`, {
-      method: 'DELETE',
-    });
+    const uuid = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+
+    const commands = [
+      {
+        type: 'filter_delete',
+        uuid,
+        args: {
+          id: filterId,
+        },
+      },
+    ];
+
+    await this.sync(commands);
   }
 
   // Project archive methods
