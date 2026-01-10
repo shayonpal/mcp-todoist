@@ -55,193 +55,58 @@ MCP server enabling programmatic Todoist task and project management through an 
 
 ## Installation
 
-### Option 1: Install from npm (Recommended)
+This MCP server is deployed as a remote HTTP service. No local installation required - just configure your MCP client to connect to the HTTP endpoint.
 
-```bash
-npm i @shayonpal/mcp-todoist
-```
+### For Deployment
 
-### Option 2: Install from source
+If you want to deploy your own instance:
 
-1. Clone the repository:
-```bash
-git clone https://github.com/shayonpal/mcp-todoist.git
-cd mcp-todoist
-```
+1. Fork this repository
+2. Deploy to Vercel (button below)
+3. Configure `TODOIST_API_TOKEN` in Vercel environment variables
 
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Build the project:
-```bash
-npm run build
-```
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/shayonpal/mcp-todoist)
 
 ## Configuration
 
-### 1. Set up environment variables
+### MCP Clients
 
-```bash
-cp .env.example .env
-```
+Configure your MCP client with the HTTP transport:
 
-Edit `.env` and add your Todoist API token:
-```bash
-TODOIST_API_TOKEN=your_todoist_api_token_here
-```
+#### Claude Desktop / Claude Code
 
-### 2. Configure your MCP client
+Add to your MCP settings file:
 
-#### Claude Desktop
+**macOS**: `~/.claude/settings.json`
+**Windows**: `%APPDATA%\.claude\settings.json`
+**Linux**: `~/.config/claude/settings.json`
 
-Add to your Claude Desktop configuration file:
-
-**macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
-**Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
-
-**If installed from npm:**
 ```json
 {
   "mcpServers": {
     "todoist": {
-      "command": "npx",
-      "args": ["-y", "@shayonpal/mcp-todoist"],
-      "env": {
-        "TODOIST_API_TOKEN": "your_api_token_here"
+      "transport": {
+        "type": "http",
+        "url": "https://todoist.uverfolks.ca/mcp"
       }
     }
   }
 }
 ```
 
-**If installed from source:**
+For local development:
 ```json
 {
   "mcpServers": {
     "todoist": {
-      "command": "node",
-      "args": ["/absolute/path/to/mcp-todoist/dist/index.js"],
-      "env": {
-        "TODOIST_API_TOKEN": "your_api_token_here"
+      "transport": {
+        "type": "http",
+        "url": "http://localhost:3000/mcp"
       }
     }
   }
 }
 ```
-
-**Note**: When using source installation, use absolute paths in the configuration.
-
-#### Claude Code CLI
-
-**Recommended: Use CLI command**
-
-Add the server using the `claude mcp add` command:
-
-```bash
-# Project scope (shared with team, stored in .mcp.json)
-claude mcp add todoist --scope project npx -y @shayonpal/mcp-todoist
-
-# User scope (personal, works across all projects)
-claude mcp add todoist --scope user npx -y @shayonpal/mcp-todoist
-
-# Local scope (personal, current project only) - default
-claude mcp add todoist npx -y @shayonpal/mcp-todoist
-```
-
-Then set your Todoist API token as an environment variable:
-```bash
-export TODOIST_API_TOKEN=your_api_token_here
-```
-
-Or manually add the environment variable to `.mcp.json`:
-```json
-{
-  "mcpServers": {
-    "todoist": {
-      "command": "npx",
-      "args": ["-y", "@shayonpal/mcp-todoist"],
-      "env": {
-        "TODOIST_API_TOKEN": "${TODOIST_API_TOKEN}"
-      }
-    }
-  }
-}
-```
-
-**Scope selection:**
-- **Project scope** (recommended for teams): Shared via `.mcp.json` in version control
-- **User scope**: Personal, available across all projects on your machine
-- **Local scope**: Personal, specific to current project only (default)
-
-#### Codex CLI
-
-Add to `~/.codex/config.toml`:
-
-```toml
-[mcp_servers.todoist]
-command = "npx"
-args = ["-y", "@shayonpal/mcp-todoist"]
-env = { "TODOIST_API_TOKEN" = "your_api_token_here" }
-startup_timeout_ms = 20000
-```
-
-**Note**: Codex uses TOML format with `mcp_servers` (underscore). All strings must be quoted.
-
-#### Cursor IDE
-
-**Recommended: One-click install**
-
-[![Add to Cursor](https://img.shields.io/badge/Add_to-Cursor-blue?logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJMMiAyMkgyMkwxMiAyWiIgZmlsbD0id2hpdGUiLz4KPC9zdmc+Cg==)](cursor://anysphere.cursor-deeplink/mcp/install?name=todoist&config=eyJ0b2RvaXN0Ijp7InR5cGUiOiJzdGRpbyIsImNvbW1hbmQiOiJucHgiLCJhcmdzIjpbIi15IiwiQHNoYXlvbnBhbC9tY3AtdG9kb2lzdCJdLCJlbnYiOnsiVE9ET0lTVF9BUElfVE9LRU4iOiIke2VudjpUT0RPSVNUX0FQSV9UT0tFTn0ifX19)
-
-Click the button above to automatically install the server in Cursor. Make sure you have `TODOIST_API_TOKEN` set as an environment variable.
-
-**Manual installation:**
-
-**Configuration locations:**
-- **Project-specific**: `.cursor/mcp.json` in project root
-- **Global**: `~/.cursor/mcp.json` in home directory
-
-**Option 1: Using environment variables**
-```json
-{
-  "mcpServers": {
-    "todoist": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@shayonpal/mcp-todoist"],
-      "env": {
-        "TODOIST_API_TOKEN": "${env:TODOIST_API_TOKEN}"
-      }
-    }
-  }
-}
-```
-
-**Option 2: Using environment file**
-```json
-{
-  "mcpServers": {
-    "todoist": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@shayonpal/mcp-todoist"],
-      "envFile": ".env"
-    }
-  }
-}
-```
-
-**Supported config interpolation:**
-- `${env:NAME}` - Environment variables
-- `${userHome}` - Path to home folder
-- `${workspaceFolder}` - Project root directory
-- `${workspaceFolderBasename}` - Project name
-
-#### Other MCP Clients
-
-Refer to your MCP client's documentation for configuration instructions. The server uses STDIO transport and follows MCP protocol version 2024-11-05.
 
 ## Available Tools
 
@@ -367,33 +232,54 @@ The server implements intelligent rate limiting to respect Todoist API constrain
 
 ## Development
 
+### Prerequisites
+
+- Node.js 18+
+- Vercel CLI: `npm install -g vercel`
+- Todoist API token
+
+### Local Setup
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/shayonpal/mcp-todoist.git
+   cd mcp-todoist
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Create `.env.local`:
+   ```bash
+   echo "TODOIST_API_TOKEN=your_token_here" > .env.local
+   ```
+
+4. Start development server:
+   ```bash
+   npm run dev
+   ```
+
+   Server runs at `http://localhost:3000/mcp`
+
+5. Test endpoint:
+   ```bash
+   curl -X POST http://localhost:3000/mcp \
+     -H "Content-Type: application/json" \
+     -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+   ```
+
+### Building
+
 ```bash
-# Run in development mode with hot reload
-npm run dev
-
-# Build TypeScript
 npm run build
+```
 
-# Run all tests
+### Testing
+
+```bash
 npm test
-
-# Run tests in watch mode
-npm run test:watch
-
-# Generate test coverage report
-npm run test:coverage
-
-# Lint code
-npm run lint
-
-# Auto-fix linting issues
-npm run lint:fix
-
-# Format code with Prettier
-npm run format
-
-# Type-check without emitting
-npm run typecheck
 ```
 
 ## Contributing
