@@ -1,19 +1,10 @@
 {
-  "version": 2,
-  "builds": [
+  "rewrites": [
     {
-      "src": "api/mcp.ts",
-      "use": "@vercel/node"
+      "source": "/mcp",
+      "destination": "/api/mcp"
     }
   ],
-  "routes": [
-    {
-      "src": "/mcp",
-      "dest": "/api/mcp"
-    }
-  ],
-  "github": {
-    "enabled": true,
-    "autoAlias": true
-  }
+  "installCommand": "npm install",
+  "framework": null
 }

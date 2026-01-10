@@ -7,7 +7,6 @@
 
 import { getServer } from '../src/server.js';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
-import { randomUUID } from 'crypto';
 
 /**
  * Vercel serverless function handler
@@ -15,16 +14,14 @@ import { randomUUID } from 'crypto';
  */
 export async function POST(request: Request): Promise<Response> {
   try {
-    // Get or create session ID from header
-    const sessionId = getOrCreateSessionId(request);
-
     // Get server wrapper and underlying MCP Server instance
     const serverWrapper = getServer();
     const server = await serverWrapper.getServerInstance();
 
-    // Create stateful transport with session ID
+    // Create stateless transport (perfect for serverless environments)
+    // sessionIdGenerator: undefined enables stateless mode
     const transport = new WebStandardStreamableHTTPServerTransport({
-      sessionIdGenerator: () => sessionId,
+      sessionIdGenerator: undefined, // Stateless mode for serverless deployment
       enableJsonResponse: true, // Return JSON responses instead of SSE
     });
 
@@ -58,26 +55,4 @@ export async function POST(request: Request): Promise<Response> {
       }
     );
   }
-}
-
-/**
- * Get existing session ID or create new one
- */
-function getOrCreateSessionId(request: Request): string {
-  const sessionId = request.headers.get('mcp-session-id');
-
-  if (sessionId && isValidSessionId(sessionId)) {
-    return sessionId;
-  }
-
-  return randomUUID();
-}
-
-/**
- * Validate session ID is a valid UUID
- */
-function isValidSessionId(id: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-    id
-  );
 }

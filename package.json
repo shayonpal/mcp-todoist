@@ -15,7 +15,6 @@
   "scripts": {
     "build": "tsc",
     "vercel-build": "tsc",
-    "dev": "vercel dev",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",

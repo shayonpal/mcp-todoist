@@ -61,3 +61,9 @@ data/
 
 # Private project documentation
 CLAUDE.local.md
+.vercel
+
+# Compiled API files (Vercel builds TypeScript on deployment)
+api/**/*.js
+api/**/*.d.ts
+api/**/*.map
