@@ -18,26 +18,40 @@ npm install
 ### Configure API Token
 Add your Todoist API token to your MCP client configuration:
 
-**Claude Desktop (~/Library/Application Support/Claude/claude_desktop_config.json)**:
+**Claude Desktop (~/.claude/settings.json)**:
 ```json
 {
   "mcpServers": {
     "todoist": {
-      "command": "node",
-      "args": ["/path/to/mcp-todoist/dist/index.js"],
-      "env": {
-        "TODOIST_API_TOKEN": "your_api_token_here"
+      "transport": {
+        "type": "http",
+        "url": "https://todoist.uverfolks.ca/mcp"
       }
     }
   }
 }
 ```
 
-### Build and Start Server
-```bash
-npm run build
-npm start
+For local development:
+```json
+{
+  "mcpServers": {
+    "todoist": {
+      "transport": {
+        "type": "http",
+        "url": "http://localhost:3000/mcp"
+      }
+    }
+  }
+}
 ```
+
+### Local Development Server
+```bash
+vercel dev
+```
+
+Server runs at `http://localhost:3000/mcp` when using Vercel dev locally.
 
 ## 2. Verification Steps
 

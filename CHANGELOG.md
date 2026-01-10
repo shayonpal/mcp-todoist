@@ -2,6 +2,72 @@
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-01-10
+
+### Breaking Changes
+
+- **STDIO transport removed** - Server now uses HTTP-only transport
+  - Migration: Update MCP client configuration from STDIO to HTTP transport
+  - Old: `{"command": "npx", "args": ["-y", "@shayonpal/mcp-todoist"]}`
+  - New: `{"transport": {"type": "http", "url": "https://todoist.uverfolks.ca/mcp"}}`
+  - Impact: All users must reconfigure their MCP clients
+- **No longer published to npm** - Server deployed as remote HTTP service
+  - Migration: Remove local npm installation, configure HTTP endpoint in MCP client
+- **Local development requires Vercel CLI** - Development workflow changed from `tsx` to `vercel dev`
+  - Migration: Install Vercel CLI globally, use `vercel dev` for local testing
+
+### Added
+
+- HTTP transport support for Vercel serverless deployment
+  - WebStandardStreamableHTTPServerTransport integration
+  - Stateless mode for serverless environments (client-provided session IDs)
+  - Per-request transport lifecycle with guaranteed cleanup
+- Comprehensive error handling and logging
+  - Correlation ID generation for request tracking
+  - Stage-specific error handling (parse, validation, server, transport)
+  - JSON-RPC 2.0 compliant error codes (-32700, -32600, -32603)
+  - Request validation (Content-Type, 1MB size limit)
+  - Timeout protection (5s default, 30s for request handling)
+  - Sanitized error messages (internals hidden from clients)
+- Integration tests for HTTP transport (27 test cases)
+  - Error scenarios, concurrent requests, validation
+  - JSON-RPC response format validation
+  - HTTP status code verification
+- Vercel deployment configuration
+  - vercel.json for routing and builds
+  - Automatic CI/CD via GitHub integration
+  - Preview deployments for pull requests
+- Server instance lifecycle documentation
+  - Singleton pattern and serverless container reuse
+  - State implications and performance trade-offs
+
+### Changed
+
+- Server architecture refactored for transport independence
+  - Added `getServerInstance()` method to expose underlying MCP Server
+  - Singleton pattern optimized for serverless cold-start performance
+  - Transport creation moved from server to HTTP handler
+- Development workflow migrated to Vercel
+  - Local development: `vercel dev` instead of `tsx src/server.ts`
+  - Build command: `tsc` (no longer needs chmod)
+  - Environment variables: `.env.local` for local, Vercel dashboard for production
+- README updated for HTTP-only deployment
+  - Removed STDIO installation instructions
+  - Added HTTP transport configuration for all MCP clients
+  - Added Vercel deployment guide
+
+### Removed
+
+- STDIO transport and entry points
+  - Removed `src/index.ts` (STDIO entry point)
+  - Removed `src/server-cli.ts` (CLI wrapper)
+  - Removed StdioServerTransport dependency
+- npm package distribution
+  - Removed `bin` field from package.json
+  - Removed npm publishing scripts (prepublishOnly)
+- Development scripts
+  - Removed recursive `dev` script (conflicted with Vercel)
+
 ## [1.5.0] - 2025-10-03
 
 ### Added
@@ -169,7 +235,8 @@
 - Project configuration (TypeScript, Jest, ESLint, Prettier)
 - README and project documentation
 
-[Unreleased]: https://github.com/shayonpal/mcp-todoist/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/shayonpal/mcp-todoist/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/shayonpal/mcp-todoist/compare/v1.5.0...v2.0.0
 [1.5.0]: https://github.com/shayonpal/mcp-todoist/compare/v1.4.1...v1.5.0
 [1.4.1]: https://github.com/shayonpal/mcp-todoist/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/shayonpal/mcp-todoist/compare/v1.3.0...v1.4.0

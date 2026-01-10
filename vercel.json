@@ -1,0 +1,10 @@
+{
+  "rewrites": [
+    {
+      "source": "/mcp",
+      "destination": "/api/mcp"
+    }
+  ],
+  "installCommand": "npm install",
+  "framework": null
+}

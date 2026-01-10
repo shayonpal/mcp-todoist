@@ -21,7 +21,7 @@
 unset TODOIST_API_TOKEN
 
 # Start the server
-npm start
+vercel dev
 
 # Expected: Server starts successfully, no error
 # Output should show: "MCP Todoist Server initialized"
@@ -104,7 +104,7 @@ npm test -- --testNamePattern="Tool call without token"
 export TODOIST_API_TOKEN="your_real_token_here"
 
 # Restart server
-npm start
+vercel dev
 
 # Call first tool
 npm test -- --testNamePattern="First tool call validates token"
@@ -140,7 +140,7 @@ npm test -- --testNamePattern="Second tool call uses cached validation"
 export TODOIST_API_TOKEN="invalid_fake_token_12345"
 
 # Restart server
-npm start
+vercel dev
 
 # Attempt tool call
 npm test -- --testNamePattern="Invalid token error"
@@ -172,7 +172,7 @@ npm test -- --testNamePattern="Invalid token error"
 unset TODOIST_API_TOKEN
 
 # Start server
-npm start
+vercel dev
 
 # Request health check
 npm test -- --testNamePattern="Health check without token"
@@ -210,7 +210,7 @@ npm test -- --testNamePattern="Health check without token"
 export TODOIST_API_TOKEN="your_real_token_here"
 
 # Start server
-npm start
+vercel dev
 
 # Make tool call to trigger validation
 npm test -- --testNamePattern="Trigger validation"
@@ -278,7 +278,7 @@ npm test -- --testNamePattern="Token validation lifecycle"
 
 # 2. Test without token
 unset TODOIST_API_TOKEN
-npm start
+vercel dev
 # Expected: Server starts, logs "Starting without token (deferred validation)"
 
 # 3. Test with real token

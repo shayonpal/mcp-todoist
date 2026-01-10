@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
   ListToolsRequestSchema,
   CallToolRequestSchema,
@@ -283,29 +282,6 @@ export class TodoistMCPServerImpl {
   }
 
   /**
-   * Start the MCP server
-   */
-  async run(): Promise<void> {
-    const transport = new StdioServerTransport();
-
-    logger.info('Starting Todoist MCP Server', {
-      version: '1.0.0',
-      toolCount: this.tools.size,
-      tools: Array.from(this.tools.keys()),
-      tokenConfigured: !!this.config.token,
-      note: 'Token validation deferred until first tool invocation',
-    });
-
-    try {
-      await this.server.connect(transport);
-      logger.info('Todoist MCP Server started successfully');
-    } catch (error) {
-      logger.error('Failed to start MCP server', { error });
-      throw error;
-    }
-  }
-
-  /**
    * Stop the MCP server
    */
   async stop(): Promise<void> {
@@ -317,6 +293,63 @@ export class TodoistMCPServerImpl {
       throw error;
     }
   }
+
+  /**
+   * Gets the underlying MCP Server instance for HTTP/SSE transport integration.
+   *
+   * This method exposes the internal Server instance that was created during
+   * TodoistMCPServerImpl construction. In serverless/container environments, this
+   * instance persists across multiple HTTP requests during a warm container's lifetime,
+   * avoiding expensive re-initialization on every request.
+   *
+   * **Singleton Behavior (Per TodoistMCPServerImpl Instance):**
+   * - Server instance is created once in constructor and stored in `this.server`
+   * - All calls to this method return the same Server instance
+   * - Server maintains stateful connection, handlers, and capabilities
+   * - Tools registered once at initialization, shared across all requests
+   *
+   * **Container Reuse in Serverless:**
+   * When deployed to serverless platforms (AWS Lambda, Cloud Run, etc.):
+   * - **Cold Start**: New container → new TodoistMCPServerImpl → new Server instance
+   * - **Warm Container**: Reused TodoistMCPServerImpl → same Server instance across requests
+   * - **Why Needed**: HTTP/SSE transport requires persistent Server for streaming responses
+   * - **Performance Benefit**: Avoids tool initialization and handler setup on warm starts
+   *
+   * **State Implications:**
+   * The returned Server instance carries state that persists across requests:
+   * - **Handlers**: Request handlers registered in `setupHandlers()` (stateless operations)
+   * - **Tools Map**: All tool instances initialized once (API clients, config, caches)
+   * - **Connection State**: May maintain transport connection metadata
+   * - **Token Validation**: Shared TokenValidatorSingleton state across requests
+   *
+   * **Safety Considerations:**
+   * - Request handlers are designed to be stateless (operate on request parameters)
+   * - Tool instances must handle concurrent execution safely (though Node.js is single-threaded)
+   * - API tokens loaded from environment once at construction (not refreshed automatically)
+   * - Stale state possible if environment changes between warm requests (rare)
+   *
+   * **Usage Pattern:**
+   * Called by HTTP transport adapters (e.g., Express handlers, SSE streaming middleware)
+   * that need direct access to the Server instance for routing MCP protocol requests
+   * over HTTP instead of stdio.
+   *
+   * @returns The underlying MCP Server instance (singleton per TodoistMCPServerImpl)
+   *
+   * @example
+   * ```typescript
+   * const serverImpl = createServerInstance();
+   * const mcpServer = serverImpl.getServerInstance();
+   *
+   * // HTTP handler uses server for MCP protocol over SSE
+   * app.post('/mcp', async (req, res) => {
+   *   const result = await mcpServer.handleRequest(req.body);
+   *   res.json(result);
+   * });
+   * ```
+   */
+  getServerInstance(): Server {
+    return this.server;
+  }
 }
 
 // Create and export server instance
@@ -324,5 +357,5 @@ export function createServerInstance(): TodoistMCPServerImpl {
   return new TodoistMCPServerImpl();
 }
 
-// Note: Auto-start functionality moved to src/index.ts and src/server-cli.ts
+// Note: Server is instantiated via getServer() from HTTP handler (api/mcp.ts).
 // This allows the server implementation to be imported without side effects.
