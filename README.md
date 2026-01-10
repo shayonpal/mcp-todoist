@@ -258,7 +258,7 @@ The server implements intelligent rate limiting to respect Todoist API constrain
 
 4. Start development server:
    ```bash
-   npm run dev
+   vercel dev
    ```
 
    Server runs at `http://localhost:3000/mcp`

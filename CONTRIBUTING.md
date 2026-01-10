@@ -49,8 +49,10 @@ npm run build
 ### Running in Development Mode
 
 ```bash
-npm run dev
+vercel dev
 ```
+
+This starts the Vercel development server with HTTP transport at `http://localhost:3000/mcp`.
 
 ### Running Tests
 
