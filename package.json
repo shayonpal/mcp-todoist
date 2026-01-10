@@ -1,12 +1,9 @@
 {
   "name": "@shayonpal/mcp-todoist",
-  "version": "1.5.0",
+  "version": "2.0.0",
   "description": "MCP server enabling programmatic Todoist task and project management through optimized tool set",
-  "main": "dist/index.js",
+  "main": "dist/server.js",
   "type": "module",
-  "bin": {
-    "mcp-todoist": "dist/server-cli.js"
-  },
   "files": [
     "dist",
     "README.md",
@@ -16,17 +13,15 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "pretest": "npm run build",
-    "build": "tsc && chmod 755 dist/server.js",
-    "prepublishOnly": "npm run build && npm test",
-    "start": "node dist/index.js",
-    "dev": "tsx src/server.ts",
+    "build": "tsc",
+    "vercel-build": "tsc",
+    "dev": "vercel dev",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "lint": "eslint src tests --ext .ts",
-    "lint:fix": "eslint src tests --ext .ts --fix",
-    "format": "prettier --write src tests",
+    "lint": "eslint src api tests --ext .ts",
+    "lint:fix": "eslint src api tests --ext .ts --fix",
+    "format": "prettier --write src api tests",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [
@@ -58,6 +53,7 @@
     "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^6.13.1",
     "@typescript-eslint/parser": "^6.13.1",
+    "@vercel/node": "^3.0.0",
     "eslint": "^8.54.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.1",
