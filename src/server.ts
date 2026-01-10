@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import type { TodoistMCPServerImpl } from './server/impl.js';
+import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 
 type HealthCheckResponse = Awaited<
   ReturnType<TodoistMCPServerImpl['healthCheck']>
@@ -10,6 +11,7 @@ type TodoistMCPServerImplementation = {
   healthCheck(): Promise<HealthCheckResponse>;
   run(): Promise<void>;
   stop(): Promise<void>;
+  getServerInstance(): Server;
 };
 
 type ServerImplementationModule = {
@@ -55,6 +57,11 @@ export class TodoistMCPServer {
   async stop(): Promise<void> {
     const impl = await this.getImpl();
     return impl.stop();
+  }
+
+  async getServerInstance(): Promise<Server> {
+    const impl = await this.getImpl();
+    return impl.getServerInstance();
   }
 }
 

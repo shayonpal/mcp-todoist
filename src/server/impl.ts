@@ -317,6 +317,14 @@ export class TodoistMCPServerImpl {
       throw error;
     }
   }
+
+  /**
+   * Get the underlying MCP Server instance
+   * This is needed for HTTP transport integration
+   */
+  getServerInstance(): Server {
+    return this.server;
+  }
 }
 
 // Create and export server instance

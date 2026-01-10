@@ -6,6 +6,7 @@
  */
 
 import { getServer } from '../src/server.js';
+import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
 import { randomUUID } from 'crypto';
 
 /**
@@ -17,28 +18,29 @@ export async function POST(request: Request): Promise<Response> {
     // Get or create session ID from header
     const sessionId = getOrCreateSessionId(request);
 
-    // Get server instance
-    const server = getServer();
+    // Get server wrapper and underlying MCP Server instance
+    const serverWrapper = getServer();
+    const server = await serverWrapper.getServerInstance();
 
-    // Parse request body
-    const body = (await request.json()) as { id?: number | string };
+    // Create stateful transport with session ID
+    const transport = new WebStandardStreamableHTTPServerTransport({
+      sessionIdGenerator: () => sessionId,
+      enableJsonResponse: true, // Return JSON responses instead of SSE
+    });
 
-    // For now, return a placeholder response
-    // We'll integrate StreamableHTTPServerTransport in next task
-    return new Response(
-      JSON.stringify({
-        jsonrpc: '2.0',
-        id: body.id || 1,
-        result: { message: 'HTTP transport placeholder' },
-      }),
-      {
-        status: 200,
-        headers: {
-          'mcp-session-id': sessionId,
-          'content-type': 'application/json',
-        },
-      }
-    );
+    // Connect server to transport
+    await server.connect(transport);
+
+    // Parse request body for handleRequest
+    const parsedBody = await request.json();
+
+    // Handle the request and get response
+    const response = await transport.handleRequest(request, { parsedBody });
+
+    // Close transport after handling request (stateless per-request model)
+    await transport.close();
+
+    return response;
   } catch (error) {
     return new Response(
       JSON.stringify({
