@@ -9,7 +9,7 @@
 - **STDIO transport removed** - Server now uses HTTP-only transport
   - Migration: Update MCP client configuration from STDIO to HTTP transport
   - Old: `{"command": "npx", "args": ["-y", "@shayonpal/mcp-todoist"]}`
-  - New: `{"transport": {"type": "http", "url": "https://todoist.uverfolks.ca/mcp"}}`
+  - New: `{"transport": {"type": "http", "url": "https://todoist.uberfolks.ca/mcp"}}`
   - Impact: All users must reconfigure their MCP clients
 - **No longer published to npm** - Server deployed as remote HTTP service
   - Migration: Remove local npm installation, configure HTTP endpoint in MCP client

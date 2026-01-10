@@ -25,7 +25,7 @@ Add your Todoist API token to your MCP client configuration:
     "todoist": {
       "transport": {
         "type": "http",
-        "url": "https://todoist.uverfolks.ca/mcp"
+        "url": "https://todoist.uberfolks.ca/mcp"
       }
     }
   }

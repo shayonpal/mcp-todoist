@@ -87,7 +87,7 @@ Add to your MCP settings file:
     "todoist": {
       "transport": {
         "type": "http",
-        "url": "https://todoist.uverfolks.ca/mcp"
+        "url": "https://todoist.uberfolks.ca/mcp"
       }
     }
   }

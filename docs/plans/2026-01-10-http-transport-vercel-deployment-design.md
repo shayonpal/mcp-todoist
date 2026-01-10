@@ -316,7 +316,7 @@ TODOIST_API_TOKEN=your_token_here
 3. **Production Deployment:**
    - PR merged to `main`
    - Vercel automatically deploys to production
-   - Deployed to `todoist.uverfolks.ca`
+   - Deployed to `todoist.uberfolks.ca`
 
 ### Branch Protection Rules
 
@@ -335,7 +335,7 @@ This ensures code cannot be merged unless Vercel can successfully build and depl
 
 **Setup in Vercel Dashboard:**
 1. Project Settings → Domains
-2. Add domain: `todoist.uverfolks.ca`
+2. Add domain: `todoist.uberfolks.ca`
 3. Configure DNS (CNAME or A record as instructed)
 4. SSL automatically provisioned by Vercel
 
@@ -388,7 +388,7 @@ Despite session IDs, the server remains stateless:
 
 **No additional authentication needed** for initial deployment:
 
-The MCP endpoint at `https://todoist.uverfolks.ca/mcp` will be publicly accessible, but:
+The MCP endpoint at `https://todoist.uberfolks.ca/mcp` will be publicly accessible, but:
 - Only proxies to YOUR Todoist account (using your token)
 - Even if discovered, manages YOUR tasks only
 - Only you configure it in your MCP clients
@@ -423,7 +423,7 @@ export async function POST(request: Request) {
     "todoist": {
       "transport": {
         "type": "http",
-        "url": "https://todoist.uverfolks.ca/mcp"
+        "url": "https://todoist.uberfolks.ca/mcp"
       }
     }
   }
@@ -583,7 +583,7 @@ git push origin feature/http-only-transport
 
 2. **Configure custom domain:**
    - Vercel Dashboard → Domains
-   - Add `todoist.uverfolks.ca`
+   - Add `todoist.uberfolks.ca`
    - Update DNS as instructed
    - Wait for SSL provisioning
 
@@ -599,7 +599,7 @@ git push origin feature/http-only-transport
        "todoist": {
          "transport": {
            "type": "http",
-           "url": "https://todoist.uverfolks.ca/mcp"
+           "url": "https://todoist.uberfolks.ca/mcp"
          }
        }
      }
@@ -793,7 +793,7 @@ Access via:
 
 ### Domain Costs
 
-**todoist.uverfolks.ca:**
+**todoist.uberfolks.ca:**
 - Already owned
 - No additional cost
 
@@ -834,7 +834,7 @@ The migration is successful when:
 2. ✓ All tools work identically to STDIO version
 3. ✓ Accessible from all devices (Mac Mini, Pi5, MacBook Air)
 4. ✓ Automatic deployments via GitHub
-5. ✓ Custom domain `todoist.uverfolks.ca` working
+5. ✓ Custom domain `todoist.uberfolks.ca` working
 6. ✓ STDIO code removed from repository
 7. ✓ Documentation updated with HTTP instructions
 8. ✓ No regressions in functionality

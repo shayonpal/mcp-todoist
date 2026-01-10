@@ -1056,7 +1056,7 @@ Add to your MCP settings file:
     "todoist": {
       "transport": {
         "type": "http",
-        "url": "https://todoist.uverfolks.ca/mcp"
+        "url": "https://todoist.uberfolks.ca/mcp"
       }
     }
   }
@@ -1284,7 +1284,7 @@ Navigate to: Vercel Dashboard → Project → Settings → Domains
 
 **Step 2: Add custom domain**
 
-Click "Add" → Enter `todoist.uverfolks.ca` → Click "Add"
+Click "Add" → Enter `todoist.uberfolks.ca` → Click "Add"
 
 **Step 3: Note DNS configuration requirements**
 
@@ -1302,7 +1302,7 @@ Add CNAME record:
 **Step 5: Verify DNS propagation**
 
 ```bash
-ssh pi5 'dig todoist.uverfolks.ca'
+ssh pi5 'dig todoist.uberfolks.ca'
 ```
 
 Expected: Shows CNAME record pointing to Vercel
@@ -1314,7 +1314,7 @@ Expected: Vercel automatically provisions SSL (may take a few minutes)
 **Step 7: Verify custom domain works**
 
 ```bash
-ssh pi5 'curl -X POST https://todoist.uverfolks.ca/mcp -H "Content-Type: application/json" -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2024-11-05\",\"capabilities\":{},\"clientInfo\":{\"name\":\"test\",\"version\":\"1.0.0\"}}}"'
+ssh pi5 'curl -X POST https://todoist.uberfolks.ca/mcp -H "Content-Type: application/json" -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2024-11-05\",\"capabilities\":{},\"clientInfo\":{\"name\":\"test\",\"version\":\"1.0.0\"}}}"'
 ```
 
 Expected: Returns valid response
@@ -1338,7 +1338,7 @@ Edit `~/.claude/settings.json`:
     "todoist": {
       "transport": {
         "type": "http",
-        "url": "https://todoist.uverfolks.ca/mcp"
+        "url": "https://todoist.uberfolks.ca/mcp"
       }
     }
   }
@@ -1354,7 +1354,7 @@ ssh pi5 'cat > ~/.claude/settings.json << '\''EOF'\''
     "todoist": {
       "transport": {
         "type": "http",
-        "url": "https://todoist.uverfolks.ca/mcp"
+        "url": "https://todoist.uberfolks.ca/mcp"
       }
     }
   }
@@ -1464,7 +1464,7 @@ Expected: Remote branch deleted
 **Step 6: Verify production deployment health**
 
 ```bash
-ssh pi5 'curl -X POST https://todoist.uverfolks.ca/mcp -H "Content-Type: application/json" -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\",\"params\":{}}" | jq .result.tools | head -20'
+ssh pi5 'curl -X POST https://todoist.uberfolks.ca/mcp -H "Content-Type: application/json" -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\",\"params\":{}}" | jq .result.tools | head -20'
 ```
 
 Expected: Lists all available tools
@@ -1512,7 +1512,7 @@ Successfully migrated Todoist MCP server from STDIO transport to HTTP-only trans
 
 ## Deployment
 
-- **Production URL:** https://todoist.uverfolks.ca/mcp
+- **Production URL:** https://todoist.uberfolks.ca/mcp
 - **Vercel Project:** mcp-todoist
 - **GitHub Repository:** https://github.com/shayonpal/mcp-todoist
 - **Branch Protection:** Enabled on main
@@ -1569,7 +1569,7 @@ Expected: Pushed to main, triggers deployment
 
 Verify all criteria are met:
 
-- [ ] HTTP endpoint deployed to Vercel (https://todoist.uverfolks.ca/mcp)
+- [ ] HTTP endpoint deployed to Vercel (https://todoist.uberfolks.ca/mcp)
 - [ ] All tools work identically to STDIO version
 - [ ] Accessible from all devices (Mac Mini, Pi5, MacBook Air)
 - [ ] Automatic deployments via GitHub integration
@@ -1618,7 +1618,7 @@ vercel dev
 ### Issue: Cannot access from MCP clients
 
 **Solution:**
-- Verify URL is correct (https://todoist.uverfolks.ca/mcp)
+- Verify URL is correct (https://todoist.uberfolks.ca/mcp)
 - Check MCP client configuration syntax
 - Restart MCP client after config change
 - Test endpoint with curl first

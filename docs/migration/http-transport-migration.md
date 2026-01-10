@@ -28,7 +28,7 @@ Successfully migrated Todoist MCP server from STDIO transport to HTTP-only trans
 
 ## Deployment
 
-- **Production URL:** https://todoist.uverfolks.ca/mcp
+- **Production URL:** https://todoist.uberfolks.ca/mcp
 - **Vercel Project:** mcp-todoist
 - **GitHub Repository:** https://github.com/shayonpal/mcp-todoist
 - **Branch:** `feature/http-transport`
@@ -56,7 +56,7 @@ npm run build
     "todoist": {
       "transport": {
         "type": "http",
-        "url": "https://todoist.uverfolks.ca/mcp"
+        "url": "https://todoist.uberfolks.ca/mcp"
       }
     }
   }
@@ -87,7 +87,7 @@ npm run build
 5. Push to GitHub and create pull request
 6. Test preview deployment
 7. Merge to main for production deployment
-8. Configure custom domain `todoist.uverfolks.ca`
+8. Configure custom domain `todoist.uberfolks.ca`
 9. Update MCP clients on all devices (Mac Mini, Pi5, MacBook Air)
 10. Configure GitHub branch protection
 
