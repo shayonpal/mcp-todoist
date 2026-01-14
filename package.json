@@ -1,6 +1,6 @@
 {
   "name": "@shayonpal/mcp-todoist",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "MCP server enabling programmatic Todoist task and project management through optimized tool set",
   "main": "dist/server.js",
   "type": "module",

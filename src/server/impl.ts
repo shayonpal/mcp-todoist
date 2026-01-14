@@ -18,6 +18,7 @@ import { TodoistLabelsTool } from '../tools/todoist-labels.js';
 import { TodoistBulkTasksTool } from '../tools/bulk-tasks.js';
 import { TokenValidatorSingleton } from '../services/token-validator.js';
 import { getConfig } from '../config/index.js';
+import { SERVER_ICONS } from '../config/server-icon.js';
 import { logger } from '../middleware/logging.js';
 import { TodoistAPIError, TodoistErrorCode } from '../types/errors.js';
 
@@ -38,7 +39,8 @@ export class TodoistMCPServerImpl {
     this.server = new Server(
       {
         name: 'todoist-mcp-server',
-        version: '1.0.0',
+        version: '2.1.0',
+        ...(SERVER_ICONS && { icons: SERVER_ICONS }),
       },
       {
         capabilities: {
